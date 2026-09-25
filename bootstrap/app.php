@@ -11,7 +11,13 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        //
+        $middleware->validateCsrfTokens(except: [
+            'webhook/*',
+        ]);
+
+        $middleware->alias([
+            'whatsapp.signature' => \App\Http\Middleware\VerifyWhatsAppWebhookSignature::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //
