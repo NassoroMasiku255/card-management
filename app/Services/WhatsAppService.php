@@ -17,12 +17,12 @@ class WhatsAppService
 
     public function __construct()
     {
-        $this->apiUrl = config('services.whatsapp.api_url', '');
-        $this->phoneNumberId = config('services.whatsapp.phone_number_id', '');
-        $this->accessToken = config('services.whatsapp.access_token', '');
-        $this->templateName = config('services.whatsapp.template_name', '');
-        $this->templateLanguage = config('services.whatsapp.template_language', 'en');
-        $this->defaultImageUrl = config('services.whatsapp.default_image_url', '');
+        $this->apiUrl = config('services.whatsapp.api_url') ?? '';
+        $this->phoneNumberId = config('services.whatsapp.phone_number_id') ?? '';
+        $this->accessToken = config('services.whatsapp.access_token') ?? '';
+        $this->templateName = config('services.whatsapp.template_name') ?? '';
+        $this->templateLanguage = config('services.whatsapp.template_language') ?? 'en';
+        $this->defaultImageUrl = config('services.whatsapp.default_image_url') ?? '';
     }
 
     /**
