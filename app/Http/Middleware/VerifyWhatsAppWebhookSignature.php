@@ -39,10 +39,17 @@ class VerifyWhatsAppWebhookSignature
             return response()->json(['message' => 'Invalid signature'], 403);
         }
 
-        $expected = hash_hmac('sha256', $request->getContent(), $appSecret);
+        $rawBody = $request->getContent();
+        $expected = hash_hmac('sha256', $rawBody, $appSecret);
+        $received = substr($header, strlen('sha256='));
 
-        if (! hash_equals($expected, substr($header, strlen('sha256=')))) {
-            Log::warning('WhatsApp webhook rejected: signature mismatch.');
+        if (! hash_equals($expected, $received)) {
+            Log::warning('WhatsApp webhook rejected: signature mismatch.', [
+                'expected_prefix' => substr($expected, 0, 12) . '…',
+                'received_prefix' => substr($received, 0, 12) . '…',
+                'body_length' => strlen($rawBody),
+                'secret_length' => strlen($appSecret),
+            ]);
 
             return response()->json(['message' => 'Invalid signature'], 403);
         }
