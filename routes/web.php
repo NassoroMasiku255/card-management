@@ -6,6 +6,7 @@ use App\Http\Controllers\EventController;
 use App\Http\Controllers\GuestController;
 use App\Http\Controllers\InvitationController;
 use App\Http\Controllers\ScannerController;
+use App\Http\Controllers\WebhookLogController;
 use App\Http\Controllers\WhatsAppWebhookController;
 use Illuminate\Support\Facades\Route;
 
@@ -64,4 +65,8 @@ Route::middleware('auth')->group(function () {
 
     // Download template
     Route::get('/guests/template/download', [GuestController::class, 'downloadTemplate'])->name('guests.template');
+
+    // Webhook logs
+    Route::get('/webhook-logs', [WebhookLogController::class, 'index'])->name('webhook-logs.index');
+    Route::get('/webhook-logs/{webhookLog}', [WebhookLogController::class, 'show'])->name('webhook-logs.show');
 });

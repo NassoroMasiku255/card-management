@@ -33,6 +33,11 @@
                     {{ request()->routeIs('events.*') ? 'bg-primary-50 text-primary-700' : 'text-surface-600 hover:bg-surface-100 hover:text-surface-900' }}">
                     <i class="fas fa-calendar-days w-4 text-center"></i> Events
                 </a>
+                <a href="{{ route('webhook-logs.index') }}"
+                    class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition
+                    {{ request()->routeIs('webhook-logs.*') ? 'bg-primary-50 text-primary-700' : 'text-surface-600 hover:bg-surface-100 hover:text-surface-900' }}">
+                    <i class="fab fa-whatsapp w-4 text-center"></i> Webhook Logs
+                </a>
 
                 <p class="px-3 pt-5 pb-1 text-[10px] font-semibold uppercase tracking-wider text-surface-400">Quick create</p>
                 <a href="{{ route('events.create') }}"
@@ -74,6 +79,7 @@
                 <div class="flex items-center gap-4">
                     <a href="{{ route('dashboard') }}" class="text-surface-500 {{ request()->routeIs('dashboard') ? 'text-primary-600' : '' }}"><i class="fas fa-house"></i></a>
                     <a href="{{ route('events.index') }}" class="text-surface-500 {{ request()->routeIs('events.*') ? 'text-primary-600' : '' }}"><i class="fas fa-calendar-days"></i></a>
+                    <a href="{{ route('webhook-logs.index') }}" class="text-surface-500 {{ request()->routeIs('webhook-logs.*') ? 'text-primary-600' : '' }}"><i class="fab fa-whatsapp"></i></a>
                     <form method="POST" action="{{ route('logout') }}">
                         @csrf
                         <button type="submit" class="text-surface-400 hover:text-red-600"><i class="fas fa-arrow-right-from-bracket"></i></button>
