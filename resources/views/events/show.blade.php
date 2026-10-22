@@ -49,6 +49,9 @@
             <a href="{{ route('events.invitations.index', $event) }}" class="btn btn-outline btn-sm">
                 <i class="fas fa-paper-plane"></i> Invitation
             </a>
+            <a href="{{ route('events.report', $event) }}" class="btn btn-secondary btn-sm">
+                <i class="fas fa-chart-pie"></i> Report
+            </a>
             <a href="{{ route('events.edit', $event) }}" class="btn btn-secondary btn-sm">
                 <i class="fas fa-pen"></i> Edit
             </a>
@@ -162,6 +165,10 @@
                     <span class="text-sm text-surface-500 flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span>Invitations Sent</span>
                     <span class="text-sm font-bold text-blue-600">{{ $stats['invitations_sent'] }}</span>
                 </div>
+                <div class="flex items-center justify-between">
+                    <span class="text-sm text-surface-500 flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-purple-500"></span>Estimated Attendance</span>
+                    <span class="text-sm font-bold text-purple-600">{{ number_format($stats['estimated_attendance']) }} seats</span>
+                </div>
             </div>
         </div>
 
@@ -192,13 +199,26 @@
         <!-- Contributions -->
         <div class="card-surface p-5 relative overflow-hidden">
             <div class="absolute -right-4 -top-4 w-20 h-20 bg-gold-100 rounded-full opacity-60"></div>
-            <div class="relative flex items-center gap-3">
-                <div class="w-11 h-11 rounded-xl bg-gold-100 flex items-center justify-center shrink-0">
-                    <i class="fas fa-coins text-gold-600"></i>
+            <div class="relative flex items-center justify-between gap-3">
+                <div class="flex items-center gap-3">
+                    <div class="w-11 h-11 rounded-xl bg-gold-100 flex items-center justify-center shrink-0">
+                        <i class="fas fa-coins text-gold-600"></i>
+                    </div>
+                    <div>
+                        <div class="text-xs text-surface-500">Total Pledged</div>
+                        <div class="text-lg font-bold text-gold-700">{{ number_format($stats['total_pledged']) }} TZS</div>
+                    </div>
                 </div>
-                <div>
-                    <div class="text-xs text-surface-500">Total Contributions</div>
-                    <div class="text-lg font-bold text-gold-700">{{ number_format($stats['total_contribution']) }} TZS</div>
+                <a href="{{ route('events.report', $event) }}" class="text-xs font-medium text-primary-600 hover:text-primary-700">Report</a>
+            </div>
+            <div class="relative grid grid-cols-2 gap-2 mt-4">
+                <div class="bg-green-50 rounded-lg p-2.5">
+                    <div class="text-[10px] uppercase tracking-wide text-green-600">Paid</div>
+                    <div class="text-sm font-bold text-green-700">{{ number_format($stats['total_paid']) }}</div>
+                </div>
+                <div class="bg-red-50 rounded-lg p-2.5">
+                    <div class="text-[10px] uppercase tracking-wide text-red-500">Outstanding</div>
+                    <div class="text-sm font-bold text-red-600">{{ number_format($stats['outstanding']) }}</div>
                 </div>
             </div>
         </div>

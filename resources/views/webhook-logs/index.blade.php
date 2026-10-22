@@ -36,10 +36,11 @@
 
     {{-- Filters --}}
     <div class="bg-white rounded-xl border border-surface-200 p-4">
-        <form method="GET" action="{{ route('webhook-logs.index') }}" class="flex flex-col sm:flex-row gap-3">
+        <form method="GET" action="{{ route('webhook-logs.index') }}" class="flex flex-col sm:flex-row gap-3"
+            data-live-filter data-loading-text="Filtering webhook logs...">
             <div class="flex-1">
                 <input type="text" name="search" value="{{ request('search') }}"
-                    placeholder="Search phone, message ID, summary..."
+                    placeholder="Search phone, message ID, summary..." autocomplete="off"
                     class="w-full rounded-lg border border-surface-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent">
             </div>
             <select name="type" class="rounded-lg border border-surface-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">

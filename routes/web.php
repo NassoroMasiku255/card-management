@@ -3,7 +3,9 @@
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EventController;
+use App\Http\Controllers\EventReportController;
 use App\Http\Controllers\GuestController;
+use App\Http\Controllers\GuestPaymentController;
 use App\Http\Controllers\InvitationController;
 use App\Http\Controllers\ScannerController;
 use App\Http\Controllers\WebhookLogController;
@@ -40,6 +42,8 @@ Route::middleware('auth')->group(function () {
 
     // Guests (nested under events)
     Route::prefix('events/{event}')->name('events.')->group(function () {
+        Route::get('/report', [EventReportController::class, 'show'])->name('report');
+
         Route::get('/guests', [GuestController::class, 'index'])->name('guests.index');
         Route::get('/guests/create', [GuestController::class, 'create'])->name('guests.create');
         Route::post('/guests', [GuestController::class, 'store'])->name('guests.store');
@@ -49,6 +53,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/guests/{guest}/edit', [GuestController::class, 'edit'])->name('guests.edit');
         Route::put('/guests/{guest}', [GuestController::class, 'update'])->name('guests.update');
         Route::delete('/guests/{guest}', [GuestController::class, 'destroy'])->name('guests.destroy');
+        Route::post('/guests/{guest}/payments', [GuestPaymentController::class, 'store'])->name('guests.payments.store');
+        Route::delete('/guests/{guest}/payments/{payment}', [GuestPaymentController::class, 'destroy'])->name('guests.payments.destroy');
 
         // Invitations
         Route::get('/invitations', [InvitationController::class, 'index'])->name('invitations.index');
@@ -56,6 +62,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/invitations/{invitation}/send', [InvitationController::class, 'send'])->name('invitations.send');
         Route::post('/invitations/send-all', [InvitationController::class, 'sendAll'])->name('invitations.sendAll');
         Route::post('/invitations/{invitation}/resend', [InvitationController::class, 'resend'])->name('invitations.resend');
+        Route::post('/guests/{guest}/send-message', [InvitationController::class, 'sendMessage'])->name('guests.send-message');
 
         // Scanner
         Route::get('/scanner', [ScannerController::class, 'index'])->name('scanner.index');

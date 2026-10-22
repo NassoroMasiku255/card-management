@@ -65,6 +65,17 @@
     .decorative-blob { filter: blur(60px); }
 
     ::selection { background:#fecdd3; color:#881337; }
+
+    /* ---------- Loading indicators ---------- */
+    body.is-loading { cursor: progress; }
+    body.is-loading * { cursor: progress !important; }
+    .action-loader-ring {
+        width: 52px; height: 52px; border-radius: 9999px;
+        border: 4px solid #ffe4e6; border-top-color: #e11d48;
+        animation: action-loader-spin .7s linear infinite;
+    }
+    @keyframes action-loader-spin { to { transform: rotate(360deg); } }
+    .btn[data-loading="true"] { pointer-events: none; }
 </style>
 <script>
     /* Loads a script trying multiple CDN mirrors in order; calls onready() once one succeeds. */

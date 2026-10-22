@@ -31,12 +31,13 @@
                 <li>Accepted formats: <strong>CSV, XLS, XLSX</strong></li>
                 <li>First row must contain column headers</li>
                 <li>Required columns: <strong>Full Name</strong>, <strong>Phone Number</strong></li>
-                <li>Optional: Amount Contributed, Card Type (single/double), Email, Table Number, Category, Notes</li>
+                <li>Optional: Pledged Amount, Amount Paid, Card Type (single/double), Email, Table Number, Category, Notes</li>
                 <li>Phone numbers can be in format: 0712345678 or 255712345678</li>
             </ul>
         </div>
 
-        <form method="POST" action="{{ route('events.guests.import.store', $event) }}" enctype="multipart/form-data" class="space-y-6">
+        <form method="POST" action="{{ route('events.guests.import.store', $event) }}" enctype="multipart/form-data" class="space-y-6"
+            data-loading-text="Importing guests..." data-loading-hint="Uploading and processing your file. Please wait.">
             @csrf
             <div>
                 <label class="label-field mb-2">Upload File *</label>
@@ -46,16 +47,19 @@
                     </div>
                     <p class="text-surface-600 mb-1">Drop your file here or click to browse</p>
                     <p class="text-xs text-surface-400">Max file size: 10MB</p>
-                    <input type="file" name="file" accept=".csv,.xlsx,.xls" required
+                    <input type="file" name="file" id="guest-file-input" accept=".csv,.xlsx,.xls" required
                         class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
                 </div>
+                <p id="selected-file-info" class="hidden mt-2 text-xs text-surface-500"></p>
                 @error('file')
                 <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                 @enderror
             </div>
 
             <div class="flex items-center justify-between pt-4">
-                <a href="{{ route('guests.template') }}" class="text-primary-600 hover:text-primary-700 text-sm font-medium">
+                <a href="{{ route('guests.template') }}" class="text-primary-600 hover:text-primary-700 text-sm font-medium"
+                    data-loading-text="Downloading import template..." data-loading-hint="Your template will download automatically."
+                    data-loading-timeout="2500">
                     <i class="fas fa-download mr-1"></i> Download Template
                 </a>
                 <button type="submit" class="btn btn-success px-8 py-3">
@@ -80,7 +84,8 @@
                 <tbody class="divide-y divide-surface-100">
                     <tr><td class="px-3 py-2">Full Name</td><td class="px-3 py-2"><span class="text-red-500">Yes</span></td><td class="px-3 py-2 text-surface-500">John Doe</td></tr>
                     <tr><td class="px-3 py-2">Phone Number</td><td class="px-3 py-2"><span class="text-red-500">Yes</span></td><td class="px-3 py-2 text-surface-500">0712345678</td></tr>
-                    <tr><td class="px-3 py-2">Amount Contributed</td><td class="px-3 py-2">No</td><td class="px-3 py-2 text-surface-500">50000</td></tr>
+                    <tr><td class="px-3 py-2">Pledged Amount</td><td class="px-3 py-2">No</td><td class="px-3 py-2 text-surface-500">50000</td></tr>
+                    <tr><td class="px-3 py-2">Amount Paid</td><td class="px-3 py-2">No</td><td class="px-3 py-2 text-surface-500">25000</td></tr>
                     <tr><td class="px-3 py-2">Card Type</td><td class="px-3 py-2">No</td><td class="px-3 py-2 text-surface-500">single / double</td></tr>
                     <tr><td class="px-3 py-2">Email</td><td class="px-3 py-2">No</td><td class="px-3 py-2 text-surface-500">john@email.com</td></tr>
                     <tr><td class="px-3 py-2">Table Number</td><td class="px-3 py-2">No</td><td class="px-3 py-2 text-surface-500">Table 1</td></tr>
@@ -92,3 +97,25 @@
     </div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+    document.getElementById('guest-file-input')?.addEventListener('change', function (event) {
+        const file = event.target.files?.[0];
+        const info = document.getElementById('selected-file-info');
+
+        if (!file) {
+            info.classList.add('hidden');
+            info.textContent = '';
+            return;
+        }
+
+        const size = file.size >= 1024 * 1024
+            ? (file.size / (1024 * 1024)).toFixed(2) + ' MB'
+            : (file.size / 1024).toFixed(1) + ' KB';
+
+        info.textContent = 'Selected: ' + file.name + ' (' + size + ')';
+        info.classList.remove('hidden');
+    });
+</script>
+@endpush

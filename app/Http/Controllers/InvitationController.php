@@ -2,10 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ActivityLog;
 use App\Models\Event;
 use App\Models\Guest;
 use App\Models\Invitation;
-use App\Models\ActivityLog;
+use App\Models\WhatsAppMessage;
 use App\Services\WhatsAppService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -13,14 +14,12 @@ use Illuminate\Support\Facades\DB;
 
 class InvitationController extends Controller
 {
-    public function __construct(private readonly WhatsAppService $whatsapp)
-    {
-    }
+    public function __construct(private readonly WhatsAppService $whatsapp) {}
 
     public function index(Event $event)
     {
         $this->authorizeEvent($event);
-        $invitations = $event->invitations()->with('guest')->paginate(25);
+        $invitations = $event->invitations()->with(['guest', 'latestWhatsAppMessage'])->paginate(25);
 
         return view('invitations.index', [
             'event' => $event,
@@ -32,6 +31,7 @@ class InvitationController extends Controller
     public function card(Event $event, Guest $guest)
     {
         $this->authorizeEvent($event);
+
         return view('invitations.card', compact('event', 'guest'));
     }
 
@@ -112,6 +112,51 @@ class InvitationController extends Controller
 
         if ($request->wantsJson()) {
             return $this->invitationJsonResponse($event, $invitation, $success, $message);
+        }
+
+        return $success
+            ? back()->with('success', $message)
+            : back()->with('error', $message);
+    }
+
+    public function sendMessage(Request $request, Event $event, Guest $guest)
+    {
+        $this->authorizeEvent($event);
+
+        $request->validate([
+            'template_name' => 'required|string',
+            'message_type' => 'required|string|in:reminder,invitation,other',
+        ]);
+
+        $invitation = $guest->invitation;
+
+        if (! $invitation) {
+            $invitation = Invitation::create([
+                'event_id' => $event->id,
+                'guest_id' => $guest->id,
+                'qr_code_data' => $guest->unique_id,
+            ]);
+        }
+
+        $success = $request->message_type === 'reminder'
+            ? $this->whatsapp->sendReminder($guest, $invitation, $request->template_name)
+            : $this->whatsapp->sendInvitation($invitation, $request->template_name);
+
+        $latestMessage = WhatsAppMessage::where('guest_id', $guest->id)->latest('id')->first();
+
+        $message = $success
+            ? ucfirst($request->message_type)." message sent to {$guest->full_name}! Status: "
+                .($latestMessage?->status_label ?? 'Accepted').'.'
+            : 'Failed to send '.$request->message_type." message to {$guest->full_name}."
+                .($latestMessage?->error_message ? " ({$latestMessage->error_message})" : '');
+
+        if ($success) {
+            ActivityLog::create([
+                'event_id' => $event->id,
+                'user_id' => Auth::id(),
+                'action' => 'whatsapp_message_sent',
+                'description' => ucfirst($request->message_type)." message (template: {$request->template_name}) sent to {$guest->full_name}.",
+            ]);
         }
 
         return $success

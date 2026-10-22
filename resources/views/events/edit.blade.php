@@ -22,7 +22,8 @@
         </div>
         @endif
 
-        <form method="POST" action="{{ route('events.update', $event) }}" enctype="multipart/form-data" class="space-y-7">
+        <form method="POST" action="{{ route('events.update', $event) }}" enctype="multipart/form-data" class="space-y-7"
+            data-loading-text="Saving event changes..." data-loading-hint="Updating event details and cover image.">
             @csrf
             @method('PUT')
 
@@ -115,7 +116,7 @@
             </div>
 
             <div class="flex items-center justify-between pt-4">
-                <button type="button" onclick="document.getElementById('delete-event-form').submit()" class="text-red-600 hover:text-red-700 font-medium text-sm">
+                <button type="button" onclick="document.getElementById('delete-event-form').requestSubmit()" class="text-red-600 hover:text-red-700 font-medium text-sm">
                     <i class="fas fa-trash mr-1"></i> Delete Event
                 </button>
                 <button type="submit" class="btn btn-primary px-8 py-3">
@@ -124,7 +125,9 @@
             </div>
         </form>
 
-        <form id="delete-event-form" method="POST" action="{{ route('events.destroy', $event) }}" onsubmit="return confirm('Are you sure you want to delete this event? All guests and invitations will be lost.')" class="hidden">
+        <form id="delete-event-form" method="POST" action="{{ route('events.destroy', $event) }}"
+            data-loading-text="Deleting event..." data-loading-hint="Removing the event, its guests and invitations."
+            onsubmit="return confirm('Are you sure you want to delete this event? All guests and invitations will be lost.')" class="hidden">
             @csrf
             @method('DELETE')
         </form>

@@ -44,6 +44,14 @@ return [
         'template_name' => env('WHATSAPP_TEMPLATE_NAME', 'wedding_invitation'),
         'template_language' => env('WHATSAPP_TEMPLATE_LANGUAGE', 'en_US'),
         'default_image_url' => env('WHATSAPP_DEFAULT_IMAGE_URL'),
+
+        // Reminder template: body params are guest name, contribution, event name,
+        // payment details. Language policy "deterministic" matches the Cloud API.
+        'reminder_template_name' => env('WHATSAPP_REMINDER_TEMPLATE', 'reminder_sw'),
+        'reminder_template_language' => env('WHATSAPP_REMINDER_TEMPLATE_LANGUAGE', 'sw'),
+        'reminder_language_policy' => env('WHATSAPP_REMINDER_LANGUAGE_POLICY', 'deterministic'),
+        'reminder_payment_details' => env('WHATSAPP_REMINDER_PAYMENT_DETAILS', ''),
+        'reminder_amount_prefix' => env('WHATSAPP_REMINDER_AMOUNT_PREFIX', 'Mchango'),
     ],
 
 ];

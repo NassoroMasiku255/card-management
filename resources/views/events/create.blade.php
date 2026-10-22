@@ -22,7 +22,8 @@
         </div>
         @endif
 
-        <form method="POST" action="{{ route('events.store') }}" enctype="multipart/form-data" class="space-y-7">
+        <form method="POST" action="{{ route('events.store') }}" enctype="multipart/form-data" class="space-y-7"
+            data-loading-text="Creating event..." data-loading-hint="Saving event details and uploading the cover image.">
             @csrf
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">

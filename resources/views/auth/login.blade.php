@@ -29,7 +29,8 @@
             </div>
             @endif
 
-            <form method="POST" action="{{ route('login') }}" class="space-y-5">
+            <form method="POST" action="{{ route('login') }}" class="space-y-5"
+                data-loading-text="Signing in..." data-loading-hint="Checking your credentials.">
                 @csrf
                 <div>
                     <label class="label-field">Email Address</label>

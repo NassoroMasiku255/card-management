@@ -55,7 +55,7 @@
                         <p class="text-xs font-semibold text-surface-800 truncate">{{ Auth::user()->name }}</p>
                         <p class="text-[11px] text-surface-400 truncate">{{ Auth::user()->email }}</p>
                     </div>
-                    <form method="POST" action="{{ route('logout') }}">
+                    <form method="POST" action="{{ route('logout') }}" data-loading-text="Logging out...">
                         @csrf
                         <button type="submit" class="text-surface-400 hover:text-red-600 transition" title="Log out">
                             <i class="fas fa-arrow-right-from-bracket"></i>
@@ -80,7 +80,7 @@
                     <a href="{{ route('dashboard') }}" class="text-surface-500 {{ request()->routeIs('dashboard') ? 'text-primary-600' : '' }}"><i class="fas fa-house"></i></a>
                     <a href="{{ route('events.index') }}" class="text-surface-500 {{ request()->routeIs('events.*') ? 'text-primary-600' : '' }}"><i class="fas fa-calendar-days"></i></a>
                     <a href="{{ route('webhook-logs.index') }}" class="text-surface-500 {{ request()->routeIs('webhook-logs.*') ? 'text-primary-600' : '' }}"><i class="fab fa-whatsapp"></i></a>
-                    <form method="POST" action="{{ route('logout') }}">
+                    <form method="POST" action="{{ route('logout') }}" data-loading-text="Logging out...">
                         @csrf
                         <button type="submit" class="text-surface-400 hover:text-red-600"><i class="fas fa-arrow-right-from-bracket"></i></button>
                     </form>
@@ -134,6 +134,184 @@
             </main>
         </div>
     </div>
+
+    <!-- Global action loader -->
+    <div id="actionLoader" class="fixed inset-0 z-[9999] hidden items-center justify-center bg-surface-900/40 p-4 backdrop-blur-[2px]" aria-hidden="true" role="status" aria-live="polite">
+        <div class="w-full max-w-xs rounded-2xl bg-white px-6 py-7 text-center shadow-2xl">
+            <div class="action-loader-ring mx-auto mb-4"></div>
+            <p id="actionLoaderText" class="text-sm font-semibold text-surface-900">Processing...</p>
+            <p id="actionLoaderHint" class="mt-1 text-xs text-surface-400">Please wait, don't close this page.</p>
+        </div>
+    </div>
+    <div id="topProgress" class="pointer-events-none fixed left-0 top-0 z-[10000] h-[3px] w-0 bg-primary-500 opacity-0 transition-[width,opacity] duration-300"></div>
+
+    <script>
+        (function () {
+            const loader = document.getElementById('actionLoader');
+            const loaderText = document.getElementById('actionLoaderText');
+            const loaderHint = document.getElementById('actionLoaderHint');
+            const progress = document.getElementById('topProgress');
+            let progressTimer = null;
+
+            window.showActionLoader = function (message, hint) {
+                if (!loader) return;
+                loaderText.textContent = message || 'Processing...';
+                loaderHint.textContent = hint || "Please wait, don't close this page.";
+                loader.classList.remove('hidden');
+                loader.classList.add('flex');
+                loader.setAttribute('aria-hidden', 'false');
+                document.body.classList.add('is-loading');
+                startTopProgress(80);
+            };
+
+            window.hideActionLoader = function () {
+                if (!loader) return;
+                loader.classList.add('hidden');
+                loader.classList.remove('flex');
+                loader.setAttribute('aria-hidden', 'true');
+                document.body.classList.remove('is-loading');
+                finishTopProgress();
+            };
+
+            window.startTopProgress = startTopProgress;
+            window.finishTopProgress = finishTopProgress;
+
+            function startTopProgress(amount) {
+                if (!progress) return;
+                clearTimeout(progressTimer);
+                progress.style.transition = 'none';
+                progress.style.opacity = '1';
+                progress.style.width = (amount || 15) + '%';
+
+                requestAnimationFrame(() => {
+                    progress.style.transition = 'width 1.8s ease-out, opacity .3s ease';
+                    progress.style.width = '82%';
+                });
+            }
+
+            function finishTopProgress() {
+                if (!progress) return;
+                clearTimeout(progressTimer);
+                progress.style.transition = 'width .2s ease, opacity .3s ease';
+                progress.style.width = '100%';
+                progressTimer = setTimeout(() => {
+                    progress.style.opacity = '0';
+                    progress.style.width = '0';
+                }, 220);
+            }
+
+            window.showButtonLoading = function (button, label) {
+                if (!button) return function () {};
+                const original = button.innerHTML;
+                button.disabled = true;
+                button.dataset.loading = 'true';
+                button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> <span>' + (label || 'Please wait...') + '</span>';
+                return function () {
+                    button.disabled = false;
+                    delete button.dataset.loading;
+                    button.innerHTML = original;
+                };
+            };
+
+            // Forms: block double submits and show a clear action message.
+            document.addEventListener('submit', function (event) {
+                const form = event.target;
+                if (!(form instanceof HTMLFormElement)) return;
+                if (event.defaultPrevented || form.hasAttribute('data-no-loading')) return;
+
+                const message = form.dataset.loadingText || 'Processing...';
+                const hint = form.dataset.loadingHint || "Please wait, don't close this page.";
+                window.showActionLoader(message, hint);
+            });
+
+            // Links with an explicit loading text are usually downloads/exports.
+            document.addEventListener('click', function (event) {
+                const link = event.target.closest('a[data-loading-text]');
+                if (!link) return;
+                if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+                if (link.target === '_blank' || link.hasAttribute('download')) return;
+
+                window.showActionLoader(link.dataset.loadingText, link.dataset.loadingHint || 'Please wait...');
+
+                const timeout = parseInt(link.dataset.loadingTimeout || '0', 10);
+                if (timeout > 0) setTimeout(window.hideActionLoader, timeout);
+            });
+
+            // Subtle progress bar for normal page navigation.
+            document.addEventListener('click', function (event) {
+                const link = event.target.closest('a[href]');
+                if (!link || link.target === '_blank' || link.hasAttribute('download')) return;
+                if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+
+                const href = link.getAttribute('href') || '';
+                if (!href || href.startsWith('#') || href.startsWith('javascript:') || href.startsWith('mailto:') || href.startsWith('tel:')) return;
+                if (link.origin !== window.location.origin) return;
+
+                startTopProgress(20);
+            });
+
+            // Live filters: submit automatically while typing or changing a select.
+            // The full-page loader is skipped so filtering stays unobtrusive.
+            document.querySelectorAll('form[data-live-filter]').forEach(function (form) {
+                form.setAttribute('data-no-loading', '');
+                let timer = null;
+
+                const submitFilter = function () {
+                    window.startTopProgress(25);
+                    if (typeof form.requestSubmit === 'function') {
+                        form.requestSubmit();
+                    } else {
+                        form.submit();
+                    }
+                };
+
+                const scheduleSubmit = function (delay) {
+                    clearTimeout(timer);
+                    timer = setTimeout(submitFilter, delay);
+                };
+
+                form.querySelectorAll('input[type="text"], input[type="search"]').forEach(function (input) {
+                    input.addEventListener('input', function () {
+                        scheduleSubmit(450);
+                    });
+                });
+
+                form.querySelectorAll('select').forEach(function (select) {
+                    select.addEventListener('change', function () {
+                        scheduleSubmit(50);
+                    });
+                });
+
+                form.addEventListener('submit', function () {
+                    clearTimeout(timer);
+
+                    const active = document.activeElement;
+                    if (active instanceof HTMLInputElement && active.name) {
+                        sessionStorage.setItem('liveFilterFocus', active.name);
+                        sessionStorage.setItem('liveFilterCaret', String(active.selectionStart ?? 0));
+                    }
+                });
+            });
+
+            const focusedFilter = sessionStorage.getItem('liveFilterFocus');
+            if (focusedFilter) {
+                const field = Array.from(document.querySelectorAll('form[data-live-filter] [name]'))
+                    .find(function (element) { return element.name === focusedFilter; });
+                if (field instanceof HTMLInputElement) {
+                    const caret = parseInt(sessionStorage.getItem('liveFilterCaret') || '0', 10);
+                    field.focus({ preventScroll: true });
+                    field.setSelectionRange(caret, caret);
+                }
+                sessionStorage.removeItem('liveFilterFocus');
+                sessionStorage.removeItem('liveFilterCaret');
+            }
+
+            window.addEventListener('pageshow', function () {
+                window.hideActionLoader();
+                finishTopProgress();
+            });
+        })();
+    </script>
 
     @stack('scripts')
     <script>

@@ -72,6 +72,10 @@ class EventController extends Controller
             'checked_in' => $event->invitations->where('attendance_status', 'attended')->count(),
             'not_checked_in' => $event->invitations->where('attendance_status', 'pending')->count(),
             'total_contribution' => $event->guests->sum('amount_contributed'),
+            'total_pledged' => $event->guests->sum('amount_contributed'),
+            'total_paid' => $event->guests->sum('paid_amount'),
+            'outstanding' => max(0, $event->guests->sum('amount_contributed') - $event->guests->sum('paid_amount')),
+            'estimated_attendance' => $event->guests->sum(fn ($guest) => $guest->estimated_attendees),
         ];
 
         return view('events.show', compact('event', 'stats'));

@@ -5,7 +5,6 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Support\Str;
 
 class Event extends Model
@@ -26,7 +25,7 @@ class Event extends Model
 
         static::creating(function ($event) {
             if (empty($event->slug)) {
-                $event->slug = Str::slug($event->name) . '-' . Str::random(6);
+                $event->slug = Str::slug($event->name).'-'.Str::random(6);
             }
         });
     }
@@ -49,6 +48,16 @@ class Event extends Model
     public function activityLogs(): HasMany
     {
         return $this->hasMany(ActivityLog::class);
+    }
+
+    public function whatsappMessages(): HasMany
+    {
+        return $this->hasMany(WhatsAppMessage::class);
+    }
+
+    public function guestPayments(): HasMany
+    {
+        return $this->hasMany(GuestPayment::class);
     }
 
     public function getAttendingCountAttribute(): int

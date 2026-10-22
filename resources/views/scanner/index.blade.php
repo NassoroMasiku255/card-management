@@ -217,7 +217,7 @@ function showGuestInfo(guest) {
                 ${guest.table_number ? `<div class="flex justify-between items-center"><span class="text-sm text-surface-500">Table:</span><span class="text-surface-900">${guest.table_number}</span></div>` : ''}
                 ${guest.category ? `<div class="flex justify-between items-center"><span class="text-sm text-surface-500">Category:</span><span class="text-surface-900">${guest.category}</span></div>` : ''}
             </div>
-            <button onclick="checkInGuest(${guest.invitation_id}, '${guest.name}')"
+            <button onclick="checkInGuest(${guest.invitation_id}, '${guest.name}', this)"
                 class="btn btn-success btn-block mt-6 py-3 text-base">
                 <i class="fas fa-circle-check"></i> Mark Attended
             </button>
@@ -248,7 +248,10 @@ function showError(message, guest = null) {
     resultContent.innerHTML = html;
 }
 
-function checkInGuest(invitationId, guestName) {
+function checkInGuest(invitationId, guestName, button) {
+    const restoreButton = window.showButtonLoading(button, 'Checking in...');
+    startTopProgress(30);
+
     fetch(`/events/${eventId}/scanner/check-in`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
@@ -256,6 +259,8 @@ function checkInGuest(invitationId, guestName) {
     })
     .then(res => res.json())
     .then(data => {
+        finishTopProgress();
+
         if (data.success) {
             const resultContent = document.getElementById('result-content');
             resultContent.innerHTML = `
@@ -277,8 +282,14 @@ function checkInGuest(invitationId, guestName) {
             // Add to recent
             addRecentCheckin(guestName);
         } else {
+            restoreButton();
             showError(data.message);
         }
+    })
+    .catch(() => {
+        finishTopProgress();
+        restoreButton();
+        showError('Network error. Please try again.');
     });
 }
 

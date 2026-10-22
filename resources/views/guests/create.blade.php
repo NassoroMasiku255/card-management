@@ -21,7 +21,8 @@
         </div>
         @endif
 
-        <form method="POST" action="{{ route('events.guests.store', $event) }}" class="space-y-6">
+        <form method="POST" action="{{ route('events.guests.store', $event) }}" class="space-y-6"
+            data-loading-text="Adding guest..." data-loading-hint="Saving the guest details.">
             @csrf
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div class="md:col-span-2">
@@ -45,8 +46,9 @@
                 </div>
 
                 <div>
-                    <label class="label-field">Amount Contributed (TZS)</label>
+                    <label class="label-field">Pledged Amount (TZS)</label>
                     <input type="number" name="amount_contributed" value="{{ old('amount_contributed', 0) }}" min="0" class="input-field">
+                    <p class="text-xs text-surface-400 mt-1">The amount this guest pledged or is expected to contribute.</p>
                 </div>
 
                 <div>

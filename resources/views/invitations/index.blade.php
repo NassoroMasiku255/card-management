@@ -10,6 +10,7 @@
     <div class="flex flex-wrap items-center justify-between gap-3 mt-2">
         <h1 class="font-display text-2xl font-bold text-surface-900">Invitations</h1>
         <form method="POST" action="{{ route('events.invitations.sendAll', $event) }}"
+            data-loading-text="Sending invitations..." data-loading-hint="Sending WhatsApp messages one by one. Please keep this page open."
             onsubmit="return confirm('Send invitations to all pending guests via WhatsApp?')">
             @csrf
             <button type="submit" class="btn btn-success">
@@ -81,6 +82,13 @@
                         </span>
                         @if($invitation->sent_at)
                         <div class="text-xs text-surface-400 mt-1">{{ $invitation->sent_at->format('d/m H:i') }}</div>
+                        @endif
+                        @if($invitation->latestWhatsAppMessage)
+                        <div class="mt-1">
+                            <span class="badge {{ $invitation->latestWhatsAppMessage->status_badge_class }}">
+                                {{ $invitation->latestWhatsAppMessage->status_label }}
+                            </span>
+                        </div>
                         @endif
                     </td>
                     <td class="px-6 py-3">
@@ -176,6 +184,7 @@ document.querySelector('tbody')?.addEventListener('click', function (e) {
     btn.dataset.originalHtml = btn.innerHTML;
     btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Sending...';
     btn.classList.add('opacity-70', 'cursor-not-allowed');
+    startTopProgress(30);
 
     fetch(url, {
         method: 'POST',
@@ -188,6 +197,7 @@ document.querySelector('tbody')?.addEventListener('click', function (e) {
     })
     .then(res => res.json())
     .then(data => {
+        finishTopProgress();
         updateStatCounters(data.stats);
 
         if (data.success) {
@@ -217,6 +227,7 @@ document.querySelector('tbody')?.addEventListener('click', function (e) {
         }
     })
     .catch(() => {
+        finishTopProgress();
         btn.disabled = false;
         btn.innerHTML = btn.dataset.originalHtml;
         btn.classList.remove('opacity-70', 'cursor-not-allowed');
