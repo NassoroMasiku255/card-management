@@ -95,6 +95,9 @@
                     <a href="{{ route('events.show', $upcoming) }}" class="btn btn-primary">
                         Manage Event <i class="fas fa-arrow-right"></i>
                     </a>
+                    <a href="{{ route('events.countdown-card', $upcoming) }}" target="_blank" class="btn btn-outline bg-white">
+                        <i class="fab fa-whatsapp text-green-600"></i> Share Countdown
+                    </a>
                 </div>
             </div>
         </div>

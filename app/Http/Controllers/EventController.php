@@ -81,6 +81,22 @@ class EventController extends Controller
         return view('events.show', compact('event', 'stats'));
     }
 
+    public function countdownCard(Event $event)
+    {
+        $this->authorizeEvent($event);
+
+        $daysRemaining = max(0, (int) now()->startOfDay()->diffInDays($event->event_date->startOfDay(), false));
+        $countdownText = $daysRemaining === 0
+            ? 'Today is the day!'
+            : $daysRemaining.' '.($daysRemaining === 1 ? 'day' : 'days').' to go';
+
+        $caption = "{$event->name} — {$countdownText}. "
+            .$event->event_date->format('l, d M Y')
+            ." at {$event->location}. See you there!";
+
+        return view('events.countdown-card', compact('event', 'daysRemaining', 'countdownText', 'caption'));
+    }
+
     public function edit(Event $event)
     {
         $this->authorizeEvent($event);

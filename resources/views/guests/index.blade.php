@@ -8,7 +8,10 @@
         <i class="fas fa-arrow-left mr-1"></i> Back to {{ $event->name }}
     </a>
     <div class="flex flex-wrap items-center justify-between gap-3 mt-2">
-        <h1 class="font-display text-2xl font-bold text-surface-900">Guests</h1>
+        <div class="flex items-baseline gap-2">
+            <h1 class="font-display text-2xl font-bold text-surface-900">Guests</h1>
+            <span class="text-xs text-surface-400">A–Z</span>
+        </div>
         <div class="flex items-center gap-3">
             <a href="{{ route('events.guests.export', $event) }}" class="btn btn-outline btn-sm"
                 data-loading-text="Preparing guest export..." data-loading-hint="Your file will download automatically."
@@ -33,6 +36,13 @@
             <input type="text" name="search" value="{{ request('search') }}" placeholder="Search by name, phone, ID..."
                 class="input-field !py-2" autocomplete="off">
         </div>
+        <select name="per_page" class="input-field !py-2 !w-auto">
+            <option value="25" {{ (string) $perPage === '25' ? 'selected' : '' }}>25 per page</option>
+            <option value="50" {{ (string) $perPage === '50' ? 'selected' : '' }}>50 per page</option>
+            <option value="100" {{ (string) $perPage === '100' ? 'selected' : '' }}>100 per page</option>
+            <option value="250" {{ (string) $perPage === '250' ? 'selected' : '' }}>250 per page</option>
+            <option value="all" {{ (string) $perPage === 'all' ? 'selected' : '' }}>Show all guests</option>
+        </select>
         <select name="card_type" class="input-field !py-2 !w-auto">
             <option value="">All Card Types</option>
             <option value="single" {{ request('card_type') === 'single' ? 'selected' : '' }}>Single</option>
@@ -59,7 +69,7 @@
         <button type="submit" class="btn btn-primary btn-sm">
             <i class="fas fa-magnifying-glass"></i> Filter
         </button>
-        @if(request()->hasAny(['search', 'card_type', 'payment_status', 'rsvp', 'message_status']))
+        @if(request()->hasAny(['search', 'per_page', 'card_type', 'payment_status', 'rsvp', 'message_status']))
         <a href="{{ route('events.guests.index', $event) }}" class="text-surface-500 hover:text-surface-700 text-sm">Clear</a>
         @endif
     </form>
@@ -180,7 +190,16 @@
     </div>
 
     <div class="px-6 py-4 border-t border-surface-100">
-        {{ $guests->links() }}
+        @if($guests instanceof \Illuminate\Contracts\Pagination\LengthAwarePaginator)
+        <div class="flex flex-wrap items-center justify-between gap-3">
+            <p class="text-xs text-surface-400">
+                Showing {{ $guests->firstItem() }}–{{ $guests->lastItem() }} of {{ $guests->total() }} guests
+            </p>
+            {{ $guests->links() }}
+        </div>
+        @else
+        <p class="text-xs text-surface-400">Showing all {{ $guests->count() }} guests</p>
+        @endif
     </div>
     @endif
 </div>

@@ -43,6 +43,7 @@ Route::middleware('auth')->group(function () {
     // Guests (nested under events)
     Route::prefix('events/{event}')->name('events.')->group(function () {
         Route::get('/report', [EventReportController::class, 'show'])->name('report');
+        Route::get('/countdown-card', [EventController::class, 'countdownCard'])->name('countdown-card');
 
         Route::get('/guests', [GuestController::class, 'index'])->name('guests.index');
         Route::get('/guests/create', [GuestController::class, 'create'])->name('guests.create');

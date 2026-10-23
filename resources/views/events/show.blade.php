@@ -52,6 +52,9 @@
             <a href="{{ route('events.report', $event) }}" class="btn btn-secondary btn-sm">
                 <i class="fas fa-chart-pie"></i> Report
             </a>
+            <a href="{{ route('events.countdown-card', $event) }}" target="_blank" class="btn btn-success btn-sm">
+                <i class="fab fa-whatsapp"></i> Countdown
+            </a>
             <a href="{{ route('events.edit', $event) }}" class="btn btn-secondary btn-sm">
                 <i class="fas fa-pen"></i> Edit
             </a>

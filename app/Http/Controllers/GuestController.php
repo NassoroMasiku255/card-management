@@ -60,16 +60,25 @@ class GuestController extends Controller
             };
         }
 
-        $guests = $query->latest()->paginate(25)->appends($request->query());
+        $query->orderBy('full_name')->orderBy('id');
 
-        return view('guests.index', compact('event', 'guests'));
+        $perPage = $request->input('per_page', '25');
+
+        if ($perPage === 'all') {
+            $guests = $query->get();
+        } else {
+            $perPage = in_array((int) $perPage, [25, 50, 100, 250], true) ? (int) $perPage : 25;
+            $guests = $query->paginate($perPage)->appends($request->query());
+        }
+
+        return view('guests.index', compact('event', 'guests', 'perPage'));
     }
 
     public function export(Event $event)
     {
         $this->authorizeEvent($event);
 
-        $guests = $event->guests()->with(['invitation', 'latestWhatsAppMessage'])->get();
+        $guests = $event->guests()->with(['invitation', 'latestWhatsAppMessage'])->orderBy('full_name')->get();
 
         $headers = ['Unique ID', 'Full Name', 'Phone Number', 'Card Type', 'Pledged Amount', 'Amount Paid', 'Balance', 'Payment Status', 'Last Payment At', 'Category', 'Table', 'RSVP Status', 'Send Status', 'Last Message Type', 'Last Message Status', 'Last Message At', 'Attendance'];
 
