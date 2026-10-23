@@ -62,5 +62,6 @@
             </p>
         </div>
     </div>
+    @include('partials.action-loader')
 </body>
 </html>
