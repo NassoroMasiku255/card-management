@@ -159,6 +159,22 @@ class InvitationController extends Controller
             ]);
         }
 
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success' => $success,
+                'message' => $message,
+                'guest_id' => $guest->id,
+                'status' => $latestMessage ? [
+                    'state' => $latestMessage->status,
+                    'label' => $latestMessage->status_label,
+                    'badge_class' => $latestMessage->status_badge_class,
+                    'message_type' => ucfirst($latestMessage->message_type),
+                    'updated_at' => optional($latestMessage->status_updated_at)->diffForHumans(),
+                    'error_message' => $latestMessage->error_message,
+                ] : null,
+            ]);
+        }
+
         return $success
             ? back()->with('success', $message)
             : back()->with('error', $message);

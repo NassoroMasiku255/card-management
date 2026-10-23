@@ -75,6 +75,20 @@
     </form>
 </div>
 
+<div id="guestBulkBar" class="hidden card-surface px-4 py-3 mb-4 border-l-4 border-green-500">
+    <div class="flex flex-wrap items-center justify-between gap-3">
+        <p class="text-sm text-surface-700">
+            <span id="guestSelectedCount" class="font-bold text-green-700">0</span> guests selected
+        </p>
+        <div class="flex items-center gap-3">
+            <button type="button" id="bulkWhatsAppBtn" class="btn btn-success btn-sm">
+                <i class="fab fa-whatsapp"></i> Send WhatsApp to selected
+            </button>
+            <button type="button" id="clearGuestSelection" class="text-sm text-surface-500 hover:text-surface-700">Clear</button>
+        </div>
+    </div>
+</div>
+
 <div class="card-surface overflow-hidden">
     @if($guests->isEmpty())
     <div class="px-6 py-12 text-center">
@@ -89,6 +103,9 @@
         <table class="w-full">
             <thead class="bg-surface-50">
                 <tr>
+                    <th class="px-4 py-3 text-left">
+                        <input type="checkbox" id="selectAllGuests" class="h-4 w-4 rounded border-surface-300 text-green-600 focus:ring-green-500" title="Select all guests shown">
+                    </th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-surface-500 uppercase tracking-wide">ID</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-surface-500 uppercase tracking-wide">Name</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-surface-500 uppercase tracking-wide">Phone</th>
@@ -101,7 +118,11 @@
             </thead>
             <tbody class="divide-y divide-surface-100">
                 @foreach($guests as $guest)
-                <tr class="hover:bg-surface-50">
+                <tr class="hover:bg-surface-50" id="guest-row-{{ $guest->id }}">
+                    <td class="px-4 py-3">
+                        <input type="checkbox" class="guest-checkbox h-4 w-4 rounded border-surface-300 text-green-600 focus:ring-green-500"
+                            value="{{ $guest->id }}" aria-label="Select {{ $guest->full_name }}">
+                    </td>
                     <td class="px-6 py-3 text-xs font-mono text-surface-500">{{ $guest->unique_id }}</td>
                     <td class="px-6 py-3">
                         <div class="font-medium text-surface-900">{{ $guest->full_name }}</div>
@@ -134,7 +155,7 @@
                         </span>
                         @endif
                     </td>
-                    <td class="px-6 py-3">
+                    <td class="px-6 py-3" id="message-cell-{{ $guest->id }}">
                         @php($latestMessage = $guest->latestWhatsAppMessage)
                         @if($latestMessage)
                         <span class="badge {{ $latestMessage->status_badge_class }}">{{ $latestMessage->status_label }}</span>
@@ -166,7 +187,9 @@
                                 <i class="fas fa-hand-holding-dollar"></i>
                             </button>
                             <button type="button"
-                                onclick="openWhatsAppModal('{{ $guest->id }}', '{{ $guest->full_name }}')"
+                                onclick="openWhatsAppModal('{{ $guest->id }}', @js($guest->full_name))"
+                                data-guest-id="{{ $guest->id }}"
+                                data-guest-name="{{ $guest->full_name }}"
                                 class="text-green-600 hover:text-green-700" title="Send WhatsApp">
                                 <i class="fab fa-whatsapp text-lg"></i>
                             </button>
@@ -208,12 +231,12 @@
 <div id="whatsappModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center p-4">
     <div class="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden animate-fade-in">
         <div class="px-6 py-4 border-b border-surface-100 flex items-center justify-between">
-            <h3 class="font-display font-bold text-lg text-surface-900">Send WhatsApp Message</h3>
-            <button onclick="closeWhatsAppModal()" class="text-surface-400 hover:text-surface-600">
+            <h3 id="whatsappModalTitle" class="font-display font-bold text-lg text-surface-900">Send WhatsApp Message</h3>
+            <button type="button" onclick="cancelWhatsAppModal()" class="text-surface-400 hover:text-surface-600" title="Close">
                 <i class="fas fa-times"></i>
             </button>
         </div>
-        <form id="whatsappForm" method="POST" action=""
+        <form id="whatsappForm" method="POST" action="" data-no-loading
             data-loading-text="Sending WhatsApp message..." data-loading-hint="Contacting WhatsApp, please wait.">
             @csrf
             <div class="p-6 space-y-4">
@@ -242,10 +265,19 @@
                         <code>WHATSAPP_REMINDER_PAYMENT_DETAILS</code>.
                     </p>
                 </div>
+                <div id="whatsappSendProgress" class="hidden rounded-lg bg-surface-50 p-3">
+                    <div class="flex items-center justify-between gap-3 text-xs text-surface-500">
+                        <span id="whatsappProgressText">Preparing...</span>
+                        <span>Keep this page open</span>
+                    </div>
+                    <div class="mt-2 h-2 overflow-hidden rounded-full bg-surface-200">
+                        <div id="whatsappProgressBar" class="h-full rounded-full bg-green-500 transition-all" style="width: 0%"></div>
+                    </div>
+                </div>
             </div>
             <div class="px-6 py-4 bg-surface-50 flex justify-end gap-3">
-                <button type="button" onclick="closeWhatsAppModal()" class="btn btn-outline">Cancel</button>
-                <button type="submit" class="btn btn-primary">
+                <button type="button" id="whatsappCancelBtn" onclick="cancelWhatsAppModal()" class="btn btn-outline">Cancel</button>
+                <button type="submit" id="whatsappSubmitBtn" class="btn btn-primary">
                     <i class="fab fa-whatsapp mr-2"></i> Send Message
                 </button>
             </div>
@@ -326,7 +358,16 @@
     </div>
 </div>
 
+<div id="guestToast" class="hidden fixed bottom-5 right-5 z-[70] max-w-sm rounded-xl px-5 py-3 text-sm font-medium text-white shadow-2xl"></div>
+
 <script>
+    const sendMessageUrlBase = @json(url('/events/'.$event->id.'/guests'));
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+    let pendingGuestIds = [];
+    let sendingMessages = false;
+    let stopMessageSend = false;
+    let guestToastTimer = null;
+
     const templateDefaults = {
         invitation: @json(config('services.whatsapp.template_name')),
         reminder: @json(config('services.whatsapp.reminder_template_name')),
@@ -347,17 +388,83 @@
         templateHint.classList.toggle('hidden', type === 'reminder');
     }
 
+    function escapeHtml(value) {
+        return String(value ?? '').replace(/[&<>"']/g, function (char) {
+            return {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            }[char];
+        });
+    }
+
+    function renderMessageStatus(status) {
+        if (!status) {
+            return '<span class="text-xs text-surface-400">Not sent</span>';
+        }
+
+        const details = [status.message_type, status.updated_at].filter(Boolean).map(escapeHtml).join(' &middot; ');
+        let html = '<span class="badge ' + escapeHtml(status.badge_class || 'bg-surface-100 text-surface-600') + '">' +
+            escapeHtml(status.label || 'Unknown') + '</span>';
+
+        if (details) {
+            html += '<div class="text-xs text-surface-400 mt-1">' + details + '</div>';
+        }
+
+        if (status.state === 'failed' && status.error_message) {
+            const error = escapeHtml(status.error_message);
+            html += '<div class="text-xs text-red-500 mt-1 max-w-[190px] truncate" title="' + error + '">' + error + '</div>';
+        }
+
+        return html;
+    }
+
+    function showGuestToast(message, type) {
+        const toast = document.getElementById('guestToast');
+        if (!toast) return;
+
+        clearTimeout(guestToastTimer);
+        toast.className = 'fixed bottom-5 right-5 z-[70] max-w-sm rounded-xl px-5 py-3 text-sm font-medium text-white shadow-2xl ' +
+            (type === 'warning' ? 'bg-amber-600' : 'bg-green-600');
+        toast.textContent = message;
+        toast.classList.remove('hidden');
+        guestToastTimer = setTimeout(() => toast.classList.add('hidden'), 9000);
+    }
+
+    function resetWhatsAppProgress() {
+        document.getElementById('whatsappSendProgress').classList.add('hidden');
+        document.getElementById('whatsappProgressBar').style.width = '0%';
+        document.getElementById('whatsappProgressText').textContent = 'Preparing...';
+        document.getElementById('whatsappCancelBtn').textContent = 'Cancel';
+    }
+
     function openWhatsAppModal(guestId, guestName) {
         const modal = document.getElementById('whatsappModal');
-        const form = document.getElementById('whatsappForm');
         const nameSpan = document.getElementById('modalGuestName');
 
+        pendingGuestIds = [String(guestId)];
+        document.getElementById('whatsappModalTitle').textContent = 'Send WhatsApp Message';
         nameSpan.textContent = guestName;
-        form.action = `/events/{{ $event->id }}/guests/${guestId}/send-message`;
-
+        resetWhatsAppProgress();
         syncTemplateName();
 
         modal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function openBulkWhatsAppModal() {
+        const ids = Array.from(document.querySelectorAll('.guest-checkbox:checked')).map(checkbox => checkbox.value);
+        if (!ids.length) return;
+
+        pendingGuestIds = ids;
+        document.getElementById('whatsappModalTitle').textContent = 'Send WhatsApp to ' + ids.length + ' guests';
+        document.getElementById('modalGuestName').textContent = ids.length + ' selected guests';
+        resetWhatsAppProgress();
+        syncTemplateName();
+
+        document.getElementById('whatsappModal').classList.remove('hidden');
         document.body.style.overflow = 'hidden';
     }
 
@@ -365,6 +472,38 @@
         const modal = document.getElementById('whatsappModal');
         modal.classList.add('hidden');
         document.body.style.overflow = 'auto';
+    }
+
+    function cancelWhatsAppModal() {
+        if (sendingMessages) {
+            stopMessageSend = true;
+            document.getElementById('whatsappCancelBtn').textContent = 'Stopping after current...';
+            return;
+        }
+
+        closeWhatsAppModal();
+    }
+
+    function syncGuestSelection() {
+        const checkboxes = Array.from(document.querySelectorAll('.guest-checkbox'));
+        const selected = checkboxes.filter(checkbox => checkbox.checked);
+        const selectAll = document.getElementById('selectAllGuests');
+        const bulkBar = document.getElementById('guestBulkBar');
+
+        document.getElementById('guestSelectedCount').textContent = selected.length;
+        bulkBar.classList.toggle('hidden', selected.length === 0);
+
+        if (selectAll) {
+            selectAll.checked = checkboxes.length > 0 && selected.length === checkboxes.length;
+            selectAll.indeterminate = selected.length > 0 && selected.length < checkboxes.length;
+        }
+    }
+
+    function clearGuestSelection() {
+        document.querySelectorAll('.guest-checkbox').forEach(checkbox => {
+            checkbox.checked = false;
+        });
+        syncGuestSelection();
     }
 
     function openPaymentModal(button) {
@@ -386,13 +525,130 @@
         document.body.style.overflow = 'auto';
     }
 
+    document.getElementById('selectAllGuests')?.addEventListener('change', function (event) {
+        document.querySelectorAll('.guest-checkbox').forEach(checkbox => {
+            checkbox.checked = event.target.checked;
+        });
+        syncGuestSelection();
+    });
+
+    document.querySelectorAll('.guest-checkbox').forEach(checkbox => {
+        checkbox.addEventListener('change', syncGuestSelection);
+    });
+
+    document.getElementById('bulkWhatsAppBtn')?.addEventListener('click', openBulkWhatsAppModal);
+    document.getElementById('clearGuestSelection')?.addEventListener('click', clearGuestSelection);
+
+    document.getElementById('whatsappForm')?.addEventListener('submit', async function (event) {
+        event.preventDefault();
+        if (sendingMessages) return;
+
+        const ids = pendingGuestIds.slice();
+        if (!ids.length) return;
+
+        const messageType = document.getElementById('messageType').value;
+        const templateName = document.getElementById('templateName').value.trim();
+        if (!templateName) {
+            document.getElementById('templateName').focus();
+            return;
+        }
+
+        const submitButton = document.getElementById('whatsappSubmitBtn');
+        const originalButtonHtml = submitButton.innerHTML;
+        const progress = document.getElementById('whatsappSendProgress');
+        const progressText = document.getElementById('whatsappProgressText');
+        const progressBar = document.getElementById('whatsappProgressBar');
+        let sent = 0;
+        let failed = 0;
+
+        sendingMessages = true;
+        stopMessageSend = false;
+        submitButton.disabled = true;
+        submitButton.classList.add('opacity-70', 'cursor-not-allowed');
+        submitButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Sending...';
+        progress.classList.remove('hidden');
+        progressBar.style.width = '0%';
+        progressText.textContent = '0 of ' + ids.length + ' processed';
+
+        for (let index = 0; index < ids.length; index++) {
+            if (stopMessageSend) break;
+
+            const guestId = ids[index];
+            const statusCell = document.getElementById('message-cell-' + guestId);
+
+            if (statusCell) {
+                statusCell.innerHTML = '<span class="text-xs text-surface-400"><i class="fas fa-spinner fa-spin mr-1"></i>Sending...</span>';
+            }
+
+            progressText.textContent = 'Sending ' + (index + 1) + ' of ' + ids.length + '...';
+
+            try {
+                const response = await fetch(sendMessageUrlBase + '/' + encodeURIComponent(guestId) + '/send-message', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': csrfToken,
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ message_type: messageType, template_name: templateName }),
+                });
+
+                let data = {};
+                try {
+                    data = await response.json();
+                } catch (error) {
+                    data = {};
+                }
+
+                if (statusCell) {
+                    statusCell.innerHTML = renderMessageStatus(data.status);
+                }
+
+                if (response.ok && data.success) {
+                    sent++;
+                } else {
+                    failed++;
+                }
+            } catch (error) {
+                failed++;
+                if (statusCell) {
+                    statusCell.innerHTML = '<span class="badge bg-red-100 text-red-700">Failed</span>';
+                }
+            }
+
+            progressBar.style.width = Math.round(((index + 1) / ids.length) * 100) + '%';
+            progressText.textContent = (index + 1) + ' of ' + ids.length + ' processed';
+
+            if (index < ids.length - 1) {
+                await new Promise(resolve => setTimeout(resolve, 250));
+            }
+        }
+
+        const stopped = stopMessageSend;
+        sendingMessages = false;
+        stopMessageSend = false;
+        submitButton.disabled = false;
+        submitButton.innerHTML = originalButtonHtml;
+        submitButton.classList.remove('opacity-70', 'cursor-not-allowed');
+        document.getElementById('whatsappCancelBtn').textContent = 'Cancel';
+        closeWhatsAppModal();
+        clearGuestSelection();
+
+        let summary = sent + ' message' + (sent === 1 ? '' : 's') + ' accepted' +
+            (failed ? ', ' + failed + ' failed' : '');
+        summary = (stopped ? 'Stopped. ' : '') + summary + '. Refresh later for delivery and RSVP updates.';
+        showGuestToast(summary, failed ? 'warning' : 'success');
+    });
+
+    syncGuestSelection();
+
     // Close on click outside
     window.onclick = function(event) {
         const whatsappModal = document.getElementById('whatsappModal');
         const paymentModal = document.getElementById('paymentModal');
 
         if (event.target == whatsappModal) {
-            closeWhatsAppModal();
+            cancelWhatsAppModal();
         }
 
         if (event.target == paymentModal) {

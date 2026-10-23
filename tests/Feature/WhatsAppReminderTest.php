@@ -73,6 +73,30 @@ class WhatsAppReminderTest extends TestCase
         $this->assertSame($invitation->id, $message->invitation_id);
     }
 
+    public function test_guest_list_message_send_returns_json_status_for_ajax(): void
+    {
+        Http::fake([
+            'graph.facebook.com/*' => Http::response([
+                'messaging_product' => 'whatsapp',
+                'messages' => [['id' => 'wamid.ajax']],
+            ]),
+        ]);
+
+        [$guest, $invitation] = $this->makeGuestAndInvitation();
+
+        $this->actingAs($guest->event->user)
+            ->postJson(route('events.guests.send-message', [$guest->event, $guest]), [
+                'message_type' => 'reminder',
+                'template_name' => 'reminder_sw',
+            ])
+            ->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('guest_id', $guest->id)
+            ->assertJsonPath('status.state', 'accepted')
+            ->assertJsonPath('status.label', 'Accepted')
+            ->assertJsonPath('status.message_type', 'Reminder');
+    }
+
     public function test_template_parameters_are_sanitized(): void
     {
         config([

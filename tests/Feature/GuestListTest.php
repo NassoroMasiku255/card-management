@@ -37,7 +37,10 @@ class GuestListTest extends TestCase
                     && $guests->count() === 2
                     && $guests->first()->full_name === 'Alpha Guest'
                     && $guests->last()->full_name === 'Zulu Guest';
-            });
+            })
+            ->assertSee('Send WhatsApp to selected')
+            ->assertSee('guest-checkbox', false)
+            ->assertSee('message-cell-', false);
     }
 
     private function event(): array
