@@ -52,6 +52,8 @@ class InvitationController extends Controller
     {
         $this->authorizeEvent($event);
 
+        $this->authorizeWhatsAppSending();
+
         $invitations = $event->invitations()
             ->where('send_status', 'pending')
             ->whereHas('guest', fn ($query) => $this->applyInvitationEligibility($query, $event))
@@ -74,6 +76,8 @@ class InvitationController extends Controller
     public function send(Request $request, Event $event, Invitation $invitation)
     {
         $this->authorizeEvent($event);
+
+        $this->authorizeWhatsAppSending();
 
         if (! $this->qualifiesForInvitation($invitation->guest, $event)) {
             return $this->ineligibleInvitationResponse($request, $invitation->guest);
@@ -112,6 +116,8 @@ class InvitationController extends Controller
     {
         $this->authorizeEvent($event);
 
+        $this->authorizeWhatsAppSending();
+
         $pendingInvitations = $event->invitations()
             ->where('send_status', 'pending')
             ->whereHas('guest', fn ($query) => $this->applyInvitationEligibility($query, $event))
@@ -148,6 +154,8 @@ class InvitationController extends Controller
     {
         $this->authorizeEvent($event);
 
+        $this->authorizeWhatsAppSending();
+
         if (! $this->qualifiesForInvitation($invitation->guest, $event)) {
             return $this->ineligibleInvitationResponse($request, $invitation->guest);
         }
@@ -177,6 +185,8 @@ class InvitationController extends Controller
     public function sendMessage(Request $request, Event $event, Guest $guest)
     {
         $this->authorizeEvent($event);
+
+        $this->authorizeWhatsAppSending();
 
         $request->validate([
             'template_name' => 'required|string',

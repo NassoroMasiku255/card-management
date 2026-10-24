@@ -49,6 +49,7 @@ class GuestListTest extends TestCase
             'name' => 'Host',
             'email' => 'host@example.com',
             'password' => bcrypt('password123'),
+            'can_send_whatsapp' => true,
         ]);
 
         $event = Event::create([

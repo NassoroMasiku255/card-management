@@ -3,6 +3,7 @@
 @section('title', 'Guests - ' . $event->name)
 
 @section('content')
+@php($canSendWhatsApp = auth()->user()->canSendWhatsApp())
 <div class="mb-6">
     <a href="{{ route('events.show', $event) }}" class="text-surface-500 hover:text-surface-700 text-sm">
         <i class="fas fa-arrow-left mr-1"></i> Back to {{ $event->name }}
@@ -12,7 +13,10 @@
             <h1 class="font-display text-2xl font-bold text-surface-900">Guests</h1>
             <span class="text-xs text-surface-400">A–Z</span>
         </div>
-        <div class="flex items-center gap-3">
+        <div class="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:items-center sm:gap-3">
+            <a href="{{ route('events.guests.create', $event) }}" class="btn btn-primary btn-sm col-span-2 sm:col-span-1">
+                <i class="fas fa-plus"></i> Add Guest
+            </a>
             <a href="{{ route('events.guests.export', $event) }}" class="btn btn-outline btn-sm"
                 data-loading-text="Preparing guest export..." data-loading-hint="Your file will download automatically."
                 data-loading-timeout="3000">
@@ -21,18 +25,22 @@
             <a href="{{ route('events.guests.import', $event) }}" class="btn btn-success btn-sm">
                 <i class="fas fa-file-import"></i> Import
             </a>
-            <a href="{{ route('events.guests.create', $event) }}" class="btn btn-primary btn-sm">
-                <i class="fas fa-plus"></i> Add Guest
-            </a>
         </div>
     </div>
 </div>
 
+@unless($canSendWhatsApp)
+<div class="mb-4 flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+    <i class="fas fa-lock mt-0.5"></i>
+    <p>WhatsApp sending is <strong>view-only</strong> for your account. You can still add guests, record payments, edit details and see delivery statuses. Ask an administrator to grant sending permission.</p>
+</div>
+@endunless
+
 <!-- Search & Filter -->
 <div class="card-surface p-4 mb-4">
-    <form method="GET" action="{{ route('events.guests.index', $event) }}" class="flex flex-wrap items-center gap-3"
+    <form method="GET" action="{{ route('events.guests.index', $event) }}" class="filter-bar"
         data-live-filter data-loading-text="Filtering guests...">
-        <div class="flex-1 min-w-[200px]">
+        <div class="filter-search">
             <input type="text" name="search" value="{{ request('search') }}" placeholder="Search by name, phone, ID..."
                 class="input-field !py-2" autocomplete="off">
         </div>
@@ -75,6 +83,7 @@
     </form>
 </div>
 
+@if($canSendWhatsApp)
 <div id="guestBulkBar" class="hidden card-surface px-4 py-3 mb-4 border-l-4 border-green-500">
     <div class="flex flex-wrap items-center justify-between gap-3">
         <p class="text-sm text-surface-700">
@@ -88,6 +97,7 @@
         </div>
     </div>
 </div>
+@endif
 
 <div class="card-surface overflow-hidden">
     @if($guests->isEmpty())
@@ -99,13 +109,15 @@
         <p class="text-surface-400 text-sm mt-1">Add guests manually or import from Excel</p>
     </div>
     @else
-    <div class="overflow-x-auto">
-        <table class="w-full">
+    <div class="overflow-x-auto responsive-table-wrap">
+        <table class="w-full responsive-table">
             <thead class="bg-surface-50">
                 <tr>
+                    @if($canSendWhatsApp)
                     <th class="px-4 py-3 text-left">
                         <input type="checkbox" id="selectAllGuests" class="h-4 w-4 rounded border-surface-300 text-green-600 focus:ring-green-500" title="Select all guests shown">
                     </th>
+                    @endif
                     <th class="px-6 py-3 text-left text-xs font-medium text-surface-500 uppercase tracking-wide">ID</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-surface-500 uppercase tracking-wide">Name</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-surface-500 uppercase tracking-wide">Phone</th>
@@ -119,34 +131,40 @@
             <tbody class="divide-y divide-surface-100">
                 @foreach($guests as $guest)
                 <tr class="hover:bg-surface-50" id="guest-row-{{ $guest->id }}">
-                    <td class="px-4 py-3">
+                    @if($canSendWhatsApp)
+                    <td class="px-4 py-3 mobile-select" data-label="">
                         <input type="checkbox" class="guest-checkbox h-4 w-4 rounded border-surface-300 text-green-600 focus:ring-green-500"
                             value="{{ $guest->id }}" aria-label="Select {{ $guest->full_name }}">
                     </td>
-                    <td class="px-6 py-3 text-xs font-mono text-surface-500">{{ $guest->unique_id }}</td>
-                    <td class="px-6 py-3">
-                        <div class="font-medium text-surface-900">{{ $guest->full_name }}</div>
-                        @if($guest->category)<div class="text-xs text-surface-400">{{ $guest->category }}</div>@endif
+                    @endif
+                    <td class="px-6 py-3 text-xs font-mono text-surface-500" data-label="Guest ID">{{ $guest->unique_id }}</td>
+                    <td class="px-6 py-3" data-label="Guest">
+                        <div class="min-w-0">
+                            <div class="font-medium text-surface-900">{{ $guest->full_name }}</div>
+                            @if($guest->category)<div class="text-xs text-surface-400">{{ $guest->category }}</div>@endif
+                        </div>
                     </td>
-                    <td class="px-6 py-3 text-sm text-surface-600">{{ $guest->phone_number }}</td>
-                    <td class="px-6 py-3">
+                    <td class="px-6 py-3 text-sm text-surface-600" data-label="Phone">{{ $guest->phone_number }}</td>
+                    <td class="px-6 py-3" data-label="Card">
                         @php($pledgedCardType = $event->cardTypeForAmount((float) $guest->amount_contributed))
                         <span class="badge {{ $pledgedCardType === 'double' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700' }}">
                             {{ ucfirst($pledgedCardType) }}
                         </span>
                     </td>
-                    <td class="px-6 py-3 text-sm">
-                        <div class="font-medium text-surface-900">{{ number_format($guest->paid_amount) }} <span class="text-surface-400 font-normal">/ {{ number_format($guest->amount_contributed) }}</span></div>
-                        <div class="mt-1 flex items-center gap-2">
-                            <span class="badge {{ $guest->payment_status_badge_class }}">{{ $guest->payment_status_label }}</span>
-                            @if($guest->balance > 0)
-                            <span class="text-xs text-red-500">Bal. {{ number_format($guest->balance) }}</span>
-                            @elseif($guest->balance < 0)
-                            <span class="text-xs text-blue-500">Extra {{ number_format(abs($guest->balance)) }}</span>
-                            @endif
+                    <td class="px-6 py-3 text-sm" data-label="Payment">
+                        <div class="min-w-0">
+                            <div class="font-medium text-surface-900">{{ number_format($guest->paid_amount) }} <span class="text-surface-400 font-normal">/ {{ number_format($guest->amount_contributed) }}</span></div>
+                            <div class="mt-1 flex flex-wrap items-center gap-2">
+                                <span class="badge {{ $guest->payment_status_badge_class }}">{{ $guest->payment_status_label }}</span>
+                                @if($guest->balance > 0)
+                                <span class="text-xs text-red-500">Bal. {{ number_format($guest->balance) }}</span>
+                                @elseif($guest->balance < 0)
+                                <span class="text-xs text-blue-500">Extra {{ number_format(abs($guest->balance)) }}</span>
+                                @endif
+                            </div>
                         </div>
                     </td>
-                    <td class="px-6 py-3">
+                    <td class="px-6 py-3" data-label="RSVP">
                         @if($guest->invitation)
                         <span class="badge
                             {{ $guest->invitation->rsvp_status === 'attending' ? 'bg-green-100 text-green-700' : '' }}
@@ -156,27 +174,29 @@
                         </span>
                         @endif
                     </td>
-                    <td class="px-6 py-3" id="message-cell-{{ $guest->id }}">
-                        @php($latestMessage = $guest->latestWhatsAppMessage)
-                        @if($latestMessage)
-                        <span class="badge {{ $latestMessage->status_badge_class }}">{{ $latestMessage->status_label }}</span>
-                        <div class="text-xs text-surface-400 mt-1">
-                            {{ ucfirst($latestMessage->message_type) }}
-                            @if($latestMessage->status_updated_at)
-                            &middot; {{ $latestMessage->status_updated_at->diffForHumans() }}
+                    <td class="px-6 py-3" id="message-cell-{{ $guest->id }}" data-label="Message">
+                        <div class="min-w-0">
+                            @php($latestMessage = $guest->latestWhatsAppMessage)
+                            @if($latestMessage)
+                            <span class="badge {{ $latestMessage->status_badge_class }}">{{ $latestMessage->status_label }}</span>
+                            <div class="text-xs text-surface-400 mt-1">
+                                {{ ucfirst($latestMessage->message_type) }}
+                                @if($latestMessage->status_updated_at)
+                                &middot; {{ $latestMessage->status_updated_at->diffForHumans() }}
+                                @endif
+                            </div>
+                            @if($latestMessage->status === 'failed' && $latestMessage->error_message)
+                            <div class="text-xs text-red-500 mt-1 max-w-[190px] truncate" title="{{ $latestMessage->error_message }}">
+                                {{ $latestMessage->error_message }}
+                            </div>
+                            @endif
+                            @else
+                            <span class="text-xs text-surface-400">Not sent</span>
                             @endif
                         </div>
-                        @if($latestMessage->status === 'failed' && $latestMessage->error_message)
-                        <div class="text-xs text-red-500 mt-1 max-w-[190px] truncate" title="{{ $latestMessage->error_message }}">
-                            {{ $latestMessage->error_message }}
-                        </div>
-                        @endif
-                        @else
-                        <span class="text-xs text-surface-400">Not sent</span>
-                        @endif
                     </td>
-                    <td class="px-6 py-3">
-                        <div class="flex items-center gap-3">
+                    <td class="px-6 py-3 mobile-actions" data-label="">
+                        <div class="flex items-center gap-2 sm:gap-3">
                             <button type="button"
                                 onclick="openPaymentModal(this)"
                                 data-url="{{ route('events.guests.payments.store', [$event, $guest]) }}"
@@ -184,24 +204,26 @@
                                 data-pledged="{{ number_format($guest->amount_contributed) }}"
                                 data-paid="{{ number_format($guest->paid_amount) }}"
                                 data-balance="{{ number_format($guest->balance) }}"
-                                class="text-amber-600 hover:text-amber-700" title="Record Payment">
+                                class="icon-action text-amber-600 hover:text-amber-700" title="Record Payment">
                                 <i class="fas fa-hand-holding-dollar"></i>
                             </button>
+                            @if($canSendWhatsApp)
                             <button type="button"
                                 onclick="openWhatsAppModal('{{ $guest->id }}', @js($guest->full_name))"
                                 data-guest-id="{{ $guest->id }}"
                                 data-guest-name="{{ $guest->full_name }}"
-                                class="text-green-600 hover:text-green-700" title="Send WhatsApp">
+                                class="icon-action text-green-600 hover:text-green-700" title="Send WhatsApp">
                                 <i class="fab fa-whatsapp text-lg"></i>
                             </button>
-                            <a href="{{ route('events.guests.edit', [$event, $guest]) }}" class="text-blue-600 hover:text-blue-700" title="Edit">
+                            @endif
+                            <a href="{{ route('events.guests.edit', [$event, $guest]) }}" class="icon-action text-blue-600 hover:text-blue-700" title="Edit">
                                 <i class="fas fa-pen"></i>
                             </a>
                             <form method="POST" action="{{ route('events.guests.destroy', [$event, $guest]) }}"
                                 data-loading-text="Removing guest..." data-loading-hint="Updating the guest list."
                                 onsubmit="return confirm('Remove this guest?')">
                                 @csrf @method('DELETE')
-                                <button type="submit" class="text-red-500 hover:text-red-700" title="Remove">
+                                <button type="submit" class="icon-action is-danger text-red-500 hover:text-red-700" title="Remove">
                                     <i class="fas fa-trash"></i>
                                 </button>
                             </form>
@@ -228,19 +250,20 @@
     @endif
 </div>
 
+@if($canSendWhatsApp)
 <!-- WhatsApp Message Modal -->
-<div id="whatsappModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden animate-fade-in">
-        <div class="px-6 py-4 border-b border-surface-100 flex items-center justify-between">
+<div id="whatsappModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="bg-white rounded-t-2xl sm:rounded-xl shadow-xl w-full max-w-md max-h-[92dvh] flex flex-col overflow-hidden animate-fade-in">
+        <div class="px-6 py-4 border-b border-surface-100 flex shrink-0 items-center justify-between">
             <h3 id="whatsappModalTitle" class="font-display font-bold text-lg text-surface-900">Send WhatsApp Message</h3>
             <button type="button" onclick="cancelWhatsAppModal()" class="text-surface-400 hover:text-surface-600" title="Close">
                 <i class="fas fa-times"></i>
             </button>
         </div>
-        <form id="whatsappForm" method="POST" action="" data-no-loading
+        <form id="whatsappForm" method="POST" action="" data-no-loading class="flex min-h-0 flex-col"
             data-loading-text="Sending WhatsApp message..." data-loading-hint="Contacting WhatsApp, please wait.">
             @csrf
-            <div class="p-6 space-y-4">
+            <div class="p-5 sm:p-6 space-y-4 overflow-y-auto">
                 <div>
                     <p class="text-sm text-surface-600 mb-4">
                         Sending message to: <span id="modalGuestName" class="font-bold"></span>
@@ -277,7 +300,7 @@
                     </div>
                 </div>
             </div>
-            <div class="px-6 py-4 bg-surface-50 flex justify-end gap-3">
+            <div class="px-5 sm:px-6 py-4 bg-surface-50 border-t border-surface-100 flex shrink-0 justify-end gap-3">
                 <button type="button" id="whatsappCancelBtn" onclick="cancelWhatsAppModal()" class="btn btn-outline">Cancel</button>
                 <button type="submit" id="whatsappSubmitBtn" class="btn btn-primary">
                     <i class="fab fa-whatsapp mr-2"></i> Send Message
@@ -286,20 +309,21 @@
         </form>
     </div>
 </div>
+@endif
 
 <!-- Payment Modal -->
-<div id="paymentModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden animate-fade-in">
-        <div class="px-6 py-4 border-b border-surface-100 flex items-center justify-between">
+<div id="paymentModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="bg-white rounded-t-2xl sm:rounded-xl shadow-xl w-full max-w-md max-h-[92dvh] flex flex-col overflow-hidden animate-fade-in">
+        <div class="px-6 py-4 border-b border-surface-100 flex shrink-0 items-center justify-between">
             <h3 class="font-display font-bold text-lg text-surface-900">Record Payment</h3>
             <button onclick="closePaymentModal()" class="text-surface-400 hover:text-surface-600">
                 <i class="fas fa-times"></i>
             </button>
         </div>
-        <form id="paymentForm" method="POST" action=""
+        <form id="paymentForm" method="POST" action="" class="flex min-h-0 flex-col"
             data-loading-text="Recording payment..." data-loading-hint="Updating the guest balance.">
             @csrf
-            <div class="p-6 space-y-4">
+            <div class="p-5 sm:p-6 space-y-4 overflow-y-auto">
                 <div>
                     <p class="text-sm text-surface-600">
                         Recording payment for: <span id="paymentGuestName" class="font-bold text-surface-900"></span>
@@ -350,7 +374,7 @@
                     <textarea name="notes" rows="2" class="input-field" placeholder="Optional payment note"></textarea>
                 </div>
             </div>
-            <div class="px-6 py-4 bg-surface-50 flex justify-end gap-3">
+            <div class="px-5 sm:px-6 py-4 bg-surface-50 border-t border-surface-100 flex shrink-0 justify-end gap-3">
                 <button type="button" onclick="closePaymentModal()" class="btn btn-outline">Cancel</button>
                 <button type="submit" class="btn btn-primary">
                     <i class="fas fa-hand-holding-dollar mr-2"></i> Record Payment
@@ -360,7 +384,7 @@
     </div>
 </div>
 
-<div id="guestToast" class="hidden fixed bottom-5 right-5 z-[70] max-w-sm rounded-xl px-5 py-3 text-sm font-medium text-white shadow-2xl"></div>
+<div id="guestToast" class="hidden fixed bottom-24 right-4 z-[70] max-w-sm rounded-xl px-5 py-3 text-sm font-medium text-white shadow-2xl md:bottom-5 md:right-5"></div>
 
 <script>
     const sendMessageUrlBase = @json(url('/events/'.$event->id.'/guests'));
@@ -428,7 +452,7 @@
         if (!toast) return;
 
         clearTimeout(guestToastTimer);
-        toast.className = 'fixed bottom-5 right-5 z-[70] max-w-sm rounded-xl px-5 py-3 text-sm font-medium text-white shadow-2xl ' +
+        toast.className = 'fixed bottom-24 right-4 z-[70] max-w-sm rounded-xl px-5 py-3 text-sm font-medium text-white shadow-2xl md:bottom-5 md:right-5 ' +
             (type === 'warning' ? 'bg-amber-600' : 'bg-green-600');
         toast.textContent = message;
         toast.classList.remove('hidden');
@@ -491,9 +515,15 @@
         const selected = checkboxes.filter(checkbox => checkbox.checked);
         const selectAll = document.getElementById('selectAllGuests');
         const bulkBar = document.getElementById('guestBulkBar');
+        const count = document.getElementById('guestSelectedCount');
 
-        document.getElementById('guestSelectedCount').textContent = selected.length;
-        bulkBar.classList.toggle('hidden', selected.length === 0);
+        if (count) {
+            count.textContent = selected.length;
+        }
+
+        if (bulkBar) {
+            bulkBar.classList.toggle('hidden', selected.length === 0);
+        }
 
         if (selectAll) {
             selectAll.checked = checkboxes.length > 0 && selected.length === checkboxes.length;

@@ -74,25 +74,24 @@
         </aside>
 
         <!-- Mobile top bar -->
-        <header class="md:hidden sticky top-0 z-30 bg-white border-b border-surface-200">
-            <div class="flex items-center justify-between h-16 px-4">
-                <a href="{{ route('dashboard') }}" class="flex items-center gap-2">
-                    <div class="w-8 h-8 rounded-lg bg-primary-500 flex items-center justify-center">
+        <header class="md:hidden sticky top-0 z-30 bg-white/95 border-b border-surface-200 backdrop-blur">
+            <div class="flex items-center justify-between h-16 px-4 gap-3">
+                <a href="{{ route('dashboard') }}" class="flex items-center gap-2 min-w-0">
+                    <div class="w-8 h-8 rounded-lg bg-primary-500 flex items-center justify-center shrink-0">
                         <i class="fas fa-envelope-open-text text-white text-xs"></i>
                     </div>
                     <span class="font-display font-bold text-surface-900">CardMS</span>
                 </a>
                 @auth
-                <div class="flex items-center gap-4">
-                    <a href="{{ route('dashboard') }}" class="text-surface-500 {{ request()->routeIs('dashboard') ? 'text-primary-600' : '' }}"><i class="fas fa-house"></i></a>
-                    <a href="{{ route('events.index') }}" class="text-surface-500 {{ request()->routeIs('events.*') ? 'text-primary-600' : '' }}"><i class="fas fa-calendar-days"></i></a>
-                    @if(Auth::user()->isAdmin())
-                    <a href="{{ route('admin.users.index') }}" class="text-surface-500 {{ request()->routeIs('admin.users.*') ? 'text-primary-600' : '' }}"><i class="fas fa-users-gear"></i></a>
-                    <a href="{{ route('webhook-logs.index') }}" class="text-surface-500 {{ request()->routeIs('webhook-logs.*') ? 'text-primary-600' : '' }}"><i class="fab fa-whatsapp"></i></a>
-                    @endif
+                <div class="flex items-center gap-2 shrink-0">
+                    <div class="w-8 h-8 rounded-full bg-gold-100 text-gold-700 flex items-center justify-center text-xs font-bold" title="{{ Auth::user()->name }}">
+                        {{ strtoupper(substr(Auth::user()->name ?? 'U', 0, 1)) }}
+                    </div>
                     <form method="POST" action="{{ route('logout') }}" data-loading-text="Logging out...">
                         @csrf
-                        <button type="submit" class="text-surface-400 hover:text-red-600"><i class="fas fa-arrow-right-from-bracket"></i></button>
+                        <button type="submit" class="icon-action text-surface-400 hover:text-red-600" aria-label="Log out" title="Log out">
+                            <i class="fas fa-arrow-right-from-bracket"></i>
+                        </button>
                     </form>
                 </div>
                 @endauth
@@ -101,7 +100,7 @@
 
         <!-- Main -->
         <div class="flex-1 md:pl-64 min-w-0">
-            <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-28 md:py-8">
 
                 @foreach ([
                     'success' => ['fa-circle-check', 'border-green-200 bg-green-50 text-green-700', 'text-green-500 hover:text-green-700'],
@@ -144,6 +143,43 @@
             </main>
         </div>
     </div>
+
+    @auth
+    <!-- Mobile bottom navigation -->
+    <nav class="md:hidden fixed inset-x-0 bottom-0 z-30 border-t border-surface-200 bg-white/95 backdrop-blur shadow-[0_-10px_30px_-24px_rgba(24,24,27,.6)]"
+        style="padding-bottom: env(safe-area-inset-bottom);" aria-label="Mobile navigation">
+        <div class="grid auto-cols-fr grid-flow-col px-2 py-1">
+            <a href="{{ route('dashboard') }}"
+                class="flex flex-col items-center gap-1 rounded-xl py-2 text-[10px] font-semibold transition {{ request()->routeIs('dashboard') ? 'text-primary-600' : 'text-surface-500' }}">
+                <i class="fas fa-house text-base"></i>
+                <span>Home</span>
+            </a>
+            <a href="{{ route('events.index') }}"
+                class="flex flex-col items-center gap-1 rounded-xl py-2 text-[10px] font-semibold transition {{ request()->routeIs('events.*') ? 'text-primary-600' : 'text-surface-500' }}">
+                <i class="fas fa-calendar-days text-base"></i>
+                <span>Events</span>
+            </a>
+            @if(Auth::user()->isAdmin())
+            <a href="{{ route('admin.users.index') }}"
+                class="flex flex-col items-center gap-1 rounded-xl py-2 text-[10px] font-semibold transition {{ request()->routeIs('admin.users.*') ? 'text-primary-600' : 'text-surface-500' }}">
+                <i class="fas fa-users-gear text-base"></i>
+                <span>Users</span>
+            </a>
+            <a href="{{ route('webhook-logs.index') }}"
+                class="flex flex-col items-center gap-1 rounded-xl py-2 text-[10px] font-semibold transition {{ request()->routeIs('webhook-logs.*') ? 'text-primary-600' : 'text-surface-500' }}">
+                <i class="fab fa-whatsapp text-base"></i>
+                <span>Logs</span>
+            </a>
+            @else
+            <a href="{{ route('events.create') }}"
+                class="flex flex-col items-center gap-1 rounded-xl py-2 text-[10px] font-semibold transition {{ request()->routeIs('events.create') ? 'text-primary-600' : 'text-surface-500' }}">
+                <i class="fas fa-circle-plus text-base"></i>
+                <span>New</span>
+            </a>
+            @endif
+        </div>
+    </nav>
+    @endauth
 
     <!-- Global action loader -->
     <div id="actionLoader" class="fixed inset-0 z-[9999] hidden items-center justify-center bg-surface-900/40 p-4 backdrop-blur-[2px]" aria-hidden="true" role="status" aria-live="polite">

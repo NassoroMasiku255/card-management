@@ -39,6 +39,7 @@ class AdminUserController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users,email',
             'password' => 'required|string|min:8|confirmed',
+            'can_send_whatsapp' => 'nullable|boolean',
             'events' => 'nullable|array',
             'events.*' => 'integer|exists:events,id',
         ]);
@@ -47,6 +48,7 @@ class AdminUserController extends Controller
             'name' => $validated['name'],
             'email' => $validated['email'],
             'password' => $validated['password'],
+            'can_send_whatsapp' => $request->boolean('can_send_whatsapp'),
         ]);
 
         $this->syncEventAssignments($user, $validated['events'] ?? []);
@@ -74,15 +76,22 @@ class AdminUserController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users,email,'.$user->id,
             'password' => 'nullable|string|min:8|confirmed',
+            'can_send_whatsapp' => 'nullable|boolean',
             'events' => 'nullable|array',
             'events.*' => 'integer|exists:events,id',
         ]);
 
-        $user->update([
+        $updateData = [
             'name' => $validated['name'],
             'email' => $validated['email'],
             ...(! empty($validated['password']) ? ['password' => $validated['password']] : []),
-        ]);
+        ];
+
+        if ($request->has('can_send_whatsapp')) {
+            $updateData['can_send_whatsapp'] = $request->boolean('can_send_whatsapp');
+        }
+
+        $user->update($updateData);
 
         $this->syncEventAssignments($user, $validated['events'] ?? []);
 

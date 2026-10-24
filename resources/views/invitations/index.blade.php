@@ -3,47 +3,81 @@
 @section('title', 'Invitations - ' . $event->name)
 
 @section('content')
+@php($canSendWhatsApp = auth()->user()->canSendWhatsApp())
 <div class="mb-6">
     <a href="{{ route('events.show', $event) }}" class="text-surface-500 hover:text-surface-700 text-sm">
         <i class="fas fa-arrow-left mr-1"></i> Back to {{ $event->name }}
     </a>
     <div class="flex flex-wrap items-center justify-between gap-3 mt-2">
         <h1 class="font-display text-2xl font-bold text-surface-900">Invitations</h1>
-        <div class="flex flex-wrap items-center gap-2">
+        <div class="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:items-center">
             <a href="{{ route('events.invitations.export', array_merge(['event' => $event], request()->query())) }}"
-                target="_blank" rel="noopener" class="btn btn-outline">
+                target="_blank" rel="noopener" class="btn btn-outline {{ $canSendWhatsApp ? '' : 'col-span-2' }} sm:col-span-1">
                 <i class="fas fa-file-export"></i> Export QR List
             </a>
+            @if($canSendWhatsApp)
             <button type="button" id="sendAllPendingBtn" class="btn btn-success">
                 <i class="fab fa-whatsapp"></i> Send All Pending
             </button>
+            @endif
         </div>
     </div>
 </div>
 
-<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-    <div class="card-surface p-4 text-center">
-        <div class="text-2xl font-bold text-surface-900" id="stat-total">{{ $stats['total'] }}</div>
-        <div class="text-xs text-surface-500">Total</div>
+@unless($canSendWhatsApp)
+<div class="mb-4 flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+    <i class="fas fa-lock mt-0.5"></i>
+    <p>WhatsApp sending is <strong>view-only</strong> for your account. You can still review delivery statuses, export QR lists and open invitation cards. Ask an administrator to grant sending permission.</p>
+</div>
+@endunless
+
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
+    <div class="card-surface p-4 sm:p-5">
+        <div class="flex items-start justify-between gap-3">
+            <div class="min-w-0">
+                <p class="text-[10px] font-semibold uppercase tracking-[.12em] text-surface-400">Total</p>
+                <p class="mt-1 text-2xl sm:text-3xl font-bold text-surface-900" id="stat-total">{{ $stats['total'] }}</p>
+            </div>
+            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-surface-100 text-surface-500"><i class="fas fa-users"></i></span>
+        </div>
+        <div class="mt-3 h-1.5 overflow-hidden rounded-full bg-surface-100"><div class="h-full w-full rounded-full bg-surface-300"></div></div>
     </div>
-    <div class="card-surface p-4 text-center">
-        <div class="text-2xl font-bold text-green-600" id="stat-sent">{{ $stats['sent'] }}</div>
-        <div class="text-xs text-surface-500">Sent</div>
+    <div class="card-surface p-4 sm:p-5">
+        <div class="flex items-start justify-between gap-3">
+            <div class="min-w-0">
+                <p class="text-[10px] font-semibold uppercase tracking-[.12em] text-green-600/70">Sent</p>
+                <p class="mt-1 text-2xl sm:text-3xl font-bold text-green-600" id="stat-sent">{{ $stats['sent'] }}</p>
+            </div>
+            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-green-50 text-green-600"><i class="fas fa-paper-plane"></i></span>
+        </div>
+        <div class="mt-3 h-1.5 overflow-hidden rounded-full bg-green-50"><div class="h-full w-full rounded-full bg-green-500"></div></div>
     </div>
-    <div class="card-surface p-4 text-center">
-        <div class="text-2xl font-bold text-yellow-600" id="stat-pending">{{ $stats['pending'] }}</div>
-        <div class="text-xs text-surface-500">Pending</div>
+    <div class="card-surface p-4 sm:p-5">
+        <div class="flex items-start justify-between gap-3">
+            <div class="min-w-0">
+                <p class="text-[10px] font-semibold uppercase tracking-[.12em] text-amber-600/70">Pending</p>
+                <p class="mt-1 text-2xl sm:text-3xl font-bold text-amber-600" id="stat-pending">{{ $stats['pending'] }}</p>
+            </div>
+            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-50 text-amber-600"><i class="fas fa-clock"></i></span>
+        </div>
+        <div class="mt-3 h-1.5 overflow-hidden rounded-full bg-amber-50"><div class="h-full w-full rounded-full bg-amber-400"></div></div>
     </div>
-    <div class="card-surface p-4 text-center">
-        <div class="text-2xl font-bold text-red-600" id="stat-failed">{{ $stats['failed'] }}</div>
-        <div class="text-xs text-surface-500">Failed</div>
+    <div class="card-surface p-4 sm:p-5">
+        <div class="flex items-start justify-between gap-3">
+            <div class="min-w-0">
+                <p class="text-[10px] font-semibold uppercase tracking-[.12em] text-red-600/70">Failed</p>
+                <p class="mt-1 text-2xl sm:text-3xl font-bold text-red-600" id="stat-failed">{{ $stats['failed'] }}</p>
+            </div>
+            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-50 text-red-600"><i class="fas fa-circle-exclamation"></i></span>
+        </div>
+        <div class="mt-3 h-1.5 overflow-hidden rounded-full bg-red-50"><div class="h-full w-full rounded-full bg-red-400"></div></div>
     </div>
 </div>
 
 <div class="card-surface p-4 mb-4">
-    <form method="GET" action="{{ route('events.invitations.index', $event) }}" class="flex flex-wrap items-center gap-3"
+    <form method="GET" action="{{ route('events.invitations.index', $event) }}" class="filter-bar"
         data-live-filter data-loading-text="Filtering invitations...">
-        <div class="flex-1 min-w-[220px]">
+        <div class="filter-search">
             <input type="text" name="search" value="{{ request('search') }}" placeholder="Search by name, phone, ID..."
                 class="input-field !py-2" autocomplete="off">
         </div>
@@ -72,6 +106,7 @@
     </p>
 </div>
 
+@if($canSendWhatsApp)
 <div id="bulkInvitationProgress" class="hidden card-surface p-4 mb-4">
     <div class="flex flex-wrap items-center justify-between gap-3">
         <div>
@@ -86,6 +121,7 @@
         <div id="bulkInvitationProgressBar" class="h-full rounded-full bg-green-500 transition-all" style="width: 0%"></div>
     </div>
 </div>
+@endif
 
 <div class="card-surface overflow-hidden">
     @if($invitations->isEmpty())
@@ -94,8 +130,8 @@
         <p class="mt-1 text-xs">Guests appear here once their paid amount meets the event's single-card minimum.</p>
     </div>
     @else
-    <div class="overflow-x-auto">
-        <table class="w-full">
+    <div class="overflow-x-auto responsive-table-wrap">
+        <table class="w-full responsive-table">
             <thead class="bg-surface-50">
                 <tr>
                     <th class="px-6 py-3 text-left text-xs font-medium text-surface-500 uppercase tracking-wide">Guest</th>
@@ -110,27 +146,32 @@
             <tbody class="divide-y divide-surface-100">
                 @foreach($invitations as $invitation)
                 <tr class="hover:bg-surface-50" id="row-{{ $invitation->id }}">
-                    <td class="px-6 py-3">
-                        <div class="font-medium text-surface-900">{{ $invitation->guest->full_name }}</div>
-                        <div class="text-xs text-surface-400">{{ $invitation->guest->unique_id }}</div>
-                    </td>
-                    <td class="px-6 py-3 text-sm text-surface-600">{{ $invitation->guest->phone_number }}</td>
-                    <td class="px-6 py-3" id="card-cell-{{ $invitation->id }}">
-                        @php($paidCardType = $event->cardTypeForAmount((float) $invitation->guest->paid_amount))
-                        <span class="badge {{ $paidCardType === 'double' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700' }}">
-                            {{ ucfirst($paidCardType) }}
-                        </span>
-                        <div class="text-[10px] text-surface-400 mt-1">Paid {{ number_format($invitation->guest->paid_amount) }}</div>
-                        <div class="mt-2" id="card-thumb-{{ $invitation->id }}">
-                            @if($invitation->card_image_path)
-                            <img src="{{ $invitation->card_image_url }}" alt="Invitation card for {{ $invitation->guest->full_name }}"
-                                class="h-14 w-10 rounded border border-surface-200 object-cover">
-                            @else
-                            <span class="text-[10px] text-surface-400">No card image</span>
-                            @endif
+                    <td class="px-6 py-3" data-label="Guest">
+                        <div class="min-w-0">
+                            <div class="font-medium text-surface-900">{{ $invitation->guest->full_name }}</div>
+                            <div class="text-xs text-surface-400">{{ $invitation->guest->unique_id }}</div>
                         </div>
                     </td>
-                    <td class="px-6 py-3" id="status-cell-{{ $invitation->id }}">
+                    <td class="px-6 py-3 text-sm text-surface-600" data-label="Phone">{{ $invitation->guest->phone_number }}</td>
+                    <td class="px-6 py-3" id="card-cell-{{ $invitation->id }}" data-label="Card">
+                        @php($paidCardType = $event->cardTypeForAmount((float) $invitation->guest->paid_amount))
+                        <div class="min-w-0">
+                            <span class="badge {{ $paidCardType === 'double' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700' }}">
+                                {{ ucfirst($paidCardType) }}
+                            </span>
+                            <div class="text-[10px] text-surface-400 mt-1">Paid {{ number_format($invitation->guest->paid_amount) }}</div>
+                            <div class="mt-2" id="card-thumb-{{ $invitation->id }}">
+                                @if($invitation->card_image_path)
+                                <img src="{{ $invitation->card_image_url }}" alt="Invitation card for {{ $invitation->guest->full_name }}"
+                                    class="h-14 w-10 rounded border border-surface-200 object-cover">
+                                @else
+                                <span class="text-[10px] text-surface-400">No card image</span>
+                                @endif
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-6 py-3" id="status-cell-{{ $invitation->id }}" data-label="Send status">
+                        <div class="min-w-0">
                         <span class="badge
                             {{ $invitation->send_status === 'sent' ? 'bg-green-100 text-green-700' : '' }}
                             {{ $invitation->send_status === 'pending' ? 'bg-yellow-100 text-yellow-700' : '' }}
@@ -148,8 +189,9 @@
                             </span>
                         </div>
                         @endif
+                        </div>
                     </td>
-                    <td class="px-6 py-3">
+                    <td class="px-6 py-3" data-label="RSVP">
                         <span class="badge
                             {{ $invitation->rsvp_status === 'attending' ? 'bg-green-100 text-green-700' : '' }}
                             {{ $invitation->rsvp_status === 'not_attending' ? 'bg-red-100 text-red-700' : '' }}
@@ -157,21 +199,21 @@
                             {{ $invitation->rsvp_status === 'attending' ? 'Nitafika' : ($invitation->rsvp_status === 'not_attending' ? 'Sitafika' : 'Pending') }}
                         </span>
                     </td>
-                    <td class="px-6 py-3">
+                    <td class="px-6 py-3" data-label="QR code">
                         <div class="qr-code-mini" data-value="{{ $invitation->qr_code_data }}"></div>
                     </td>
-                    <td class="px-6 py-3" id="action-cell-{{ $invitation->id }}">
-                        <div class="flex flex-wrap items-center gap-3">
-                            <a href="{{ route('events.invitations.card', [$event, $invitation->guest]) }}" target="_blank" class="text-blue-600 hover:text-blue-700 text-sm" title="View generated card">
+                    <td class="px-6 py-3 mobile-actions" id="action-cell-{{ $invitation->id }}" data-label="">
+                        <div class="flex flex-wrap items-center gap-2 sm:gap-3">
+                            <a href="{{ route('events.invitations.card', [$event, $invitation->guest]) }}" target="_blank" class="icon-action text-blue-600 hover:text-blue-700" title="View generated card">
                                 <i class="fas fa-id-card"></i>
                             </a>
-                            <button type="button" class="copy-public-link-btn text-surface-500 hover:text-surface-700 text-sm"
+                            <button type="button" class="copy-public-link-btn icon-action text-surface-500 hover:text-surface-700"
                                 data-public-url="{{ route('invitation.public', $invitation->qr_code_data) }}"
                                 title="Copy public invitation link">
                                 <i class="fas fa-link"></i>
                             </button>
-                            @if($invitation->send_status === 'pending')
-                            <button type="button" class="prepare-invitation-btn text-green-600 hover:text-green-700 text-sm font-medium"
+                            @if($canSendWhatsApp && $invitation->send_status === 'pending')
+                            <button type="button" class="prepare-invitation-btn icon-action text-green-600 hover:text-green-700 font-medium"
                                 data-invitation-id="{{ $invitation->id }}"
                                 data-guest-name="{{ $invitation->guest->full_name }}"
                                 data-guest-unique-id="{{ $invitation->guest->unique_id }}"
@@ -180,10 +222,10 @@
                                 data-card-image-url="{{ $invitation->card_image_url }}"
                                 data-public-url="{{ route('invitation.public', $invitation->qr_code_data) }}"
                                 title="Upload a card, preview, and send">
-                                <i class="fas fa-upload mr-1"></i> <span>Send</span>
+                                <i class="fas fa-upload"></i> <span class="hidden sm:inline">Send</span>
                             </button>
-                            @elseif($invitation->send_status === 'failed')
-                            <button type="button" class="prepare-invitation-btn text-amber-600 hover:text-amber-700 text-sm font-medium"
+                            @elseif($canSendWhatsApp && $invitation->send_status === 'failed')
+                            <button type="button" class="prepare-invitation-btn icon-action text-amber-600 hover:text-amber-700 font-medium"
                                 data-invitation-id="{{ $invitation->id }}"
                                 data-guest-name="{{ $invitation->guest->full_name }}"
                                 data-guest-unique-id="{{ $invitation->guest->unique_id }}"
@@ -192,9 +234,9 @@
                                 data-card-image-url="{{ $invitation->card_image_url }}"
                                 data-public-url="{{ route('invitation.public', $invitation->qr_code_data) }}"
                                 title="Upload a card, preview, and retry">
-                                <i class="fas fa-rotate-right mr-1"></i> <span>Retry</span>
+                                <i class="fas fa-rotate-right"></i> <span class="hidden sm:inline">Retry</span>
                             </button>
-                            @else
+                            @elseif($canSendWhatsApp)
                             <span class="text-surface-400 text-sm" title="Invitation already sent"><i class="fas fa-check"></i></span>
                             @endif
                         </div>
@@ -211,8 +253,9 @@
     @endif
 </div>
 
-<div id="invitationModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-white rounded-xl shadow-xl w-full max-w-xl overflow-hidden" style="max-height: 92vh;">
+@if($canSendWhatsApp)
+<div id="invitationModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="bg-white rounded-t-2xl sm:rounded-xl shadow-xl w-full max-w-xl overflow-hidden" style="max-height: 92dvh;">
         <div class="px-6 py-4 border-b border-surface-100 flex items-center justify-between">
             <div>
                 <h3 class="font-display font-bold text-lg text-surface-900">Prepare Invitation</h3>
@@ -329,8 +372,9 @@
         </form>
     </div>
 </div>
+@endif
 
-<div id="invitationToast" class="hidden fixed bottom-5 right-5 z-[80] max-w-sm rounded-xl px-5 py-3 text-sm font-medium text-white shadow-2xl"></div>
+<div id="invitationToast" class="hidden fixed bottom-24 right-4 z-[80] max-w-sm rounded-xl px-5 py-3 text-sm font-medium text-white shadow-2xl md:bottom-5 md:right-5"></div>
 @endsection
 
 @push('scripts')

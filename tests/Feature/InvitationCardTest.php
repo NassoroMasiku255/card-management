@@ -129,6 +129,7 @@ class InvitationCardTest extends TestCase
             'name' => 'Host',
             'email' => 'host-'.uniqid().'@example.com',
             'password' => bcrypt('password123'),
+            'can_send_whatsapp' => true,
         ]);
 
         $event = Event::create([

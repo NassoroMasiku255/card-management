@@ -51,12 +51,13 @@
         <p>No users yet.</p>
     </div>
     @else
-    <div class="overflow-x-auto">
-        <table class="w-full">
+    <div class="overflow-x-auto responsive-table-wrap">
+        <table class="w-full responsive-table">
             <thead class="bg-surface-50">
                 <tr>
                     <th class="px-6 py-3 text-left text-xs font-medium text-surface-500 uppercase tracking-wide">User</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-surface-500 uppercase tracking-wide">Role</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-surface-500 uppercase tracking-wide">WhatsApp</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-surface-500 uppercase tracking-wide">Assigned Events</th>
                     <th class="px-6 py-3 text-right text-xs font-medium text-surface-500 uppercase tracking-wide">Actions</th>
                 </tr>
@@ -64,7 +65,7 @@
             <tbody class="divide-y divide-surface-100">
                 @foreach($users as $user)
                 <tr class="hover:bg-surface-50">
-                    <td class="px-6 py-4">
+                    <td class="px-6 py-4" data-label="User">
                         <div class="flex items-center gap-3">
                             <div class="w-10 h-10 rounded-full bg-gold-100 text-gold-700 flex items-center justify-center text-sm font-bold shrink-0">
                                 {{ strtoupper(substr($user->name, 0, 1)) }}
@@ -80,12 +81,19 @@
                             </div>
                         </div>
                     </td>
-                    <td class="px-6 py-4">
+                    <td class="px-6 py-4" data-label="Role">
                         <span class="badge {{ $user->is_admin ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700' }}">
                             {{ $user->is_admin ? 'Administrator' : 'Regular User' }}
                         </span>
                     </td>
-                    <td class="px-6 py-4">
+                    <td class="px-6 py-4" data-label="WhatsApp">
+                        @if($user->canSendWhatsApp())
+                        <span class="badge bg-green-100 text-green-700"><i class="fab fa-whatsapp mr-1"></i>Can send</span>
+                        @else
+                        <span class="badge bg-surface-100 text-surface-500"><i class="fas fa-lock mr-1"></i>View only</span>
+                        @endif
+                    </td>
+                    <td class="px-6 py-4" data-label="Events">
                         @if($user->is_admin)
                         <div class="flex flex-wrap items-center gap-1.5">
                             <span class="badge bg-purple-100 text-purple-700">All events</span>
@@ -105,7 +113,7 @@
                         </div>
                         @endif
                     </td>
-                    <td class="px-6 py-4 text-right">
+                    <td class="px-6 py-4 text-right mobile-actions" data-label="">
                         <a href="{{ route('admin.users.edit', $user) }}" class="text-primary-600 hover:text-primary-700 text-sm font-medium">
                             <i class="fas fa-user-pen mr-1"></i> Manage access
                         </a>

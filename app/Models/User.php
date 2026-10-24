@@ -16,6 +16,7 @@ class User extends Authenticatable
         'email',
         'password',
         'is_admin',
+        'can_send_whatsapp',
     ];
 
     protected $hidden = [
@@ -29,6 +30,7 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'is_admin' => 'boolean',
+            'can_send_whatsapp' => 'boolean',
         ];
     }
 
@@ -40,5 +42,10 @@ class User extends Authenticatable
     public function isAdmin(): bool
     {
         return (bool) $this->is_admin;
+    }
+
+    public function canSendWhatsApp(): bool
+    {
+        return $this->isAdmin() || (bool) $this->can_send_whatsapp;
     }
 }

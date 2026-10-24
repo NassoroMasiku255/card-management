@@ -48,7 +48,7 @@ php artisan serve --port=8000
 - `/webhook/whatsapp` - WhatsApp webhook endpoint
 
 ## Database Schema
-- `users` - System users
+- `users` - System users with `is_admin` and `can_send_whatsapp` permission flags
 - `events` - Event details + card template settings
 - `guests` - Guest records with unique IDs
 - `invitations` - Invitation status, RSVP, and attendance tracking

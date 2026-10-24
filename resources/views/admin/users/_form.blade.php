@@ -22,6 +22,28 @@
         </div>
     </div>
 
+    <div class="rounded-2xl border border-surface-200 bg-surface-50/70 p-4">
+        <label class="flex cursor-pointer items-start gap-3">
+            <input type="hidden" name="can_send_whatsapp" value="0">
+            <input type="checkbox" name="can_send_whatsapp" value="1"
+                {{ old('can_send_whatsapp', $user->can_send_whatsapp ?? false) ? 'checked' : '' }}
+                class="mt-0.5 h-4 w-4 rounded border-surface-300 text-green-600 focus:ring-green-500">
+            <span>
+                <span class="flex flex-wrap items-center gap-2 text-sm font-semibold text-surface-800">
+                    <i class="fab fa-whatsapp text-green-600"></i>
+                    Allow WhatsApp sending
+                    @if(isset($user) && $user->is_admin)
+                    <span class="badge bg-purple-100 text-purple-700">Administrators always allowed</span>
+                    @endif
+                </span>
+                <span class="mt-1 block text-xs leading-relaxed text-surface-500">
+                    Can send invitations and reminders from the guest and invitation pages.
+                    Users without this permission still see delivery statuses and can manage guests and payments.
+                </span>
+            </span>
+        </label>
+    </div>
+
     <div class="border-t border-surface-100 pt-6">
         <div class="flex flex-wrap items-start justify-between gap-3 mb-3">
             <div>
