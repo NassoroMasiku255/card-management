@@ -11,6 +11,7 @@ use App\Services\WhatsAppService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class InvitationController extends Controller
 {
@@ -35,9 +36,33 @@ class InvitationController extends Controller
         return view('invitations.card', compact('event', 'guest'));
     }
 
+    public function pending(Event $event)
+    {
+        $this->authorizeEvent($event);
+
+        $invitations = $event->invitations()
+            ->where('send_status', 'pending')
+            ->with('guest')
+            ->get()
+            ->sortBy(fn ($invitation) => $invitation->guest->full_name)
+            ->values();
+
+        return response()->json([
+            'invitations' => $invitations->map(fn ($invitation) => [
+                'id' => $invitation->id,
+                'guest_id' => $invitation->guest_id,
+                'guest_name' => $invitation->guest->full_name,
+                'url' => route('events.invitations.send', [$event, $invitation]),
+                'card_image_url' => $invitation->card_image_url,
+            ]),
+        ]);
+    }
+
     public function send(Request $request, Event $event, Invitation $invitation)
     {
         $this->authorizeEvent($event);
+        $this->validateCardImage($request);
+        $this->storeCardImage($request, $event, $invitation);
 
         $success = $this->whatsapp->sendInvitation($invitation);
 
@@ -101,6 +126,8 @@ class InvitationController extends Controller
     public function resend(Request $request, Event $event, Invitation $invitation)
     {
         $this->authorizeEvent($event);
+        $this->validateCardImage($request);
+        $this->storeCardImage($request, $event, $invitation);
 
         $invitation->update(['send_status' => 'pending']);
 
@@ -182,7 +209,7 @@ class InvitationController extends Controller
 
     private function invitationJsonResponse(Event $event, Invitation $invitation, bool $success, string $message)
     {
-        $invitation->refresh();
+        $invitation->refresh()->load('latestWhatsAppMessage');
 
         return response()->json([
             'success' => $success,
@@ -191,9 +218,36 @@ class InvitationController extends Controller
                 'id' => $invitation->id,
                 'send_status' => $invitation->send_status,
                 'sent_at' => optional($invitation->sent_at)->format('d/m H:i'),
+                'card_image_url' => $invitation->card_image_url,
+                'whatsapp_status' => $invitation->latestWhatsAppMessage ? [
+                    'label' => $invitation->latestWhatsAppMessage->status_label,
+                    'badge_class' => $invitation->latestWhatsAppMessage->status_badge_class,
+                ] : null,
             ],
             'stats' => $this->sendStats($event),
         ]);
+    }
+
+    private function validateCardImage(Request $request): void
+    {
+        $request->validate([
+            'card_image' => 'nullable|image|mimes:jpg,jpeg,png|max:5120',
+        ]);
+    }
+
+    private function storeCardImage(Request $request, Event $event, Invitation $invitation): void
+    {
+        if (! $request->hasFile('card_image')) {
+            return;
+        }
+
+        $path = $request->file('card_image')->store("invitation-cards/{$event->id}", 'public');
+
+        if ($invitation->card_image_path) {
+            Storage::disk('public')->delete($invitation->card_image_path);
+        }
+
+        $invitation->update(['card_image_path' => $path]);
     }
 
     /**

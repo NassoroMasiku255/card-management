@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 class Invitation extends Model
 {
     protected $fillable = [
-        'event_id', 'guest_id', 'qr_code_data', 'qr_code_path',
+        'event_id', 'guest_id', 'qr_code_data', 'qr_code_path', 'card_image_path',
         'send_status', 'sent_at', 'rsvp_status', 'rsvp_responded_at',
         'attendance_status', 'checked_in_at', 'whatsapp_message_id',
     ];
@@ -39,6 +39,11 @@ class Invitation extends Model
     public function latestWhatsAppMessage(): HasOne
     {
         return $this->hasOne(WhatsAppMessage::class)->latestOfMany('id');
+    }
+
+    public function getCardImageUrlAttribute(): ?string
+    {
+        return $this->card_image_path ? asset('storage/'.$this->card_image_path) : null;
     }
 
     public function markAsSent(?string $messageId = null): void

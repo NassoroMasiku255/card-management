@@ -72,9 +72,10 @@ class WhatsAppService
         $guest = $invitation->guest;
         $event = $invitation->event;
 
-        $imageUrl = $event->cover_image
-            ? asset('storage/'.$event->cover_image)
-            : $this->defaultImageUrl;
+        $imageUrl = $invitation->card_image_url
+            ?: ($event->cover_image
+                ? asset('storage/'.$event->cover_image)
+                : $this->defaultImageUrl);
 
         $template = $templateName ?? $this->templateName;
 
