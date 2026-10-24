@@ -12,7 +12,13 @@ class EventController extends Controller
 {
     public function index()
     {
-        $events = Auth::user()->events()->withCount('guests', 'invitations')->latest()->get();
+        $user = Auth::user();
+
+        $events = ($user->isAdmin() ? Event::query()->with('user') : $user->events())
+            ->withCount('guests', 'invitations')
+            ->latest()
+            ->get();
+
         return view('events.index', compact('events'));
     }
 

@@ -83,6 +83,7 @@ class WhatsAppService
             ['type' => 'text', 'text' => $guest->full_name],
             ['type' => 'text', 'text' => $guest->unique_id],
             ['type' => 'text', 'text' => $event->event_date->format('M d, Y')],
+            ['type' => 'text', 'text' => route('invitation.public', $invitation->qr_code_data)],
         ];
 
         return $this->sendTemplateMessage(

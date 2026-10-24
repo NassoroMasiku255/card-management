@@ -12,7 +12,9 @@ abstract class Controller
      */
     protected function authorizeEvent(Event $event): void
     {
-        if ($event->user_id !== Auth::id()) {
+        $user = Auth::user();
+
+        if (! $user || (! $user->isAdmin() && $event->user_id !== $user->id)) {
             abort(403, 'Unauthorized');
         }
     }

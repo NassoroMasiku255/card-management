@@ -4,11 +4,14 @@ namespace App\Http\Controllers;
 
 use App\Models\WebhookLog;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class WebhookLogController extends Controller
 {
     public function index(Request $request)
     {
+        $this->authorizeAdmin();
+
         $query = WebhookLog::query()->latest();
 
         if ($type = $request->input('type')) {
@@ -46,6 +49,13 @@ class WebhookLogController extends Controller
 
     public function show(WebhookLog $webhookLog)
     {
+        $this->authorizeAdmin();
+
         return view('webhook-logs.show', compact('webhookLog'));
+    }
+
+    private function authorizeAdmin(): void
+    {
+        abort_unless(Auth::user()?->isAdmin(), 403, 'Administrator access required.');
     }
 }

@@ -259,7 +259,8 @@
                     <input type="text" name="template_name" id="templateName" required value="{{ config('services.whatsapp.template_name') }}"
                         placeholder="e.g. wedding_reminder" class="input-field">
                     <p class="text-[10px] text-surface-400 mt-1" id="templateHint">
-                        Must match the template name in your Meta WhatsApp Business Manager.
+                        Must match the template name in your Meta WhatsApp Business Manager. Invitation templates need
+                        4 body parameters: guest name, guest ID, event date and public invitation link.
                     </p>
                     <p id="reminderHint" class="text-[10px] text-surface-400 mt-1 hidden">
                         Reminder body: guest name, contribution amount, event name and the payment details configured in

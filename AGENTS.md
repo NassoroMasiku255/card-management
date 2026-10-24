@@ -43,6 +43,8 @@ php artisan serve --port=8000
 - `/events/{id}/guests` - Guest management with import/export
 - `/events/{id}/invitations` - WhatsApp invitation management
 - `/events/{id}/scanner` - QR code scanner for check-in
+- `/invitation/{qrCode}` - Public guest invitation page with RSVP and card download
+- `/admin/users` - Admin-only user and event-access management
 - `/webhook/whatsapp` - WhatsApp webhook endpoint
 
 ## Database Schema
@@ -58,9 +60,15 @@ Set these in `.env`:
 WHATSAPP_API_URL=https://graph.facebook.com/v17.0
 WHATSAPP_PHONE_NUMBER_ID=your_phone_number_id
 WHATSAPP_ACCESS_TOKEN=your_access_token
+WHATSAPP_TEMPLATE_NAME=your_template_name
+WHATSAPP_INVITATION_TEMPLATES=your_template_name,your_premium_template
 WHATSAPP_WEBHOOK_VERIFY_TOKEN=your_webhook_verify_token
 WHATSAPP_APP_SECRET=your_meta_app_secret
 ```
+The invitation template must have four body parameters in this order:
+guest name, guest ID, event date, and public invitation link. `WHATSAPP_INVITATION_TEMPLATES`
+is an optional comma-separated list shown in the invitation send dialog.
+
 The verify token is only used for the GET handshake. `WHATSAPP_APP_SECRET`
 (Meta App Dashboard → Settings → Basic) is what validates the
 `X-Hub-Signature-256` header on incoming POSTs.

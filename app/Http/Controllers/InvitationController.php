@@ -79,10 +79,12 @@ class InvitationController extends Controller
             return $this->ineligibleInvitationResponse($request, $invitation->guest);
         }
 
+        $request->validate(['template_name' => 'nullable|string|max:255']);
+
         $this->validateCardImage($request);
         $this->storeCardImage($request, $event, $invitation);
 
-        $success = $this->whatsapp->sendInvitation($invitation);
+        $success = $this->whatsapp->sendInvitation($invitation, $request->filled('template_name') ? $request->string('template_name')->toString() : null);
 
         $message = $success
             ? "Invitation sent to {$invitation->guest->full_name}!"
@@ -150,12 +152,14 @@ class InvitationController extends Controller
             return $this->ineligibleInvitationResponse($request, $invitation->guest);
         }
 
+        $request->validate(['template_name' => 'nullable|string|max:255']);
+
         $this->validateCardImage($request);
         $this->storeCardImage($request, $event, $invitation);
 
         $invitation->update(['send_status' => 'pending']);
 
-        $success = $this->whatsapp->sendInvitation($invitation);
+        $success = $this->whatsapp->sendInvitation($invitation, $request->filled('template_name') ? $request->string('template_name')->toString() : null);
 
         $message = $success
             ? "Invitation resent to {$invitation->guest->full_name}!"

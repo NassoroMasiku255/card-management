@@ -19,6 +19,7 @@ class DatabaseSeeder extends Seeder
             'name' => 'Admin User',
             'email' => 'admin@cardms.com',
             'password' => bcrypt('password123'),
+            'is_admin' => true,
         ]);
     }
 }

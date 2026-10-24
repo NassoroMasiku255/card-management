@@ -165,6 +165,11 @@
                             <a href="{{ route('events.invitations.card', [$event, $invitation->guest]) }}" target="_blank" class="text-blue-600 hover:text-blue-700 text-sm" title="View generated card">
                                 <i class="fas fa-id-card"></i>
                             </a>
+                            <button type="button" class="copy-public-link-btn text-surface-500 hover:text-surface-700 text-sm"
+                                data-public-url="{{ route('invitation.public', $invitation->qr_code_data) }}"
+                                title="Copy public invitation link">
+                                <i class="fas fa-link"></i>
+                            </button>
                             @if($invitation->send_status === 'pending')
                             <button type="button" class="prepare-invitation-btn text-green-600 hover:text-green-700 text-sm font-medium"
                                 data-invitation-id="{{ $invitation->id }}"
@@ -173,6 +178,7 @@
                                 data-phone="{{ $invitation->guest->phone_number }}"
                                 data-action-url="{{ route('events.invitations.send', [$event, $invitation]) }}"
                                 data-card-image-url="{{ $invitation->card_image_url }}"
+                                data-public-url="{{ route('invitation.public', $invitation->qr_code_data) }}"
                                 title="Upload a card, preview, and send">
                                 <i class="fas fa-upload mr-1"></i> <span>Send</span>
                             </button>
@@ -184,6 +190,7 @@
                                 data-phone="{{ $invitation->guest->phone_number }}"
                                 data-action-url="{{ route('events.invitations.resend', [$event, $invitation]) }}"
                                 data-card-image-url="{{ $invitation->card_image_url }}"
+                                data-public-url="{{ route('invitation.public', $invitation->qr_code_data) }}"
                                 title="Upload a card, preview, and retry">
                                 <i class="fas fa-rotate-right mr-1"></i> <span>Retry</span>
                             </button>
@@ -225,6 +232,40 @@
                     <div class="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs text-surface-400">
                         <span id="invitationGuestPhone"></span>
                         <span id="invitationGuestId"></span>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="invitationTemplateInput" class="block text-sm font-medium text-surface-700 mb-1">
+                            WhatsApp template
+                        </label>
+                        <input type="text" name="template_name" id="invitationTemplateInput"
+                            list="invitationTemplateOptions"
+                            value="{{ config('services.whatsapp.template_name') }}"
+                            class="input-field" placeholder="e.g. wedding_invitation">
+                        <datalist id="invitationTemplateOptions">
+                            @foreach(config('services.whatsapp.invitation_templates', []) as $template)
+                            <option value="{{ $template }}"></option>
+                            @endforeach
+                        </datalist>
+                        <p class="text-[10px] text-surface-400 mt-1">
+                            Your approved template must contain 4 body parameters: guest name, guest ID, event date, and public invitation link.
+                        </p>
+                    </div>
+                    <div>
+                        <label for="invitationPublicUrl" class="block text-sm font-medium text-surface-700 mb-1">
+                            Public invitation link
+                        </label>
+                        <div class="flex gap-2">
+                            <input type="text" id="invitationPublicUrl" readonly class="input-field text-[11px]">
+                            <button type="button" onclick="copyInvitationLink()" class="btn btn-outline shrink-0" title="Copy link">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                        </div>
+                        <p class="text-[10px] text-surface-400 mt-1">
+                            Share this link by SMS too. It opens the guest invitation and card download.
+                        </p>
                     </div>
                 </div>
 
@@ -321,6 +362,7 @@ const invitationPreviewData = {
     coverImageUrl: @json($event->cover_image ? asset('storage/'.$event->cover_image) : config('services.whatsapp.default_image_url')),
     templateName: @json(config('services.whatsapp.template_name')),
     pendingUrl: @json(route('events.invitations.pending', $event)),
+    publicUrl: null,
 };
 
 let activeInvitation = null;
@@ -425,6 +467,8 @@ function invitationPreviewText(guestName, guestUniqueId) {
     lines.push('Venue: ' + invitationPreviewData.location + (invitationPreviewData.hall ? ' - ' + invitationPreviewData.hall : ''));
     lines.push('Guest ID: ' + guestUniqueId);
     lines.push('');
+    lines.push('Your invitation: ' + invitationPreviewData.publicUrl);
+    lines.push('');
     lines.push('Please present your QR code at the entrance.');
 
     return lines.join('\n');
@@ -476,9 +520,14 @@ function openInvitationModal(button) {
         phone: button.dataset.phone,
         actionUrl: button.dataset.actionUrl,
         cardImageUrl: button.dataset.cardImageUrl || null,
+        publicUrl: button.dataset.publicUrl || '',
     };
 
+    invitationPreviewData.publicUrl = activeInvitation.publicUrl;
+
     document.getElementById('invitationForm').action = activeInvitation.actionUrl;
+    document.getElementById('invitationTemplateInput').value = invitationPreviewData.templateName;
+    document.getElementById('invitationPublicUrl').value = activeInvitation.publicUrl;
     document.getElementById('invitationGuestName').textContent = activeInvitation.guestName;
     document.getElementById('invitationGuestPhone').textContent = activeInvitation.phone || 'No phone';
     document.getElementById('invitationGuestId').textContent = activeInvitation.guestUniqueId;
@@ -508,6 +557,10 @@ function closeInvitationModal() {
     document.body.style.overflow = 'auto';
     resetInvitationModalState();
 }
+
+document.getElementById('invitationTemplateInput')?.addEventListener('input', function () {
+    document.getElementById('invitationTemplateName').textContent = 'Template: ' + (this.value.trim() || invitationPreviewData.templateName);
+});
 
 document.getElementById('invitationCardInput')?.addEventListener('change', function (event) {
     const file = event.target.files[0];
@@ -587,7 +640,40 @@ document.getElementById('invitationForm')?.addEventListener('submit', async func
     }
 });
 
+function copyInvitationLink() {
+    copyTextToClipboard(document.getElementById('invitationPublicUrl').value);
+}
+
+async function copyTextToClipboard(value) {
+    if (!value) return;
+
+    try {
+        if (navigator.clipboard && window.isSecureContext) {
+            await navigator.clipboard.writeText(value);
+        } else {
+            const input = document.createElement('textarea');
+            input.value = value;
+            input.style.position = 'fixed';
+            input.style.opacity = '0';
+            document.body.appendChild(input);
+            input.select();
+            document.execCommand('copy');
+            document.body.removeChild(input);
+        }
+
+        showInvitationToast('Invitation link copied.', 'success');
+    } catch (error) {
+        window.prompt('Copy this invitation link:', value);
+    }
+}
+
 document.querySelector('tbody')?.addEventListener('click', function (event) {
+    const copyButton = event.target.closest('.copy-public-link-btn');
+    if (copyButton) {
+        copyTextToClipboard(copyButton.dataset.publicUrl);
+        return;
+    }
+
     const button = event.target.closest('.prepare-invitation-btn');
     if (!button) return;
     openInvitationModal(button);

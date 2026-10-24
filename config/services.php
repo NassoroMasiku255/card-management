@@ -42,6 +42,10 @@ return [
         'webhook_verify_token' => env('WHATSAPP_WEBHOOK_VERIFY_TOKEN'),
         'app_secret' => env('WHATSAPP_APP_SECRET'),
         'template_name' => env('WHATSAPP_TEMPLATE_NAME', 'wedding_invitation'),
+        'invitation_templates' => array_values(array_filter(array_map('trim', explode(',', env(
+            'WHATSAPP_INVITATION_TEMPLATES',
+            env('WHATSAPP_TEMPLATE_NAME', 'wedding_invitation')
+        ))))),
         'template_language' => env('WHATSAPP_TEMPLATE_LANGUAGE', 'en_US'),
         'default_image_url' => env('WHATSAPP_DEFAULT_IMAGE_URL'),
 

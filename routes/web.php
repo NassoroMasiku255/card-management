@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AdminUserController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EventController;
@@ -7,6 +8,7 @@ use App\Http\Controllers\EventReportController;
 use App\Http\Controllers\GuestController;
 use App\Http\Controllers\GuestPaymentController;
 use App\Http\Controllers\InvitationController;
+use App\Http\Controllers\PublicInvitationController;
 use App\Http\Controllers\ScannerController;
 use App\Http\Controllers\WebhookLogController;
 use App\Http\Controllers\WhatsAppWebhookController;
@@ -27,6 +29,11 @@ Route::middleware('guest')->group(function () {
 
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout')->middleware('auth');
 
+// Public guest invitation page (shared via WhatsApp or SMS)
+Route::get('/invitation/{qrCode}', [PublicInvitationController::class, 'show'])->name('invitation.public');
+Route::get('/invitation/{qrCode}/card', [PublicInvitationController::class, 'card'])->name('invitation.public.card');
+Route::post('/invitation/{qrCode}/rsvp', [PublicInvitationController::class, 'rsvp'])->name('invitation.public.rsvp');
+
 // WhatsApp Cloud API webhook: one public endpoint handling both
 // the GET verification handshake and POST event delivery.
 Route::match(['get', 'post'], '/webhook/whatsapp', WhatsAppWebhookController::class)
@@ -36,6 +43,15 @@ Route::match(['get', 'post'], '/webhook/whatsapp', WhatsAppWebhookController::cl
 // Authenticated routes
 Route::middleware('auth')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+    // Admin user and event access management
+    Route::prefix('admin/users')->name('admin.users.')->group(function () {
+        Route::get('/', [AdminUserController::class, 'index'])->name('index');
+        Route::get('/create', [AdminUserController::class, 'create'])->name('create');
+        Route::post('/', [AdminUserController::class, 'store'])->name('store');
+        Route::get('/{user}/edit', [AdminUserController::class, 'edit'])->name('edit');
+        Route::put('/{user}', [AdminUserController::class, 'update'])->name('update');
+    });
 
     // Events
     Route::resource('events', EventController::class);

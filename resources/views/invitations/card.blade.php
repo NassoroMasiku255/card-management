@@ -4,12 +4,14 @@
     $fg = $event->card_text_color ?: '#333333';
     $accent = $event->card_accent_color ?: '#d4af37';
     $invitationCardType = $event->cardTypeForAmount((float) $guest->paid_amount);
+    $backUrl = $backUrl ?? route('events.invitations.index', $event);
 @endphp
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
     <title>Invitation Card - {{ $guest->full_name }}</title>
     @include('partials.head-assets')
     <style>
@@ -23,11 +25,14 @@
 </head>
 <body class="bg-surface-100 min-h-screen flex items-center justify-center p-4 md:p-8">
 
-    <div class="no-print fixed top-4 right-4 flex gap-2 z-20">
-        <button onclick="window.print()" class="btn btn-primary btn-sm shadow-soft-lg">
+    <div class="no-print fixed top-4 right-4 flex flex-wrap gap-2 z-20">
+        <button type="button" id="download-card-btn" onclick="downloadCard()" class="btn btn-primary btn-sm shadow-soft-lg">
+            <i class="fas fa-download"></i> Download PNG
+        </button>
+        <button type="button" onclick="window.print()" class="btn btn-outline btn-sm shadow-soft-lg bg-white">
             <i class="fas fa-print"></i> Print
         </button>
-        <a href="{{ route('events.invitations.index', $event) }}" class="btn btn-outline btn-sm shadow-soft-lg bg-white">
+        <a href="{{ $backUrl }}" class="btn btn-outline btn-sm shadow-soft-lg bg-white">
             <i class="fas fa-arrow-left"></i> Back
         </a>
     </div>
@@ -378,6 +383,49 @@
                 correctLevel: QRCode.CorrectLevel.H
             });
         });
+
+        loadScriptWithFallback([
+            'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js',
+            'https://unpkg.com/html2canvas@1.4.1/dist/html2canvas.min.js',
+            'https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js'
+        ]);
+
+        async function downloadCard() {
+            const target = document.querySelector('.card-container');
+            const button = document.getElementById('download-card-btn');
+
+            if (!target) {
+                return;
+            }
+
+            if (typeof html2canvas === 'undefined') {
+                window.alert('The image generator is still loading. Please try again in a moment.');
+                return;
+            }
+
+            const originalLabel = button.innerHTML;
+            button.disabled = true;
+            button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Preparing...';
+
+            try {
+                const canvas = await html2canvas(target, {
+                    scale: 2,
+                    backgroundColor: null,
+                    useCORS: true,
+                    logging: false
+                });
+
+                const link = document.createElement('a');
+                link.download = 'invitation-{{ \Illuminate\Support\Str::slug($guest->full_name) }}.png';
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            } catch (error) {
+                window.alert('Could not generate the image. Please use Print instead.');
+            } finally {
+                button.disabled = false;
+                button.innerHTML = originalLabel;
+            }
+        }
     </script>
 </body>
 </html>
