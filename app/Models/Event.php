@@ -9,14 +9,21 @@ use Illuminate\Support\Str;
 
 class Event extends Model
 {
+    public const DEFAULT_SINGLE_CARD_MINIMUM = 70000;
+
+    public const DEFAULT_DOUBLE_CARD_MINIMUM = 100000;
+
     protected $fillable = [
         'user_id', 'name', 'slug', 'event_date', 'event_time', 'location',
         'hall', 'description', 'card_template', 'card_background_color',
-        'card_text_color', 'card_accent_color', 'cover_image', 'status',
+        'card_text_color', 'card_accent_color', 'single_card_min_amount',
+        'double_card_min_amount', 'cover_image', 'status',
     ];
 
     protected $casts = [
         'event_date' => 'date',
+        'single_card_min_amount' => 'decimal:2',
+        'double_card_min_amount' => 'decimal:2',
     ];
 
     protected static function boot()
@@ -88,5 +95,29 @@ class Event extends Model
     public function getTotalGuestsAttribute(): int
     {
         return $this->guests()->count();
+    }
+
+    public function getSingleCardMinimumAttribute(): float
+    {
+        $amount = (float) ($this->single_card_min_amount ?? 0);
+
+        return $amount > 0 ? $amount : self::DEFAULT_SINGLE_CARD_MINIMUM;
+    }
+
+    public function getDoubleCardMinimumAttribute(): float
+    {
+        $amount = (float) ($this->double_card_min_amount ?? 0);
+
+        return $amount > 0 ? $amount : self::DEFAULT_DOUBLE_CARD_MINIMUM;
+    }
+
+    public function cardTypeForAmount(float $amount): string
+    {
+        return $amount >= $this->double_card_minimum ? 'double' : 'single';
+    }
+
+    public function paidAmountQualifiesForInvitation(float $paidAmount): bool
+    {
+        return $paidAmount > 0 && $paidAmount >= $this->single_card_minimum;
     }
 }

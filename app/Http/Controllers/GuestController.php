@@ -28,7 +28,14 @@ class GuestController extends Controller
         }
 
         if ($cardType = $request->input('card_type')) {
-            $query->where('card_type', $cardType);
+            if ($cardType === 'double') {
+                $query->where('amount_contributed', '>=', $event->double_card_minimum);
+            } elseif ($cardType === 'single') {
+                $query->where(function ($q) use ($event) {
+                    $q->whereNull('amount_contributed')
+                        ->orWhere('amount_contributed', '<', $event->double_card_minimum);
+                });
+            }
         }
 
         if ($rsvp = $request->input('rsvp')) {
@@ -82,12 +89,12 @@ class GuestController extends Controller
 
         $headers = ['Unique ID', 'Full Name', 'Phone Number', 'Card Type', 'Pledged Amount', 'Amount Paid', 'Balance', 'Payment Status', 'Last Payment At', 'Category', 'Table', 'RSVP Status', 'Send Status', 'Last Message Type', 'Last Message Status', 'Last Message At', 'Attendance'];
 
-        $rows = $guests->map(function ($guest) {
+        $rows = $guests->map(function ($guest) use ($event) {
             return [
                 $guest->unique_id,
                 $guest->full_name,
                 $guest->phone_number,
-                $guest->card_type,
+                $event->cardTypeForAmount((float) $guest->amount_contributed),
                 $guest->amount_contributed,
                 $guest->paid_amount,
                 $guest->balance,
@@ -131,7 +138,6 @@ class GuestController extends Controller
             'full_name' => 'required|string|max:255',
             'phone_number' => 'required|string|max:20',
             'amount_contributed' => 'nullable|numeric|min:0',
-            'card_type' => 'required|in:single,double',
             'email' => 'nullable|email',
             'table_number' => 'nullable|string|max:50',
             'category' => 'nullable|string|max:100',
@@ -139,6 +145,7 @@ class GuestController extends Controller
         ]);
 
         $validated['event_id'] = $event->id;
+        $validated['card_type'] = $event->cardTypeForAmount((float) ($validated['amount_contributed'] ?? 0));
         $guest = Guest::create($validated);
 
         Invitation::create([
@@ -176,13 +183,13 @@ class GuestController extends Controller
             'full_name' => 'required|string|max:255',
             'phone_number' => 'required|string|max:20',
             'amount_contributed' => 'nullable|numeric|min:0',
-            'card_type' => 'required|in:single,double',
             'email' => 'nullable|email',
             'table_number' => 'nullable|string|max:50',
             'category' => 'nullable|string|max:100',
             'notes' => 'nullable|string',
         ]);
 
+        $validated['card_type'] = $event->cardTypeForAmount((float) ($validated['amount_contributed'] ?? 0));
         $guest->update($validated);
 
         return redirect()->route('events.guests.index', $event)->with('success', 'Guest updated successfully!');

@@ -78,6 +78,7 @@ class InvitationCardTest extends TestCase
             'event_id' => $event->id,
             'full_name' => 'Alpha Guest',
             'phone_number' => '0767654321',
+            'paid_amount' => 100000,
         ]);
 
         Invitation::create([
@@ -90,6 +91,7 @@ class InvitationCardTest extends TestCase
             'event_id' => $event->id,
             'full_name' => 'Middle Guest',
             'phone_number' => '0755123456',
+            'paid_amount' => 100000,
         ]);
 
         Invitation::create([
@@ -141,6 +143,7 @@ class InvitationCardTest extends TestCase
             'event_id' => $event->id,
             'full_name' => $guestName,
             'phone_number' => '0712345678',
+            'paid_amount' => 100000,
         ]);
 
         $invitation = Invitation::create([

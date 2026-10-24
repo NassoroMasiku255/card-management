@@ -130,8 +130,9 @@
                     </td>
                     <td class="px-6 py-3 text-sm text-surface-600">{{ $guest->phone_number }}</td>
                     <td class="px-6 py-3">
-                        <span class="badge {{ $guest->card_type === 'double' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700' }}">
-                            {{ ucfirst($guest->card_type) }}
+                        @php($pledgedCardType = $event->cardTypeForAmount((float) $guest->amount_contributed))
+                        <span class="badge {{ $pledgedCardType === 'double' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700' }}">
+                            {{ ucfirst($pledgedCardType) }}
                         </span>
                     </td>
                     <td class="px-6 py-3 text-sm">

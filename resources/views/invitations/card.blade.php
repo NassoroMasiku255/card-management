@@ -3,6 +3,7 @@
     $bg = $event->card_background_color ?: '#ffffff';
     $fg = $event->card_text_color ?: '#333333';
     $accent = $event->card_accent_color ?: '#d4af37';
+    $invitationCardType = $event->cardTypeForAmount((float) $guest->paid_amount);
 @endphp
 <!DOCTYPE html>
 <html lang="en">
@@ -50,7 +51,7 @@
             <div class="py-2">
                 <div class="text-xs opacity-70 mb-1 tracking-wide">Dear</div>
                 <div class="font-display text-xl font-semibold">{{ $guest->full_name }}</div>
-                <div class="text-xs mt-1 opacity-60">{{ $guest->card_type === 'double' ? 'Couple Invitation' : 'Single Invitation' }}</div>
+                <div class="text-xs mt-1 opacity-60">{{ $invitationCardType === 'double' ? 'Couple Invitation' : 'Single Invitation' }}</div>
             </div>
 
             <div class="flex items-center justify-center gap-3 py-1" style="color: {{ $accent }};">
@@ -113,7 +114,7 @@
             <div>
                 <div class="text-xs opacity-50 mb-1">Guest</div>
                 <div class="text-lg font-semibold">{{ $guest->full_name }}</div>
-                <div class="text-xs mt-0.5 opacity-50">{{ $guest->card_type === 'double' ? 'Couple Invitation' : 'Single Invitation' }}</div>
+                <div class="text-xs mt-0.5 opacity-50">{{ $invitationCardType === 'double' ? 'Couple Invitation' : 'Single Invitation' }}</div>
             </div>
 
             <div class="grid grid-cols-2 gap-4 border-t pt-5" style="border-color: {{ $accent }}22;">
@@ -190,7 +191,7 @@
             <div class="py-2">
                 <div class="text-sm opacity-70 mb-1">Dear</div>
                 <div class="font-display text-xl font-semibold">{{ $guest->full_name }}</div>
-                <div class="text-xs mt-1 opacity-60">{{ $guest->card_type === 'double' ? 'Couple Invitation' : 'Single Invitation' }}</div>
+                <div class="text-xs mt-1 opacity-60">{{ $invitationCardType === 'double' ? 'Couple Invitation' : 'Single Invitation' }}</div>
             </div>
 
             <div class="rounded-2xl py-4 space-y-2" style="background: {{ $accent }}0f;">
@@ -255,7 +256,7 @@
             <div class="py-2">
                 <div class="text-sm opacity-70 mb-1">Dear</div>
                 <div class="font-display text-xl font-semibold">{{ $guest->full_name }}</div>
-                <div class="text-xs mt-1 opacity-60">{{ $guest->card_type === 'double' ? 'Couple Invitation' : 'Single Invitation' }}</div>
+                <div class="text-xs mt-1 opacity-60">{{ $invitationCardType === 'double' ? 'Couple Invitation' : 'Single Invitation' }}</div>
             </div>
 
             <div class="border-t border-b py-4 space-y-2" style="border-color: {{ $accent }}44;">
@@ -322,7 +323,7 @@
             <div class="py-2">
                 <div class="text-sm opacity-70 mb-1">Dear</div>
                 <div class="font-display text-xl font-semibold">{{ $guest->full_name }}</div>
-                <div class="text-xs mt-1 opacity-60">{{ $guest->card_type === 'double' ? 'Couple Invitation' : 'Single Invitation' }}</div>
+                <div class="text-xs mt-1 opacity-60">{{ $invitationCardType === 'double' ? 'Couple Invitation' : 'Single Invitation' }}</div>
             </div>
 
             <div class="py-4 space-y-2" style="border-top: 1px dashed {{ $accent }}66; border-bottom: 1px dashed {{ $accent }}66;">

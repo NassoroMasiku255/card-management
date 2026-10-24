@@ -38,17 +38,11 @@
                 </div>
 
                 <div>
-                    <label class="label-field">Card Type *</label>
-                    <select name="card_type" class="input-field">
-                        <option value="single" {{ old('card_type') === 'single' ? 'selected' : '' }}>Single</option>
-                        <option value="double" {{ old('card_type') === 'double' ? 'selected' : '' }}>Double (Couple)</option>
-                    </select>
-                </div>
-
-                <div>
                     <label class="label-field">Pledged Amount (TZS)</label>
                     <input type="number" name="amount_contributed" value="{{ old('amount_contributed', 0) }}" min="0" class="input-field">
-                    <p class="text-xs text-surface-400 mt-1">The amount this guest pledged or is expected to contribute.</p>
+                    <p class="text-xs text-surface-400 mt-1">
+                        Card type is based on this pledged amount: Double from {{ number_format($event->double_card_minimum) }} TZS, otherwise Single.
+                    </p>
                 </div>
 
                 <div>

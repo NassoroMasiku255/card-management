@@ -66,15 +66,16 @@ class ExcelImportService
                 }
 
                 $paidAmount = $this->parseAmount($row['amount_paid'] ?? 0);
+                $pledgedAmount = $this->parseAmount($row['amount_contributed'] ?? 0);
 
                 $guest = Guest::create([
                     'event_id' => $event->id,
                     'full_name' => $fullName,
                     'phone_number' => $phoneNumber,
-                    'amount_contributed' => $this->parseAmount($row['amount_contributed'] ?? 0),
+                    'amount_contributed' => $pledgedAmount,
                     'paid_amount' => $paidAmount,
                     'last_payment_at' => $paidAmount > 0 ? now() : null,
-                    'card_type' => in_array(strtolower($row['card_type'] ?? ''), ['double', 'couple']) ? 'double' : 'single',
+                    'card_type' => $event->cardTypeForAmount($pledgedAmount),
                     'email' => trim($row['email'] ?? ''),
                     'table_number' => trim($row['table_number'] ?? ''),
                     'category' => trim($row['category'] ?? ''),

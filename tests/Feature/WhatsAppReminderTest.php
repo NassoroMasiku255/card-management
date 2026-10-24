@@ -271,7 +271,9 @@ class WhatsAppReminderTest extends TestCase
             ->get(route('events.invitations.index', $invitation->event))
             ->assertOk()
             ->assertSee('Accepted')
-            ->assertDontSee('Delivered');
+            ->assertViewHas('invitations', function ($invitations) {
+                return $invitations->first()->latestInvitationMessage?->status === WhatsAppMessage::STATUS_ACCEPTED;
+            });
     }
 
     public function test_failed_webhook_stores_the_error_details(): void
@@ -359,6 +361,7 @@ class WhatsAppReminderTest extends TestCase
             'full_name' => 'Jane Doe',
             'phone_number' => '0712345678',
             'amount_contributed' => 200000,
+            'paid_amount' => 200000,
         ]);
 
         $invitation = Invitation::create([

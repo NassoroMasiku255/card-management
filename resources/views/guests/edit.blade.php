@@ -26,16 +26,12 @@
                     <input type="text" name="phone_number" value="{{ old('phone_number', $guest->phone_number) }}" required class="input-field">
                 </div>
                 <div>
-                    <label class="label-field">Card Type *</label>
-                    <select name="card_type" class="input-field">
-                        <option value="single" {{ $guest->card_type === 'single' ? 'selected' : '' }}>Single</option>
-                        <option value="double" {{ $guest->card_type === 'double' ? 'selected' : '' }}>Double (Couple)</option>
-                    </select>
-                </div>
-                <div>
                     <label class="label-field">Pledged Amount (TZS)</label>
                     <input type="number" name="amount_contributed" value="{{ old('amount_contributed', $guest->amount_contributed) }}" min="0" class="input-field">
-                    <p class="text-xs text-surface-400 mt-1">Changing this updates the balance but does not change recorded payments.</p>
+                    <p class="text-xs text-surface-400 mt-1">
+                        Card type is based on this pledged amount: Double from {{ number_format($event->double_card_minimum) }} TZS, otherwise Single.
+                        Changing this does not change recorded payments.
+                    </p>
                 </div>
                 <div>
                     <label class="label-field">Email</label>

@@ -17,10 +17,37 @@ class InvitationController extends Controller
 {
     public function __construct(private readonly WhatsAppService $whatsapp) {}
 
-    public function index(Event $event)
+    public function index(Request $request, Event $event)
     {
         $this->authorizeEvent($event);
-        $invitations = $event->invitations()->with(['guest', 'latestInvitationMessage'])->orderBy('id')->paginate(25);
+
+        $query = $event->invitations()
+            ->with(['guest', 'latestInvitationMessage'])
+            ->whereHas('guest', fn ($query) => $this->applyInvitationEligibility($query, $event));
+
+        if ($search = trim((string) $request->input('search'))) {
+            $query->whereHas('guest', function ($guest) use ($search) {
+                $guest->where(function ($q) use ($search) {
+                    $q->where('full_name', 'like', "%{$search}%")
+                        ->orWhere('phone_number', 'like', "%{$search}%")
+                        ->orWhere('unique_id', 'like', "%{$search}%");
+                });
+            });
+        }
+
+        if (in_array($sendStatus = $request->input('send_status'), ['pending', 'sent', 'failed', 'delivered'], true)) {
+            $query->where('send_status', $sendStatus);
+        }
+
+        if (in_array($rsvp = $request->input('rsvp'), ['pending', 'attending', 'not_attending'], true)) {
+            $query->where('rsvp_status', $rsvp);
+        }
+
+        $invitations = $query
+            ->orderBy(Guest::select('full_name')->whereColumn('guests.id', 'invitations.guest_id'))
+            ->orderBy('invitations.id')
+            ->paginate(25)
+            ->appends($request->query());
 
         return view('invitations.index', [
             'event' => $event,
@@ -42,6 +69,7 @@ class InvitationController extends Controller
 
         $invitations = $event->invitations()
             ->where('send_status', 'pending')
+            ->whereHas('guest', fn ($query) => $this->applyInvitationEligibility($query, $event))
             ->with('guest')
             ->get()
             ->sortBy(fn ($invitation) => $invitation->guest->full_name)
@@ -61,6 +89,11 @@ class InvitationController extends Controller
     public function send(Request $request, Event $event, Invitation $invitation)
     {
         $this->authorizeEvent($event);
+
+        if (! $this->qualifiesForInvitation($invitation->guest, $event)) {
+            return $this->ineligibleInvitationResponse($request, $invitation->guest);
+        }
+
         $this->validateCardImage($request);
         $this->storeCardImage($request, $event, $invitation);
 
@@ -94,6 +127,7 @@ class InvitationController extends Controller
 
         $pendingInvitations = $event->invitations()
             ->where('send_status', 'pending')
+            ->whereHas('guest', fn ($query) => $this->applyInvitationEligibility($query, $event))
             ->with('guest')
             ->get();
 
@@ -126,6 +160,11 @@ class InvitationController extends Controller
     public function resend(Request $request, Event $event, Invitation $invitation)
     {
         $this->authorizeEvent($event);
+
+        if (! $this->qualifiesForInvitation($invitation->guest, $event)) {
+            return $this->ineligibleInvitationResponse($request, $invitation->guest);
+        }
+
         $this->validateCardImage($request);
         $this->storeCardImage($request, $event, $invitation);
 
@@ -154,6 +193,10 @@ class InvitationController extends Controller
             'template_name' => 'required|string',
             'message_type' => 'required|string|in:reminder,invitation,other',
         ]);
+
+        if ($request->message_type === 'invitation' && ! $this->qualifiesForInvitation($guest, $event)) {
+            return $this->ineligibleInvitationResponse($request, $guest);
+        }
 
         $invitation = $guest->invitation;
 
@@ -257,6 +300,7 @@ class InvitationController extends Controller
     private function sendStats(Event $event): array
     {
         $counts = $event->invitations()
+            ->whereHas('guest', fn ($query) => $this->applyInvitationEligibility($query, $event))
             ->select('send_status', DB::raw('COUNT(*) as aggregate'))
             ->groupBy('send_status')
             ->pluck('aggregate', 'send_status');
@@ -267,5 +311,30 @@ class InvitationController extends Controller
             'pending' => (int) $counts->get('pending', 0),
             'failed' => (int) $counts->get('failed', 0),
         ];
+    }
+
+    private function qualifiesForInvitation(Guest $guest, Event $event): bool
+    {
+        return $event->paidAmountQualifiesForInvitation((float) $guest->paid_amount);
+    }
+
+    private function applyInvitationEligibility($query, Event $event): void
+    {
+        $query->where('paid_amount', '>', 0)
+            ->where('paid_amount', '>=', $event->single_card_minimum);
+    }
+
+    private function ineligibleInvitationResponse(Request $request, Guest $guest)
+    {
+        $message = "{$guest->full_name} has not paid the minimum amount required for an invitation.";
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success' => false,
+                'message' => $message,
+            ], 422);
+        }
+
+        return back()->with('error', $message);
     }
 }

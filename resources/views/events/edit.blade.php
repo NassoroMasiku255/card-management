@@ -115,6 +115,26 @@
                 </div>
             </div>
 
+            <div class="rounded-xl border border-surface-200 bg-surface-50 p-4">
+                <h3 class="font-display text-sm font-bold text-surface-800 mb-1">Invitation Card Minimums</h3>
+                <p class="text-xs text-surface-400 mb-3">
+                    Paid amounts decide whether a guest qualifies for an invitation and whether the card is Single or Double.
+                    Leave blank to use the defaults.
+                </p>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="label-field">Minimum Single Amount (TZS)</label>
+                        <input type="number" name="single_card_min_amount" value="{{ old('single_card_min_amount', $event->single_card_minimum) }}"
+                            min="1" step="0.01" class="input-field" placeholder="70000">
+                    </div>
+                    <div>
+                        <label class="label-field">Minimum Double Amount (TZS)</label>
+                        <input type="number" name="double_card_min_amount" value="{{ old('double_card_min_amount', $event->double_card_minimum) }}"
+                            min="1" step="0.01" class="input-field" placeholder="100000">
+                    </div>
+                </div>
+            </div>
+
             <div class="flex items-center justify-between pt-4">
                 <button type="button" onclick="document.getElementById('delete-event-form').requestSubmit()" class="text-red-600 hover:text-red-700 font-medium text-sm">
                     <i class="fas fa-trash mr-1"></i> Delete Event

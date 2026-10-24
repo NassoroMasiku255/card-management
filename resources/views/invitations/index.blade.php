@@ -34,6 +34,38 @@
     </div>
 </div>
 
+<div class="card-surface p-4 mb-4">
+    <form method="GET" action="{{ route('events.invitations.index', $event) }}" class="flex flex-wrap items-center gap-3"
+        data-live-filter data-loading-text="Filtering invitations...">
+        <div class="flex-1 min-w-[220px]">
+            <input type="text" name="search" value="{{ request('search') }}" placeholder="Search by name, phone, ID..."
+                class="input-field !py-2" autocomplete="off">
+        </div>
+        <select name="send_status" class="input-field !py-2 !w-auto">
+            <option value="">All Send Status</option>
+            @foreach(['pending' => 'Pending', 'sent' => 'Sent', 'failed' => 'Failed', 'delivered' => 'Delivered'] as $value => $label)
+            <option value="{{ $value }}" {{ request('send_status') === $value ? 'selected' : '' }}>{{ $label }}</option>
+            @endforeach
+        </select>
+        <select name="rsvp" class="input-field !py-2 !w-auto">
+            <option value="">All RSVP</option>
+            <option value="attending" {{ request('rsvp') === 'attending' ? 'selected' : '' }}>Nitafika</option>
+            <option value="not_attending" {{ request('rsvp') === 'not_attending' ? 'selected' : '' }}>Sitafika</option>
+            <option value="pending" {{ request('rsvp') === 'pending' ? 'selected' : '' }}>Pending</option>
+        </select>
+        <button type="submit" class="btn btn-primary btn-sm">
+            <i class="fas fa-magnifying-glass"></i> Filter
+        </button>
+        @if(request()->hasAny(['search', 'send_status', 'rsvp']))
+        <a href="{{ route('events.invitations.index', $event) }}" class="text-surface-500 hover:text-surface-700 text-sm">Clear</a>
+        @endif
+    </form>
+    <p class="mt-2 text-[11px] text-surface-400">
+        Guests appear here after they have paid at least {{ number_format($event->single_card_minimum) }} TZS.
+        Paid amounts of at least {{ number_format($event->double_card_minimum) }} TZS are shown as Double.
+    </p>
+</div>
+
 <div id="bulkInvitationProgress" class="hidden card-surface p-4 mb-4">
     <div class="flex flex-wrap items-center justify-between gap-3">
         <div>
@@ -52,7 +84,8 @@
 <div class="card-surface overflow-hidden">
     @if($invitations->isEmpty())
     <div class="px-6 py-12 text-center text-surface-400">
-        <p>No invitations yet. Add guests first.</p>
+        <p>No eligible invitations found.</p>
+        <p class="mt-1 text-xs">Guests appear here once their paid amount meets the event's single-card minimum.</p>
     </div>
     @else
     <div class="overflow-x-auto">
@@ -77,9 +110,11 @@
                     </td>
                     <td class="px-6 py-3 text-sm text-surface-600">{{ $invitation->guest->phone_number }}</td>
                     <td class="px-6 py-3" id="card-cell-{{ $invitation->id }}">
-                        <span class="badge {{ $invitation->guest->card_type === 'double' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700' }}">
-                            {{ ucfirst($invitation->guest->card_type) }}
+                        @php($paidCardType = $event->cardTypeForAmount((float) $invitation->guest->paid_amount))
+                        <span class="badge {{ $paidCardType === 'double' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700' }}">
+                            {{ ucfirst($paidCardType) }}
                         </span>
+                        <div class="text-[10px] text-surface-400 mt-1">Paid {{ number_format($invitation->guest->paid_amount) }}</div>
                         <div class="mt-2" id="card-thumb-{{ $invitation->id }}">
                             @if($invitation->card_image_path)
                             <img src="{{ $invitation->card_image_url }}" alt="Invitation card for {{ $invitation->guest->full_name }}"

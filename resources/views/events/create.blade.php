@@ -110,6 +110,27 @@
                 </div>
             </div>
 
+            <div class="rounded-xl border border-surface-200 bg-surface-50 p-4">
+                <h3 class="font-display text-sm font-bold text-surface-800 mb-1">Invitation Card Minimums</h3>
+                <p class="text-xs text-surface-400 mb-3">
+                    Paid amounts decide whether a guest qualifies for an invitation and whether the card is Single or Double.
+                    Defaults are {{ number_format(\App\Models\Event::DEFAULT_SINGLE_CARD_MINIMUM) }} and
+                    {{ number_format(\App\Models\Event::DEFAULT_DOUBLE_CARD_MINIMUM) }} TZS.
+                </p>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="label-field">Minimum Single Amount (TZS)</label>
+                        <input type="number" name="single_card_min_amount" value="{{ old('single_card_min_amount', \App\Models\Event::DEFAULT_SINGLE_CARD_MINIMUM) }}"
+                            min="1" step="0.01" class="input-field" placeholder="70000">
+                    </div>
+                    <div>
+                        <label class="label-field">Minimum Double Amount (TZS)</label>
+                        <input type="number" name="double_card_min_amount" value="{{ old('double_card_min_amount', \App\Models\Event::DEFAULT_DOUBLE_CARD_MINIMUM) }}"
+                            min="1" step="0.01" class="input-field" placeholder="100000">
+                    </div>
+                </div>
+            </div>
+
             <div>
                 <label class="label-field">Cover Image (optional)</label>
                 <input type="file" name="cover_image" accept="image/*"

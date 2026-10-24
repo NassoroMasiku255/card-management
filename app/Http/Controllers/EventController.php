@@ -35,6 +35,8 @@ class EventController extends Controller
             'card_background_color' => 'nullable|string|max:7',
             'card_text_color' => 'nullable|string|max:7',
             'card_accent_color' => 'nullable|string|max:7',
+            'single_card_min_amount' => 'nullable|numeric|min:1',
+            'double_card_min_amount' => 'nullable|numeric|min:1',
             'cover_image' => 'nullable|image|max:5120',
         ]);
 
@@ -119,6 +121,8 @@ class EventController extends Controller
             'card_background_color' => 'nullable|string|max:7',
             'card_text_color' => 'nullable|string|max:7',
             'card_accent_color' => 'nullable|string|max:7',
+            'single_card_min_amount' => 'nullable|numeric|min:1',
+            'double_card_min_amount' => 'nullable|numeric|min:1',
             'cover_image' => 'nullable|image|max:5120',
             'status' => 'nullable|in:draft,active,completed,cancelled',
         ]);
