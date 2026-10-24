@@ -21,31 +21,7 @@ class InvitationController extends Controller
     {
         $this->authorizeEvent($event);
 
-        $query = $event->invitations()
-            ->with(['guest', 'latestInvitationMessage'])
-            ->whereHas('guest', fn ($query) => $this->applyInvitationEligibility($query, $event));
-
-        if ($search = trim((string) $request->input('search'))) {
-            $query->whereHas('guest', function ($guest) use ($search) {
-                $guest->where(function ($q) use ($search) {
-                    $q->where('full_name', 'like', "%{$search}%")
-                        ->orWhere('phone_number', 'like', "%{$search}%")
-                        ->orWhere('unique_id', 'like', "%{$search}%");
-                });
-            });
-        }
-
-        if (in_array($sendStatus = $request->input('send_status'), ['pending', 'sent', 'failed', 'delivered'], true)) {
-            $query->where('send_status', $sendStatus);
-        }
-
-        if (in_array($rsvp = $request->input('rsvp'), ['pending', 'attending', 'not_attending'], true)) {
-            $query->where('rsvp_status', $rsvp);
-        }
-
-        $invitations = $query
-            ->orderBy(Guest::select('full_name')->whereColumn('guests.id', 'invitations.guest_id'))
-            ->orderBy('invitations.id')
+        $invitations = $this->filteredInvitationsQuery($request, $event)
             ->paginate(25)
             ->appends($request->query());
 
@@ -54,6 +30,15 @@ class InvitationController extends Controller
             'invitations' => $invitations,
             'stats' => $this->sendStats($event),
         ]);
+    }
+
+    public function export(Request $request, Event $event)
+    {
+        $this->authorizeEvent($event);
+
+        $invitations = $this->filteredInvitationsQuery($request, $event)->get();
+
+        return view('invitations.export', compact('event', 'invitations'));
     }
 
     public function card(Event $event, Guest $guest)
@@ -311,6 +296,35 @@ class InvitationController extends Controller
             'pending' => (int) $counts->get('pending', 0),
             'failed' => (int) $counts->get('failed', 0),
         ];
+    }
+
+    private function filteredInvitationsQuery(Request $request, Event $event)
+    {
+        $query = $event->invitations()
+            ->with(['guest', 'latestInvitationMessage'])
+            ->whereHas('guest', fn ($query) => $this->applyInvitationEligibility($query, $event));
+
+        if ($search = trim((string) $request->input('search'))) {
+            $query->whereHas('guest', function ($guest) use ($search) {
+                $guest->where(function ($q) use ($search) {
+                    $q->where('full_name', 'like', "%{$search}%")
+                        ->orWhere('phone_number', 'like', "%{$search}%")
+                        ->orWhere('unique_id', 'like', "%{$search}%");
+                });
+            });
+        }
+
+        if (in_array($sendStatus = $request->input('send_status'), ['pending', 'sent', 'failed', 'delivered'], true)) {
+            $query->where('send_status', $sendStatus);
+        }
+
+        if (in_array($rsvp = $request->input('rsvp'), ['pending', 'attending', 'not_attending'], true)) {
+            $query->where('rsvp_status', $rsvp);
+        }
+
+        return $query
+            ->orderBy(Guest::select('full_name')->whereColumn('guests.id', 'invitations.guest_id'))
+            ->orderBy('invitations.id');
     }
 
     private function qualifiesForInvitation(Guest $guest, Event $event): bool

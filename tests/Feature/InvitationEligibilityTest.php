@@ -156,6 +156,54 @@ class InvitationEligibilityTest extends TestCase
             ->assertJsonPath('invitations.0.guest_name', 'Eligible Guest');
     }
 
+    public function test_invitation_export_includes_eligible_guests_with_their_qr_barcodes(): void
+    {
+        [$user, $event] = $this->makeEvent();
+
+        [, $alpha] = $this->addGuest($event, 'Alpha Guest', 70000, invitation: [
+            'send_status' => 'sent',
+            'rsvp_status' => 'attending',
+        ]);
+        [, $zulu] = $this->addGuest($event, 'Zulu Guest', 100000);
+        $this->addGuest($event, 'Unpaid Guest', 0);
+
+        $response = $this->actingAs($user)
+            ->get(route('events.invitations.export', $event))
+            ->assertOk()
+            ->assertSee('Invitation Guest List')
+            ->assertSee('Print / Save PDF')
+            ->assertSee('Scan at entrance')
+            ->assertSee('Alpha Guest')
+            ->assertSee('Zulu Guest')
+            ->assertDontSee('Unpaid Guest')
+            ->assertSee('data-qr-code="'.$alpha->qr_code_data.'"', false)
+            ->assertSee('data-qr-code="'.$zulu->qr_code_data.'"', false);
+
+        $response->assertViewHas('invitations', function ($invitations) {
+            return $invitations->pluck('guest.full_name')->all() === ['Alpha Guest', 'Zulu Guest'];
+        });
+    }
+
+    public function test_invitation_export_respects_the_current_list_filters(): void
+    {
+        [$user, $event] = $this->makeEvent();
+
+        $this->addGuest($event, 'Sent Guest', 70000, invitation: ['send_status' => 'sent']);
+        $this->addGuest($event, 'Failed Guest', 70000, invitation: ['send_status' => 'failed']);
+        $this->addGuest($event, 'Pending Guest', 70000);
+
+        $response = $this->actingAs($user)
+            ->get(route('events.invitations.export', ['event' => $event, 'send_status' => 'failed']))
+            ->assertOk()
+            ->assertSee('Failed Guest')
+            ->assertDontSee('Sent Guest')
+            ->assertDontSee('Pending Guest');
+
+        $response->assertViewHas('invitations', function ($invitations) {
+            return $invitations->pluck('guest.full_name')->all() === ['Failed Guest'];
+        });
+    }
+
     private function makeEvent(array $attributes = []): array
     {
         $user = User::create([

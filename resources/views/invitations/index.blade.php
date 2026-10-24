@@ -9,9 +9,15 @@
     </a>
     <div class="flex flex-wrap items-center justify-between gap-3 mt-2">
         <h1 class="font-display text-2xl font-bold text-surface-900">Invitations</h1>
-        <button type="button" id="sendAllPendingBtn" class="btn btn-success">
-            <i class="fab fa-whatsapp"></i> Send All Pending
-        </button>
+        <div class="flex flex-wrap items-center gap-2">
+            <a href="{{ route('events.invitations.export', array_merge(['event' => $event], request()->query())) }}"
+                target="_blank" rel="noopener" class="btn btn-outline">
+                <i class="fas fa-file-export"></i> Export QR List
+            </a>
+            <button type="button" id="sendAllPendingBtn" class="btn btn-success">
+                <i class="fab fa-whatsapp"></i> Send All Pending
+            </button>
+        </div>
     </div>
 </div>
 

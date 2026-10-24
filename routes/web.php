@@ -60,6 +60,7 @@ Route::middleware('auth')->group(function () {
         // Invitations
         Route::get('/invitations', [InvitationController::class, 'index'])->name('invitations.index');
         Route::get('/invitations/pending', [InvitationController::class, 'pending'])->name('invitations.pending');
+        Route::get('/invitations/export', [InvitationController::class, 'export'])->name('invitations.export');
         Route::get('/invitations/{guest}/card', [InvitationController::class, 'card'])->name('invitations.card');
         Route::post('/invitations/{invitation}/send', [InvitationController::class, 'send'])->name('invitations.send');
         Route::post('/invitations/send-all', [InvitationController::class, 'sendAll'])->name('invitations.sendAll');
