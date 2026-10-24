@@ -100,10 +100,10 @@
                         @if($invitation->sent_at)
                         <div class="text-xs text-surface-400 mt-1">{{ $invitation->sent_at->format('d/m H:i') }}</div>
                         @endif
-                        @if($invitation->latestWhatsAppMessage)
+                        @if($invitation->latestInvitationMessage)
                         <div class="mt-1">
-                            <span class="badge {{ $invitation->latestWhatsAppMessage->status_badge_class }}">
-                                {{ $invitation->latestWhatsAppMessage->status_label }}
+                            <span class="badge {{ $invitation->latestInvitationMessage->status_badge_class }}">
+                                {{ $invitation->latestInvitationMessage->status_label }}
                             </span>
                         </div>
                         @endif

@@ -20,7 +20,7 @@ class InvitationController extends Controller
     public function index(Event $event)
     {
         $this->authorizeEvent($event);
-        $invitations = $event->invitations()->with(['guest', 'latestWhatsAppMessage'])->paginate(25);
+        $invitations = $event->invitations()->with(['guest', 'latestInvitationMessage'])->orderBy('id')->paginate(25);
 
         return view('invitations.index', [
             'event' => $event,
@@ -209,7 +209,7 @@ class InvitationController extends Controller
 
     private function invitationJsonResponse(Event $event, Invitation $invitation, bool $success, string $message)
     {
-        $invitation->refresh()->load('latestWhatsAppMessage');
+        $invitation->refresh()->load('latestInvitationMessage');
 
         return response()->json([
             'success' => $success,
@@ -219,9 +219,9 @@ class InvitationController extends Controller
                 'send_status' => $invitation->send_status,
                 'sent_at' => optional($invitation->sent_at)->format('d/m H:i'),
                 'card_image_url' => $invitation->card_image_url,
-                'whatsapp_status' => $invitation->latestWhatsAppMessage ? [
-                    'label' => $invitation->latestWhatsAppMessage->status_label,
-                    'badge_class' => $invitation->latestWhatsAppMessage->status_badge_class,
+                'whatsapp_status' => $invitation->latestInvitationMessage ? [
+                    'label' => $invitation->latestInvitationMessage->status_label,
+                    'badge_class' => $invitation->latestInvitationMessage->status_badge_class,
                 ] : null,
             ],
             'stats' => $this->sendStats($event),

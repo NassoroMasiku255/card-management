@@ -71,6 +71,10 @@ class WhatsAppReminderTest extends TestCase
         $this->assertSame(WhatsAppMessage::STATUS_ACCEPTED, $message->status);
         $this->assertSame($guest->id, $message->guest_id);
         $this->assertSame($invitation->id, $message->invitation_id);
+
+        $invitation->refresh();
+        $this->assertSame('pending', $invitation->send_status);
+        $this->assertNull($invitation->sent_at);
     }
 
     public function test_guest_list_message_send_returns_json_status_for_ajax(): void
@@ -128,10 +132,10 @@ class WhatsAppReminderTest extends TestCase
             'event_id' => $invitation->event_id,
             'guest_id' => $guest->id,
             'invitation_id' => $invitation->id,
-            'message_type' => 'reminder',
+            'message_type' => 'invitation',
             'to_phone' => '255712345678',
-            'template_name' => 'reminder_sw',
-            'language_code' => 'sw',
+            'template_name' => 'wedding_invitation',
+            'language_code' => 'en_US',
             'whatsapp_message_id' => 'wamid.reminder',
             'status' => WhatsAppMessage::STATUS_ACCEPTED,
         ]);
@@ -198,7 +202,7 @@ class WhatsAppReminderTest extends TestCase
             ->assertDontSee($guest->full_name);
     }
 
-    public function test_failed_webhook_stores_the_error_details(): void
+    public function test_reminder_status_webhook_does_not_change_invitation_state(): void
     {
         [$guest, $invitation] = $this->makeGuestAndInvitation();
 
@@ -207,6 +211,78 @@ class WhatsAppReminderTest extends TestCase
             'guest_id' => $guest->id,
             'invitation_id' => $invitation->id,
             'message_type' => 'reminder',
+            'to_phone' => '255712345678',
+            'whatsapp_message_id' => 'wamid.reminder-status',
+            'status' => WhatsAppMessage::STATUS_ACCEPTED,
+        ]);
+
+        $this->postSigned([
+            'object' => 'whatsapp_business_account',
+            'entry' => [[
+                'id' => '123',
+                'changes' => [[
+                    'field' => 'messages',
+                    'value' => [
+                        'messaging_product' => 'whatsapp',
+                        'statuses' => [[
+                            'id' => 'wamid.reminder-status',
+                            'status' => 'delivered',
+                            'recipient_id' => '255712345678',
+                        ]],
+                    ],
+                ]],
+            ]],
+        ])->assertOk();
+
+        $this->assertSame(WhatsAppMessage::STATUS_DELIVERED, $message->fresh()->status);
+
+        $invitation->refresh();
+        $this->assertSame('pending', $invitation->send_status);
+        $this->assertNull($invitation->whatsapp_message_id);
+    }
+
+    public function test_invitation_page_shows_invitation_status_not_reminder_status(): void
+    {
+        [$guest, $invitation] = $this->makeGuestAndInvitation();
+
+        WhatsAppMessage::create([
+            'event_id' => $invitation->event_id,
+            'guest_id' => $guest->id,
+            'invitation_id' => $invitation->id,
+            'message_type' => 'invitation',
+            'to_phone' => '255712345678',
+            'whatsapp_message_id' => 'wamid.invitation-accepted',
+            'status' => WhatsAppMessage::STATUS_ACCEPTED,
+        ]);
+
+        WhatsAppMessage::create([
+            'event_id' => $invitation->event_id,
+            'guest_id' => $guest->id,
+            'invitation_id' => $invitation->id,
+            'message_type' => 'reminder',
+            'to_phone' => '255712345678',
+            'whatsapp_message_id' => 'wamid.reminder-delivered',
+            'status' => WhatsAppMessage::STATUS_DELIVERED,
+        ]);
+
+        $invitation->update(['send_status' => 'sent', 'sent_at' => now()]);
+
+        $this->actingAs($invitation->event->user)
+            ->get(route('events.invitations.index', $invitation->event))
+            ->assertOk()
+            ->assertSee('Accepted')
+            ->assertDontSee('Delivered');
+    }
+
+    public function test_failed_webhook_stores_the_error_details(): void
+    {
+        [$guest, $invitation] = $this->makeGuestAndInvitation();
+
+        $message = WhatsAppMessage::create([
+            'event_id' => $invitation->event_id,
+            'guest_id' => $guest->id,
+            'invitation_id' => $invitation->id,
+            'message_type' => 'invitation',
             'to_phone' => '255712345678',
             'whatsapp_message_id' => 'wamid.failed',
             'status' => WhatsAppMessage::STATUS_ACCEPTED,

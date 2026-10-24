@@ -212,7 +212,7 @@ class WhatsAppService
                     'status_updated_at' => now(),
                 ]);
 
-                if ($invitation) {
+                if ($invitation && $messageType === 'invitation') {
                     $invitation->markAsSent($messageId);
                 }
 
@@ -249,7 +249,7 @@ class WhatsAppService
                 'invitation_id' => $invitation?->id,
             ]);
 
-            if ($invitation) {
+            if ($invitation && $messageType === 'invitation') {
                 $invitation->update(['send_status' => 'failed']);
             }
 
@@ -270,7 +270,7 @@ class WhatsAppService
                 'to' => $phone,
             ]);
 
-            if ($invitation) {
+            if ($invitation && $messageType === 'invitation') {
                 $invitation->update(['send_status' => 'failed']);
             }
 
@@ -363,6 +363,10 @@ class WhatsAppService
 
         if ($message && $this->shouldApplyStatus($message->status, $state)) {
             $message->applyStatus($state, $status);
+        }
+
+        if ($message && $message->message_type !== 'invitation') {
+            return;
         }
 
         $invitation = $message?->invitation

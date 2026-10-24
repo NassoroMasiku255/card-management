@@ -41,6 +41,14 @@ class Invitation extends Model
         return $this->hasOne(WhatsAppMessage::class)->latestOfMany('id');
     }
 
+    public function latestInvitationMessage(): HasOne
+    {
+        return $this->hasOne(WhatsAppMessage::class)->ofMany(
+            ['id' => 'max'],
+            fn ($query) => $query->where('message_type', 'invitation')
+        );
+    }
+
     public function getCardImageUrlAttribute(): ?string
     {
         return $this->card_image_path ? asset('storage/'.$this->card_image_path) : null;
