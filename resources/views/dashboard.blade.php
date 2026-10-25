@@ -126,8 +126,8 @@
 </div>
 
 <!-- Spotlight + quick actions -->
-<div class="mb-6 grid grid-cols-1 gap-6 xl:grid-cols-3">
-    <div class="xl:col-span-2">
+<div class="mb-6 grid grid-cols-1 items-start gap-6 xl:grid-cols-3">
+    <div class="self-start xl:col-span-2">
         @if($upcoming)
         @php
             $cover = $upcoming->cover_image ? asset('storage/'.$upcoming->cover_image) : null;
@@ -135,12 +135,12 @@
                 ? "linear-gradient(115deg, rgba(18,18,20,.94) 10%, rgba(18,18,20,.62) 58%, rgba(18,18,20,.35)), url('{$cover}')"
                 : "linear-gradient(125deg, {$upcomingAccent} 0%, #881337 58%, #18181b 100%)";
         @endphp
-        <div class="relative h-full overflow-hidden rounded-2xl p-6 text-white shadow-soft-lg sm:p-8"
+        <div class="relative overflow-hidden rounded-2xl p-6 text-white shadow-soft-lg sm:p-8"
             style="background: {{ $heroBg }}; background-size: cover; background-position: center;">
             <div class="absolute -right-12 -top-16 h-56 w-56 rounded-full bg-white/10 blur-2xl"></div>
             <div class="absolute -bottom-20 right-1/3 h-44 w-44 rounded-full bg-gold-400/20 blur-3xl"></div>
 
-            <div class="relative flex h-full flex-col">
+            <div class="relative">
                 <div class="flex flex-wrap items-start justify-between gap-3">
                     <span class="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-white/85 backdrop-blur">
                         <i class="fas fa-star text-gold-300"></i> Next up
@@ -151,7 +151,7 @@
                     </div>
                 </div>
 
-                <div class="mt-auto pt-10">
+                <div class="mt-7">
                     <h2 class="font-display text-2xl font-bold leading-tight sm:text-3xl">{{ $upcoming->name }}</h2>
                     <div class="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-white/75">
                         <span><i class="fas fa-calendar mr-1.5 text-white/50"></i>{{ $upcoming->event_date->format('l, d M Y') }}</span>

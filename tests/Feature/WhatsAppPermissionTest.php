@@ -116,8 +116,8 @@ class WhatsAppPermissionTest extends TestCase
         $this->actingAs($user)
             ->get(route('events.guests.index', $event))
             ->assertOk()
-            ->assertSee('WhatsApp sending is')
-            ->assertSee('view-only')
+            ->assertDontSee('WhatsApp sending is')
+            ->assertDontSee('view-only')
             ->assertSee('Not sent')
             ->assertDontSee('Send WhatsApp to selected')
             ->assertDontSee('Send Message');
@@ -125,7 +125,8 @@ class WhatsAppPermissionTest extends TestCase
         $this->actingAs($user)
             ->get(route('events.invitations.index', $event))
             ->assertOk()
-            ->assertSee('WhatsApp sending is')
+            ->assertDontSee('WhatsApp sending is')
+            ->assertDontSee('view-only')
             ->assertSee('Pending')
             ->assertDontSee('Send All Pending')
             ->assertDontSee('Prepare Invitation');

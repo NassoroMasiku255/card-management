@@ -29,13 +29,6 @@
     </div>
 </div>
 
-@unless($canSendWhatsApp)
-<div class="mb-4 flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-    <i class="fas fa-lock mt-0.5"></i>
-    <p>WhatsApp sending is <strong>view-only</strong> for your account. You can still add guests, record payments, edit details and see delivery statuses. Ask an administrator to grant sending permission.</p>
-</div>
-@endunless
-
 <!-- Search & Filter -->
 <div class="card-surface p-4 mb-4">
     <form method="GET" action="{{ route('events.guests.index', $event) }}" class="filter-bar"

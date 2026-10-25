@@ -44,6 +44,9 @@
             background-size: 16px 16px;
             background-blend-mode: multiply;
         }
+        .faq-item summary::-webkit-details-marker { display: none; }
+        .faq-item[open] .faq-chevron { transform: rotate(180deg); }
+        .faq-item[open] summary { color: #be123c; }
         @media (prefers-reduced-motion: reduce) {
             .float-slow, .float-slower, .reveal { animation: none !important; transition: none !important; opacity: 1 !important; transform: none !important; }
         }
@@ -342,6 +345,72 @@
             </div>
         </section>
 
+        <!-- The NiaLike difference -->
+        <section class="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8 lg:py-24">
+            <div class="mx-auto max-w-2xl text-center reveal">
+                <span class="text-xs font-bold uppercase tracking-[0.22em] text-primary-600">The NiaLike difference</span>
+                <h2 class="mt-3 font-display text-3xl font-bold text-surface-900 sm:text-4xl">Leave the paperwork behind.</h2>
+                <p class="mt-4 text-base leading-relaxed text-surface-500">The same celebration, without the missed calls, lost lists and long queues at the entrance.</p>
+            </div>
+
+            <div class="mt-12 grid gap-5 lg:grid-cols-2">
+                <div class="reveal rounded-3xl border border-red-100 bg-red-50/40 p-7 sm:p-9">
+                    <div class="flex items-center gap-3">
+                        <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-white text-red-500 shadow-soft">
+                            <i class="fas fa-box-archive"></i>
+                        </div>
+                        <div>
+                            <p class="text-xs font-bold uppercase tracking-[0.16em] text-red-400">The old way</p>
+                            <h3 class="font-display text-xl font-bold text-surface-900">Scattered and stressful</h3>
+                        </div>
+                    </div>
+                    <div class="mt-6 space-y-3.5">
+                        @foreach([
+                            'Printed invitation cards that cost money and get lost.',
+                            'Guest names spread across notebooks, chats and spreadsheets.',
+                            'Manual attendance lists and long queues at the entrance.',
+                            'Contribution balances that nobody can confirm.',
+                            'Reports assembled by hand after the event.',
+                        ] as $item)
+                        <div class="flex items-start gap-3 text-sm text-surface-500">
+                            <span class="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white text-red-400"><i class="fas fa-xmark text-[9px]"></i></span>
+                            <span>{{ $item }}</span>
+                        </div>
+                        @endforeach
+                    </div>
+                </div>
+
+                <div class="reveal relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#6d0f2a] via-[#be123c] to-[#b8932a] p-7 text-white shadow-soft-lg sm:p-9">
+                    <div class="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/10 blur-2xl"></div>
+                    <div class="relative">
+                        <div class="flex items-center gap-3">
+                            <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-white/15 text-white backdrop-blur">
+                                <i class="fas fa-heart"></i>
+                            </div>
+                            <div>
+                                <p class="text-xs font-bold uppercase tracking-[0.16em] text-white/60">With NiaLike</p>
+                                <h3 class="font-display text-xl font-bold">Connected and calm</h3>
+                            </div>
+                        </div>
+                        <div class="mt-6 space-y-3.5">
+                            @foreach([
+                                'One beautiful digital card delivered directly on WhatsApp.',
+                                'Every guest, phone number and category in one clean list.',
+                                'Unique QR codes scanned at the door in seconds.',
+                                'Pledges, payments and outstanding balances in real time.',
+                                'Reports ready the moment you need them — no manual work.',
+                            ] as $item)
+                            <div class="flex items-start gap-3 text-sm text-white/80">
+                                <span class="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white/15 text-gold-200"><i class="fas fa-check text-[9px]"></i></span>
+                                <span>{{ $item }}</span>
+                            </div>
+                            @endforeach
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
         <!-- What you can do inside -->
         <section id="inside" class="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8 lg:py-28">
             <div class="grid items-center gap-12 lg:grid-cols-2 lg:gap-20">
@@ -449,6 +518,95 @@
             </div>
         </section>
 
+        <!-- Check-in spotlight -->
+        <section class="relative overflow-hidden bg-surface-900 py-20 text-white lg:py-28">
+            <div class="absolute -left-20 top-0 h-72 w-72 rounded-full bg-primary-600/30 blur-3xl"></div>
+            <div class="absolute -right-20 bottom-0 h-72 w-72 rounded-full bg-gold-500/20 blur-3xl"></div>
+
+            <div class="relative mx-auto grid max-w-7xl items-center gap-14 px-4 sm:px-6 lg:grid-cols-2 lg:px-8">
+                <div class="reveal">
+                    <span class="text-xs font-bold uppercase tracking-[0.22em] text-gold-300">The day of the event</span>
+                    <h2 class="mt-3 font-display text-3xl font-bold leading-tight sm:text-4xl">A welcome that moves as fast as you do.</h2>
+                    <p class="mt-5 max-w-lg text-base leading-relaxed text-white/65">
+                        No printed guest lists. No guessing. Your team opens the scanner on any phone,
+                        scans the guest's QR code and sees an instant verified result at the door.
+                    </p>
+
+                    <div class="mt-7 space-y-3.5">
+                        @foreach([
+                            'Verify each guest in under a second.',
+                            'See card type, table and guest status instantly.',
+                            'Prevent duplicate check-ins automatically.',
+                            'Watch the attendance count update live.',
+                        ] as $item)
+                        <div class="flex items-start gap-3 text-sm text-white/75">
+                            <span class="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white/10 text-gold-300"><i class="fas fa-check text-[9px]"></i></span>
+                            <span>{{ $item }}</span>
+                        </div>
+                        @endforeach
+                    </div>
+
+                    <a href="{{ route('register') }}" class="btn mt-8 bg-white px-6 py-3 text-surface-900 hover:bg-surface-100">
+                        Try the check-in workflow <i class="fas fa-arrow-right text-xs"></i>
+                    </a>
+                </div>
+
+                <div class="reveal mx-auto w-full max-w-sm" style="transition-delay: .12s;">
+                    <div class="rounded-[2rem] border border-white/15 bg-white/10 p-3 shadow-2xl backdrop-blur">
+                        <div class="overflow-hidden rounded-[1.5rem] bg-white">
+                            <div class="flex items-center justify-between bg-surface-900 px-4 py-3 text-white">
+                                <div class="flex items-center gap-2">
+                                    <i class="fas fa-qrcode text-gold-300"></i>
+                                    <span class="text-xs font-semibold">NiaLike Scanner</span>
+                                </div>
+                                <span class="flex items-center gap-1.5 text-[10px] text-green-300">
+                                    <span class="h-1.5 w-1.5 animate-pulse rounded-full bg-green-400"></span> Camera live
+                                </span>
+                            </div>
+
+                            <div class="relative bg-surface-900 px-5 py-6">
+                                <div class="relative mx-auto aspect-square w-52">
+                                    <div class="absolute inset-0 rounded-2xl border border-white/10"></div>
+                                    <span class="absolute left-0 top-0 h-8 w-8 rounded-tl-2xl border-l-4 border-t-4 border-gold-400"></span>
+                                    <span class="absolute right-0 top-0 h-8 w-8 rounded-tr-2xl border-r-4 border-t-4 border-gold-400"></span>
+                                    <span class="absolute bottom-0 left-0 h-8 w-8 rounded-bl-2xl border-b-4 border-l-4 border-gold-400"></span>
+                                    <span class="absolute bottom-0 right-0 h-8 w-8 rounded-br-2xl border-b-4 border-r-4 border-gold-400"></span>
+                                    <div class="absolute inset-8 rounded-xl bg-white p-3">
+                                        <div class="qr-mock h-full w-full rounded-md opacity-90"></div>
+                                    </div>
+                                    <div class="absolute inset-x-0 top-1/2 h-0.5 bg-gold-400/70 shadow-[0_0_12px_2px_rgba(234,203,95,.45)]"></div>
+                                </div>
+                            </div>
+
+                            <div class="px-5 pb-5">
+                                <div class="flex items-center gap-3 rounded-xl border border-green-100 bg-green-50 p-3">
+                                    <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-green-500 text-white">
+                                        <i class="fas fa-check"></i>
+                                    </div>
+                                    <div class="min-w-0 flex-1">
+                                        <p class="text-[10px] font-bold uppercase tracking-wider text-green-600">Verified guest</p>
+                                        <p class="truncate text-sm font-bold text-surface-900">Amina Hassan</p>
+                                        <p class="text-[10px] text-surface-500">Double card · Table 4</p>
+                                    </div>
+                                </div>
+                                <div class="mt-3 grid grid-cols-2 gap-2">
+                                    <div class="rounded-lg bg-surface-50 px-3 py-2 text-center">
+                                        <p class="text-base font-bold text-surface-900">128</p>
+                                        <p class="text-[9px] uppercase tracking-wider text-surface-400">Checked in</p>
+                                    </div>
+                                    <div class="rounded-lg bg-surface-50 px-3 py-2 text-center">
+                                        <p class="text-base font-bold text-surface-900">32</p>
+                                        <p class="text-[9px] uppercase tracking-wider text-surface-400">Remaining</p>
+                                    </div>
+                                </div>
+                                <p class="mt-3 text-center text-[9px] font-medium uppercase tracking-[0.16em] text-surface-400">Works on any phone with a camera</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
         <!-- How it works -->
         <section id="how" class="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8 lg:py-28">
             <div class="mx-auto max-w-2xl text-center reveal">
@@ -472,6 +630,104 @@
                     <p class="mt-2 text-sm leading-relaxed text-surface-500">{{ $copy }}</p>
                 </div>
                 @endforeach
+            </div>
+        </section>
+
+        <!-- Team access -->
+        <section class="border-y border-surface-100 bg-surface-50/70 py-16 lg:py-20">
+            <div class="mx-auto grid max-w-7xl items-center gap-12 px-4 sm:px-6 lg:grid-cols-2 lg:px-8">
+                <div class="reveal">
+                    <span class="text-xs font-bold uppercase tracking-[0.22em] text-primary-600">Team access</span>
+                    <h2 class="mt-3 font-display text-3xl font-bold text-surface-900 sm:text-4xl">Everyone has the access they need.</h2>
+                    <p class="mt-4 max-w-lg text-base leading-relaxed text-surface-500">
+                        Run one event with a committee or manage many events across a team. NiaLike keeps
+                        responsibilities clear and your guest data protected.
+                    </p>
+                    <div class="mt-6 space-y-3">
+                        @foreach([
+                            'Administrators manage users, templates and event access.',
+                            'Event planners only see the events assigned to them.',
+                            'Check-in teams can scan guests without changing financial records.',
+                            'Every important action is recorded in the activity log.',
+                        ] as $item)
+                        <div class="flex items-start gap-3 text-sm text-surface-600">
+                            <span class="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white text-primary-600 shadow-soft"><i class="fas fa-check text-[9px]"></i></span>
+                            <span>{{ $item }}</span>
+                        </div>
+                        @endforeach
+                    </div>
+                </div>
+
+                <div class="grid gap-4 sm:grid-cols-2 reveal" style="transition-delay: .1s;">
+                    <div class="rounded-2xl border border-surface-100 bg-white p-5 shadow-soft sm:col-span-2">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-50 text-primary-600"><i class="fas fa-user-shield"></i></div>
+                                <div>
+                                    <p class="text-sm font-bold text-surface-900">Administrator</p>
+                                    <p class="text-[11px] text-surface-400">Full workspace control</p>
+                                </div>
+                            </div>
+                            <span class="badge bg-primary-50 text-primary-700">All access</span>
+                        </div>
+                        <div class="mt-3 flex flex-wrap gap-1.5">
+                            @foreach(['Users', 'Events', 'Payments', 'Templates', 'Reports'] as $permission)
+                            <span class="rounded-full bg-surface-100 px-2.5 py-1 text-[10px] font-medium text-surface-500">{{ $permission }}</span>
+                            @endforeach
+                        </div>
+                    </div>
+
+                    <div class="rounded-2xl border border-surface-100 bg-white p-5 shadow-soft">
+                        <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600"><i class="fas fa-calendar-check"></i></div>
+                        <p class="mt-3 text-sm font-bold text-surface-900">Event planner</p>
+                        <p class="mt-1 text-[11px] leading-relaxed text-surface-400">Manages only assigned events, guests and invitations.</p>
+                    </div>
+
+                    <div class="rounded-2xl border border-surface-100 bg-white p-5 shadow-soft">
+                        <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-green-50 text-green-600"><i class="fas fa-qrcode"></i></div>
+                        <p class="mt-3 text-sm font-bold text-surface-900">Check-in team</p>
+                        <p class="mt-1 text-[11px] leading-relaxed text-surface-400">Scans guest QR codes and verifies attendance at the door.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- FAQ -->
+        <section id="faq" class="mx-auto max-w-4xl px-4 py-20 sm:px-6 lg:px-8 lg:py-28">
+            <div class="text-center reveal">
+                <span class="text-xs font-bold uppercase tracking-[0.22em] text-primary-600">Questions, answered</span>
+                <h2 class="mt-3 font-display text-3xl font-bold text-surface-900 sm:text-4xl">Everything you might be wondering.</h2>
+                <p class="mt-4 text-base leading-relaxed text-surface-500">A few quick answers before you create your first event.</p>
+            </div>
+
+            <div class="mt-10 space-y-3 reveal">
+                @foreach([
+                    ['Is NiaLike only for weddings?', 'No. NiaLike works for weddings, send-offs, graduations, birthdays, corporate events and any celebration where you need to invite and manage guests.'],
+                    ['Do my guests need to download an app?', 'No. Guests receive their invitation link through WhatsApp and open it in any browser on any phone. They can RSVP, view the event details and download their card without installing anything.'],
+                    ['How are invitations delivered?', 'Invitations are sent as personalised WhatsApp messages containing the guest name, unique guest ID, event date and a private invitation link. Your team can send them individually or in bulk.'],
+                    ['Can I import my existing guest list?', 'Yes. Download the template, add your guests in Excel or CSV, and import the file. NiaLike creates each guest record and prepares their invitation automatically.'],
+                    ['What happens at the entrance?', 'Open the scanner on any phone with a camera. Scan the guest QR code and NiaLike instantly verifies the guest, shows their card type and records the check-in.'],
+                    ['Can I track contributions and balances?', 'Yes. Record pledges and payments against each guest, see outstanding balances and open a complete contribution report for the event.'],
+                    ['Can more than one person manage an event?', 'Administrators can assign events to different users. Each planner sees the events they are responsible for, while administrators keep full oversight.'],
+                    ['Where is my guest data stored?', 'Guest records live in your NiaLike workspace and are only available to authorised users. Sensitive actions are recorded in the event activity log.'],
+                ] as [$question, $answer])
+                <details class="faq-item group rounded-2xl border border-surface-200 bg-white px-5 py-4 shadow-soft transition open:border-primary-100 open:shadow-soft-lg sm:px-6">
+                    <summary class="flex cursor-pointer list-none items-center justify-between gap-4 text-sm font-semibold text-surface-800 transition">
+                        <span>{{ $question }}</span>
+                        <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-surface-100 text-surface-400 transition group-open:bg-primary-50 group-open:text-primary-600">
+                            <i class="fas fa-chevron-down faq-chevron text-[10px] transition-transform"></i>
+                        </span>
+                    </summary>
+                    <p class="mt-3 max-w-3xl text-sm leading-relaxed text-surface-500">{{ $answer }}</p>
+                </details>
+                @endforeach
+            </div>
+
+            <div class="mt-10 rounded-2xl border border-primary-100 bg-primary-50/50 px-6 py-5 text-center reveal">
+                <p class="text-sm text-surface-600">Still have a question? Talk to the Hamasika Technology team when you create your account.</p>
+                <a href="{{ route('register') }}" class="mt-3 inline-flex items-center gap-2 text-sm font-semibold text-primary-600 hover:text-primary-700">
+                    Create your free account <i class="fas fa-arrow-right text-[10px]"></i>
+                </a>
             </div>
         </section>
 
@@ -528,6 +784,7 @@
                         <li><a href="#features" class="hover:text-primary-600">Features</a></li>
                         <li><a href="#inside" class="hover:text-primary-600">What you can do</a></li>
                         <li><a href="#how" class="hover:text-primary-600">How it works</a></li>
+                        <li><a href="#faq" class="hover:text-primary-600">FAQ</a></li>
                     </ul>
                 </div>
                 <div>

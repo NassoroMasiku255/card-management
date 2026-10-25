@@ -24,13 +24,6 @@
     </div>
 </div>
 
-@unless($canSendWhatsApp)
-<div class="mb-4 flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-    <i class="fas fa-lock mt-0.5"></i>
-    <p>WhatsApp sending is <strong>view-only</strong> for your account. You can still review delivery statuses, export QR lists and open invitation cards. Ask an administrator to grant sending permission.</p>
-</div>
-@endunless
-
 <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
     <div class="card-surface p-4 sm:p-5">
         <div class="flex items-start justify-between gap-3">
