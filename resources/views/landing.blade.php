@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="NiaLike by Hamasika Technology — beautiful digital wedding and event invitations, WhatsApp delivery, guest management, QR check-in and live reports in one place.">
-    <title>NiaLike by Hamasika Technology — Digital Invitations & Guest Management</title>
+    <title>NiaLike · Digital Invitations & Guest Management</title>
     @include('partials.head-assets')
     <style>
         .landing-hero {

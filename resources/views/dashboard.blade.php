@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Dashboard - NiaLike')
+@section('title', 'Dashboard')
 
 @section('content')
 @php

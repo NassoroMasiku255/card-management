@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Events - NiaLike')
+@section('title', 'Events')
 
 @section('content')
 @php

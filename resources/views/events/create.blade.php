@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Create Event - NiaLike')
+@section('title', 'Create Event')
 
 @section('content')
 <div class="max-w-3xl mx-auto">

@@ -14,7 +14,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="robots" content="noindex, nofollow">
-    <title>Invitation Card - {{ $guest->full_name }}</title>
+    <title>NiaLike · Invitation Card - {{ $guest->full_name }}</title>
     @include('partials.head-assets')
     <style>
         @media print {

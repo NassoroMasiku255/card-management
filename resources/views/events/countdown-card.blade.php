@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Countdown Card - {{ $event->name }}</title>
+    <title>NiaLike · Countdown Card - {{ $event->name }}</title>
     @include('partials.head-assets')
     <style>
         .countdown-canvas { display: block; width: 100%; height: auto; }
