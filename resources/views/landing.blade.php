@@ -58,14 +58,8 @@
     <!-- Navigation -->
     <header class="sticky top-0 z-50 border-b border-surface-100 bg-white/85 backdrop-blur-xl">
         <div class="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3.5 sm:px-6 lg:px-8">
-            <a href="{{ route('home') }}" class="flex items-center gap-2.5">
-                <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary-600 to-primary-500 shadow-soft-lg">
-                    <i class="fas fa-heart text-white"></i>
-                </div>
-                <div class="leading-tight">
-                    <span class="font-display text-xl font-bold tracking-tight text-surface-900">NiaLike</span>
-                    <span class="block text-[10px] font-semibold uppercase tracking-[0.18em] text-surface-400">by Hamasika Technology</span>
-                </div>
+            <a href="{{ route('home') }}" class="flex shrink-0 items-center">
+                <img src="{{ asset('images/nialike-logo.png') }}" alt="NiaLike by Hamasika Technology" class="h-11 w-auto sm:h-12">
             </a>
 
             <nav class="hidden items-center gap-8 lg:flex">
@@ -763,15 +757,7 @@
         <div class="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
             <div class="grid gap-10 md:grid-cols-[1.4fr_1fr_1fr]">
                 <div>
-                    <div class="flex items-center gap-2.5">
-                        <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-primary-500">
-                            <i class="fas fa-heart text-sm text-white"></i>
-                        </div>
-                        <div class="leading-tight">
-                            <span class="font-display text-lg font-bold text-surface-900">NiaLike</span>
-                            <span class="block text-[9px] font-semibold uppercase tracking-[0.18em] text-surface-400">by Hamasika Technology</span>
-                        </div>
-                    </div>
+                    <img src="{{ asset('images/nialike-logo.png') }}" alt="NiaLike by Hamasika Technology" class="h-12 w-auto">
                     <p class="mt-4 max-w-sm text-sm leading-relaxed text-surface-500">
                         Beautiful digital invitations and complete guest management for weddings, send-offs,
                         graduations and corporate events.

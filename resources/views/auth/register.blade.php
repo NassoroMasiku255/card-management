@@ -17,11 +17,8 @@
 
     <div class="relative max-w-md w-full">
         <div class="text-center mb-8">
-            <div class="w-14 h-14 bg-gradient-to-br from-primary-600 to-primary-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-soft-lg">
-                <i class="fas fa-heart text-white text-xl"></i>
-            </div>
-            <h1 class="font-display text-3xl font-bold text-surface-900">NiaLike</h1>
-            <p class="text-surface-500 mt-1.5 text-sm">Create your event workspace</p>
+            <img src="{{ asset('images/nialike-logo.png') }}" alt="NiaLike by Hamasika Technology" class="mx-auto h-16 w-auto sm:h-20">
+            <p class="text-surface-500 mt-4 text-sm">Create your event workspace</p>
         </div>
 
         <div class="card-surface shadow-soft-lg p-8">
