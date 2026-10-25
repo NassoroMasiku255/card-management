@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\ActivityLog;
 use App\Models\Event;
+use App\Models\Guest;
+use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 
 class DashboardController extends Controller
@@ -46,7 +48,22 @@ class DashboardController extends Controller
         $estimatedAttendance = $events->sum(fn ($event) => $event->single_guests_count + ($event->double_guests_count * 2));
 
         $upcoming = $events->where('event_date', '>=', now()->startOfDay())->sortBy('event_date')->first();
-        $recentEvents = $events->take(6);
+        $topContributors = Guest::query()
+            ->whereIn('event_id', $events->pluck('id'))
+            ->where('paid_amount', '>', 0)
+            ->with('event')
+            ->orderByDesc('paid_amount')
+            ->take(5)
+            ->get();
+
+        $teamStats = $user->isAdmin()
+            ? [
+                'total' => User::count(),
+                'admins' => User::where('is_admin', true)->count(),
+                'whatsapp' => User::where('can_send_whatsapp', true)->count(),
+                'owners' => $events->pluck('user_id')->filter()->unique()->count(),
+            ]
+            : null;
 
         $activityLogs = ActivityLog::whereIn('event_id', $events->pluck('id'))
             ->with(['event', 'user'])
@@ -71,7 +88,8 @@ class DashboardController extends Controller
             'collectionRate',
             'estimatedAttendance',
             'upcoming',
-            'recentEvents',
+            'topContributors',
+            'teamStats',
             'activityLogs'
         ));
     }

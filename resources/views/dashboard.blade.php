@@ -451,121 +451,194 @@
 </div>
 </div>
 
-<!-- Events -->
-<div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+<!-- Command center -->
+<div class="mb-4 flex flex-wrap items-end justify-between gap-3">
     <div>
-        <h2 class="font-display text-xl font-bold text-surface-900">Your events</h2>
-        <p class="mt-0.5 text-xs text-surface-400">A snapshot of your most recent events</p>
+        <h2 class="font-display text-xl font-bold text-surface-900">Command center</h2>
+        <p class="mt-0.5 text-xs text-surface-400">Everything that needs a nudge, in one place</p>
     </div>
-    @if($events->count() > 6)
     <a href="{{ route('events.index') }}" class="text-sm font-semibold text-primary-600 hover:text-primary-700">
-        View all ({{ $events->count() }}) <i class="fas fa-arrow-right ml-1 text-xs"></i>
+        All events <i class="fas fa-arrow-right ml-1 text-xs"></i>
     </a>
-    @endif
 </div>
 
-@if($events->isEmpty())
-<div class="card-surface px-6 py-16 text-center">
-    <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-surface-100 text-surface-400">
-        <i class="fas fa-calendar-plus text-xl"></i>
-    </div>
-    <h3 class="mt-4 font-display text-lg font-bold text-surface-800">No events yet</h3>
-    <p class="mt-1 text-sm text-surface-400">Create your first event to start inviting guests and tracking attendance.</p>
-    <a href="{{ route('events.create') }}" class="btn btn-primary mt-5"><i class="fas fa-plus"></i> Create Event</a>
-</div>
-@else
-<div class="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
-    @foreach($recentEvents as $event)
-    @php
-        $accent = $event->card_accent_color ?: '#e11d48';
-        $isUpcoming = $event->event_date->isFuture();
-        $eventDelivery = $event->invitations_count > 0 ? (int) round(($event->invitations_sent_count / $event->invitations_count) * 100) : 0;
-        $eventCheckin = $event->guests_count > 0 ? (int) round(($event->checked_in_count / $event->guests_count) * 100) : 0;
-        $eventPaid = (float) $event->total_paid;
-        $eventPledged = (float) $event->total_pledged;
-        $eventCollection = $eventPledged > 0 ? (int) min(100, round(($eventPaid / $eventPledged) * 100)) : 0;
-    @endphp
-    <div class="group relative overflow-hidden rounded-2xl border border-surface-200 bg-white shadow-soft transition hover:-translate-y-1 hover:shadow-soft-lg">
-        <div class="absolute inset-x-0 top-0 h-1" style="background: linear-gradient(90deg, {{ $accent }}, {{ $accent }}66);"></div>
-        <div class="absolute -right-10 -top-10 h-28 w-28 rounded-full opacity-[0.06]" style="background: {{ $accent }}; filter: blur(20px);"></div>
+@php
+    $attentionItems = [
+        [
+            'label' => 'Invitations to send',
+            'value' => number_format($pendingInvitations),
+            'caption' => $deliveryRate.'% already delivered',
+            'cta' => $pendingInvitations > 0 ? 'Send now' : 'View invitations',
+            'icon' => 'fa-paper-plane',
+            'tone' => 'green',
+            'href' => $upcoming ? route('events.invitations.index', $upcoming) : route('events.index'),
+        ],
+        [
+            'label' => 'RSVPs awaiting reply',
+            'value' => number_format($rsvpPending),
+            'caption' => $rsvpResponseRate.'% response rate',
+            'cta' => 'Follow up',
+            'icon' => 'fa-envelope-open-text',
+            'tone' => 'blue',
+            'href' => $upcoming ? route('events.invitations.index', $upcoming) : route('events.index'),
+        ],
+        [
+            'label' => 'Outstanding collections',
+            'value' => 'TZS '.$money($outstanding),
+            'caption' => $collectionRate.'% collected so far',
+            'cta' => 'View reports',
+            'icon' => 'fa-coins',
+            'tone' => 'gold',
+            'href' => $upcoming ? route('events.report', $upcoming) : route('events.index'),
+        ],
+        [
+            'label' => 'Check-in progress',
+            'value' => number_format($checkedIn),
+            'caption' => $checkinRate.'% of all guests',
+            'cta' => 'Open scanner',
+            'icon' => 'fa-qrcode',
+            'tone' => 'rose',
+            'href' => $upcoming ? route('events.scanner.index', $upcoming) : route('events.index'),
+        ],
+    ];
 
-        <div class="relative p-5">
-            <div class="flex items-start justify-between gap-3">
-                <div class="flex min-w-0 items-center gap-3">
-                    <div class="flex h-12 w-12 shrink-0 flex-col items-center justify-center rounded-xl"
-                        style="background: {{ $accent }}14; color: {{ $accent }};">
-                        <span class="text-lg font-bold leading-none">{{ $event->event_date->format('d') }}</span>
-                        <span class="mt-0.5 text-[9px] font-bold uppercase tracking-[0.12em]">{{ $event->event_date->format('M') }}</span>
+    $toneClasses = [
+        'green' => ['icon' => 'bg-green-100 text-green-600', 'hover' => 'hover:border-green-200', 'text' => 'text-green-600'],
+        'blue' => ['icon' => 'bg-blue-100 text-blue-600', 'hover' => 'hover:border-blue-200', 'text' => 'text-blue-600'],
+        'gold' => ['icon' => 'bg-gold-100 text-gold-600', 'hover' => 'hover:border-gold-200', 'text' => 'text-gold-600'],
+        'rose' => ['icon' => 'bg-primary-100 text-primary-600', 'hover' => 'hover:border-primary-200', 'text' => 'text-primary-600'],
+    ];
+@endphp
+
+<div class="grid grid-cols-1 gap-5 xl:grid-cols-3">
+    <!-- Action items -->
+    <div class="card-surface flex flex-col overflow-hidden xl:col-span-2">
+        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-surface-100 px-5 py-4">
+            <div class="flex items-center gap-3">
+                <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary-500 to-rose-600 text-white shadow-soft">
+                    <i class="fas fa-bolt text-sm"></i>
+                </div>
+                <div>
+                    <h3 class="text-sm font-semibold text-surface-900">Needs attention</h3>
+                    <p class="text-[11px] text-surface-400">Your priorities across all events</p>
+                </div>
+            </div>
+            <span class="badge bg-green-50 text-green-700"><span class="mr-1.5 h-1.5 w-1.5 rounded-full bg-green-500"></span>Live overview</span>
+        </div>
+
+        <div class="grid flex-1 gap-3 p-5 sm:grid-cols-2">
+            @foreach($attentionItems as $item)
+            @php $tone = $toneClasses[$item['tone']]; @endphp
+            <a href="{{ $item['href'] }}" class="group flex flex-col rounded-xl border border-surface-100 bg-surface-50/60 p-4 transition hover:-translate-y-0.5 hover:bg-white hover:shadow-soft {{ $tone['hover'] }}">
+                <div class="flex items-start justify-between gap-2">
+                    <div class="flex h-9 w-9 items-center justify-center rounded-lg {{ $tone['icon'] }}">
+                        <i class="fas {{ $item['icon'] }} text-xs"></i>
                     </div>
-                    <div class="min-w-0">
-                        <a href="{{ route('events.show', $event) }}" class="block truncate font-display text-base font-bold text-surface-900 transition hover:text-primary-600">{{ $event->name }}</a>
-                        <p class="mt-0.5 truncate text-[11px] text-surface-400"><i class="fas fa-location-dot mr-1"></i>{{ $event->location }}</p>
-                    </div>
+                    <i class="fas fa-arrow-up-right-from-square text-[10px] text-surface-300 transition group-hover:text-surface-500"></i>
                 </div>
-                <span class="badge shrink-0 {{ $event->status === 'active' ? 'bg-green-100 text-green-700' : ($event->status === 'completed' ? 'bg-blue-100 text-blue-700' : 'bg-surface-100 text-surface-600') }}">
-                    {{ ucfirst($event->status) }}
-                </span>
-            </div>
+                <p class="mt-3 text-2xl font-bold tracking-tight text-surface-900">{{ $item['value'] }}</p>
+                <p class="mt-0.5 text-xs font-medium text-surface-600">{{ $item['label'] }}</p>
+                <div class="mt-2.5 flex items-center justify-between gap-2 text-[10px]">
+                    <span class="text-surface-400">{{ $item['caption'] }}</span>
+                    <span class="inline-flex shrink-0 items-center gap-1 font-semibold {{ $tone['text'] }}">{{ $item['cta'] }} <i class="fas fa-arrow-right text-[8px]"></i></span>
+                </div>
+            </a>
+            @endforeach
+        </div>
 
-            <div class="mt-3 flex flex-wrap items-center gap-1.5">
-                @if($isUpcoming)
-                <span class="inline-flex items-center gap-1 rounded-full bg-surface-50 px-2.5 py-1 text-[10px] font-medium text-surface-500">
-                    <i class="fas fa-clock text-surface-400"></i>{{ $event->event_date->diffForHumans(null, true) }} left
-                </span>
-                @endif
-                <span class="inline-flex items-center gap-1 rounded-full bg-surface-50 px-2.5 py-1 text-[10px] font-medium text-surface-500">
-                    <i class="fas fa-calendar text-surface-400"></i>{{ $event->event_date->format('D, d M Y') }}
-                </span>
-                @if(auth()->user()->isAdmin() && $event->user)
-                <span class="inline-flex items-center gap-1 rounded-full bg-surface-50 px-2.5 py-1 text-[10px] font-medium text-surface-500">
-                    <i class="fas fa-user text-surface-400"></i>{{ $event->user->name }}
-                </span>
-                @endif
-            </div>
-
-            <div class="mt-4 grid grid-cols-4 divide-x divide-surface-100 rounded-xl border border-surface-100 bg-surface-50/60 py-2.5 text-center">
-                <div>
-                    <p class="text-sm font-bold text-surface-900">{{ number_format($event->guests_count) }}</p>
-                    <p class="mt-0.5 text-[8px] font-semibold uppercase tracking-wider text-surface-400">Guests</p>
-                </div>
-                <div>
-                    <p class="text-sm font-bold text-surface-900">{{ number_format($event->invitations_sent_count) }}</p>
-                    <p class="mt-0.5 text-[8px] font-semibold uppercase tracking-wider text-surface-400">Invited</p>
-                </div>
-                <div>
-                    <p class="text-sm font-bold text-green-600">{{ number_format($event->rsvp_attending_count) }}</p>
-                    <p class="mt-0.5 text-[8px] font-semibold uppercase tracking-wider text-surface-400">Attending</p>
-                </div>
-                <div>
-                    <p class="text-sm font-bold text-gold-600">{{ number_format($event->checked_in_count) }}</p>
-                    <p class="mt-0.5 text-[8px] font-semibold uppercase tracking-wider text-surface-400">Checked</p>
-                </div>
-            </div>
-
-            <div class="mt-4 space-y-2.5">
-                <div>
-                    <div class="mb-1 flex items-center justify-between text-[10px] text-surface-400">
-                        <span>Invitation delivery</span><span class="font-semibold text-surface-600">{{ $eventDelivery }}%</span>
-                    </div>
-                    <div class="h-1.5 overflow-hidden rounded-full bg-surface-100"><div class="h-full rounded-full bg-green-500" style="width: {{ $eventDelivery }}%;"></div></div>
-                </div>
-                <div>
-                    <div class="mb-1 flex items-center justify-between text-[10px] text-surface-400">
-                        <span>Contributions</span><span class="font-semibold text-surface-600">{{ $eventCollection }}%</span>
-                    </div>
-                    <div class="h-1.5 overflow-hidden rounded-full bg-surface-100"><div class="h-full rounded-full bg-gold-500" style="width: {{ $eventCollection }}%;"></div></div>
-                </div>
-            </div>
-
-            <div class="mt-4 flex items-center justify-between border-t border-surface-100 pt-3">
-                <span class="text-[10px] text-surface-400"><i class="fas fa-qrcode mr-1"></i>{{ $eventCheckin }}% checked in</span>
-                <a href="{{ route('events.show', $event) }}" class="inline-flex items-center gap-1 text-xs font-semibold text-primary-600 hover:text-primary-700">
-                    Manage <i class="fas fa-arrow-right text-[10px] transition-transform group-hover:translate-x-0.5"></i>
-                </a>
-            </div>
+        <div class="flex flex-wrap items-center justify-between gap-2 border-t border-surface-100 bg-surface-50/50 px-5 py-3">
+            @if($teamStats)
+            <p class="text-[11px] text-surface-400">
+                Managing <span class="font-semibold text-surface-600">{{ number_format($totalEvents) }}</span> events across
+                <span class="font-semibold text-surface-600">{{ number_format($teamStats['owners']) }}</span> event owners ·
+                <span class="font-semibold text-surface-600">{{ number_format($teamStats['total']) }}</span> team members ·
+                <span class="font-semibold text-surface-600">{{ number_format($teamStats['whatsapp']) }}</span> WhatsApp-enabled
+            </p>
+            <a href="{{ route('admin.users.index') }}" class="inline-flex items-center gap-1 text-xs font-semibold text-primary-600 hover:text-primary-700">
+                Manage team <i class="fas fa-arrow-right text-[10px]"></i>
+            </a>
+            @else
+            <p class="text-[11px] text-surface-400">
+                <span class="font-semibold text-surface-600">{{ number_format($totalGuests) }}</span> guests ·
+                <span class="font-semibold text-surface-600">{{ number_format($estimatedAttendance) }}</span> expected seats ·
+                <span class="font-semibold text-surface-600">{{ number_format($activeEvents) }}</span> active events
+            </p>
+            <a href="{{ route('events.index') }}" class="inline-flex items-center gap-1 text-xs font-semibold text-primary-600 hover:text-primary-700">
+                Browse events <i class="fas fa-arrow-right text-[10px]"></i>
+            </a>
+            @endif
         </div>
     </div>
-    @endforeach
+
+    <!-- Top contributors -->
+    <div class="card-surface flex flex-col overflow-hidden">
+        <div class="flex items-center justify-between border-b border-surface-100 px-5 py-4">
+            <div class="flex items-center gap-3">
+                <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-gold-400 to-amber-600 text-white shadow-soft">
+                    <i class="fas fa-crown text-sm"></i>
+                </div>
+                <div>
+                    <h3 class="text-sm font-semibold text-surface-900">Top contributors</h3>
+                    <p class="text-[11px] text-surface-400">Most generous guests</p>
+                </div>
+            </div>
+            <span class="rounded-full bg-gold-50 px-2.5 py-1 text-[10px] font-bold text-gold-700">TZS {{ $money($totalPaid) }}</span>
+        </div>
+
+        <div class="flex-1 p-5">
+            @if($topContributors->isEmpty())
+            <div class="flex h-full min-h-[220px] flex-col items-center justify-center text-center">
+                <div class="flex h-12 w-12 items-center justify-center rounded-full bg-surface-100 text-surface-400">
+                    <i class="fas fa-hand-holding-heart"></i>
+                </div>
+                <p class="mt-3 text-sm font-medium text-surface-600">No contributions yet</p>
+                <p class="mt-0.5 max-w-[220px] text-xs text-surface-400">Record guest pledges and payments to see your top supporters here.</p>
+            </div>
+            @else
+            <div class="space-y-3.5">
+                @foreach($topContributors as $guest)
+                @php
+                    $initials = collect(preg_split('/\s+/', trim($guest->full_name)))
+                        ->filter()
+                        ->take(2)
+                        ->map(fn ($part) => mb_strtoupper(mb_substr($part, 0, 1)))
+                        ->implode('');
+                    $avatarTones = ['bg-primary-100 text-primary-700', 'bg-blue-100 text-blue-700', 'bg-green-100 text-green-700', 'bg-gold-100 text-gold-700', 'bg-purple-100 text-purple-700'];
+                    $avatarTone = $avatarTones[$loop->index % count($avatarTones)];
+                    $rate = $guest->collection_rate;
+                    $barTone = $rate >= 100 ? 'bg-green-500' : ($rate >= 50 ? 'bg-gold-500' : 'bg-primary-500');
+                @endphp
+                <div class="flex items-center gap-3">
+                    <div class="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[10px] font-bold {{ $avatarTone }}">
+                        {{ $initials }}
+                        @if($loop->first)
+                        <span class="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-gold-400 text-[7px] text-white shadow"><i class="fas fa-crown"></i></span>
+                        @endif
+                    </div>
+                    <div class="min-w-0 flex-1">
+                        <div class="flex items-center justify-between gap-2">
+                            <p class="truncate text-xs font-semibold text-surface-800">{{ $guest->full_name }}</p>
+                            <p class="shrink-0 text-xs font-bold text-surface-900">TZS {{ $money($guest->paid_amount) }}</p>
+                        </div>
+                        <div class="mt-0.5 flex items-center justify-between gap-2 text-[10px] text-surface-400">
+                            <span class="truncate">{{ $guest->event?->name }}</span>
+                            <span class="shrink-0">{{ $rate }}%</span>
+                        </div>
+                        <div class="mt-1.5 h-1 overflow-hidden rounded-full bg-surface-100">
+                            <div class="h-full rounded-full {{ $barTone }}" style="width: {{ $rate }}%;"></div>
+                        </div>
+                    </div>
+                </div>
+                @endforeach
+            </div>
+            @endif
+        </div>
+
+        <div class="border-t border-surface-100 px-5 py-3">
+            <a href="{{ $upcoming ? route('events.report', $upcoming) : route('events.index') }}" class="flex items-center justify-between text-xs font-semibold text-primary-600 hover:text-primary-700">
+                View contribution reports <i class="fas fa-arrow-right text-[10px]"></i>
+            </a>
+        </div>
+    </div>
 </div>
-@endif
 @endsection
