@@ -350,6 +350,32 @@
 
     <!-- Right sidebar -->
     <div class="space-y-5">
+        <!-- Payment thank-you status -->
+        <div class="card-surface p-5">
+            <div class="flex items-start justify-between gap-3">
+                <div class="flex items-center gap-2.5">
+                    <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-green-50 text-green-600"><i class="fab fa-whatsapp text-sm"></i></div>
+                    <div>
+                        <h3 class="text-sm font-semibold text-surface-900">Payment thank-you</h3>
+                        <p class="text-[10px] text-surface-400">Automatic WhatsApp message</p>
+                    </div>
+                </div>
+                <span class="badge {{ $event->payment_thank_you_enabled ? 'bg-green-100 text-green-700' : 'bg-surface-100 text-surface-500' }}">
+                    {{ $event->payment_thank_you_enabled ? 'Enabled' : 'Disabled' }}
+                </span>
+            </div>
+            <p class="mt-4 text-xs leading-relaxed text-surface-500">
+                @if($event->payment_thank_you_enabled)
+                    Guests receive a WhatsApp thank-you after each payment with the amount paid and their remaining balance.
+                @else
+                    Thank-you messages are not sent after payments for this event. Enable them in settings to keep guests updated automatically.
+                @endif
+            </p>
+            <a href="{{ route('events.edit', $event) }}" class="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-primary-600 hover:text-primary-700">
+                Manage in settings <i class="fas fa-arrow-right text-[9px]"></i>
+            </a>
+        </div>
+
         <!-- Check-in progress -->
         <div class="card-surface p-5">
             <div class="flex items-center justify-between">

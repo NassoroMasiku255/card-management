@@ -57,12 +57,14 @@ class EventController extends Controller
             'card_accent_color' => 'nullable|string|max:7',
             'single_card_min_amount' => 'nullable|numeric|min:1',
             'double_card_min_amount' => 'nullable|numeric|min:1',
+            'payment_thank_you_enabled' => 'nullable|boolean',
             'cover_image' => 'nullable|image|max:5120',
         ]);
 
         $validated['event_time'] = $this->normalizeEventTime($validated['event_time'] ?? null);
         $validated['user_id'] = Auth::id();
         $validated['status'] = 'active';
+        $validated['payment_thank_you_enabled'] = $request->boolean('payment_thank_you_enabled');
 
         if ($request->hasFile('cover_image')) {
             $validated['cover_image'] = $request->file('cover_image')->store('events/covers', 'public');
@@ -167,11 +169,13 @@ class EventController extends Controller
             'card_accent_color' => 'nullable|string|max:7',
             'single_card_min_amount' => 'nullable|numeric|min:1',
             'double_card_min_amount' => 'nullable|numeric|min:1',
+            'payment_thank_you_enabled' => 'nullable|boolean',
             'cover_image' => 'nullable|image|max:5120',
             'status' => 'nullable|in:draft,active,completed,cancelled',
         ]);
 
         $validated['event_time'] = $this->normalizeEventTime($validated['event_time'] ?? null);
+        $validated['payment_thank_you_enabled'] = $request->boolean('payment_thank_you_enabled');
 
         if ($request->hasFile('cover_image')) {
             if ($event->cover_image) {

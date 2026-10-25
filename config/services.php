@@ -57,6 +57,11 @@ return [
         'reminder_language_policy' => env('WHATSAPP_REMINDER_LANGUAGE_POLICY', 'deterministic'),
         'reminder_payment_details' => env('WHATSAPP_REMINDER_PAYMENT_DETAILS', ''),
         'reminder_amount_prefix' => env('WHATSAPP_REMINDER_AMOUNT_PREFIX', 'Mchango'),
+
+        // Payment thank-you template: body params are guest name, event name,
+        // amount just paid, and a final sentence (balance or completion).
+        'payment_template_name' => env('WHATSAPP_PAYMENT_TEMPLATE', 'payment_notification'),
+        'payment_template_language' => env('WHATSAPP_PAYMENT_TEMPLATE_LANGUAGE', 'en'),
     ],
 
 ];

@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Event;
 use App\Models\Guest;
+use App\Models\GuestPayment;
 use App\Models\Invitation;
 use App\Models\WhatsAppMessage;
 use App\Models\WhatsAppTemplate;
@@ -36,6 +37,10 @@ class WhatsAppService
 
     private string $reminderAmountPrefix;
 
+    private string $paymentTemplateName;
+
+    private string $paymentTemplateLanguage;
+
     public function __construct()
     {
         $this->apiUrl = config('services.whatsapp.api_url') ?? 'https://graph.facebook.com/v25.0';
@@ -50,6 +55,8 @@ class WhatsAppService
         $this->reminderLanguagePolicy = (string) (config('services.whatsapp.reminder_language_policy') ?? 'deterministic');
         $this->reminderPaymentDetails = (string) (config('services.whatsapp.reminder_payment_details') ?? '');
         $this->reminderAmountPrefix = (string) (config('services.whatsapp.reminder_amount_prefix') ?? 'Mchango');
+        $this->paymentTemplateName = (string) (config('services.whatsapp.payment_template_name') ?? 'payment_notification');
+        $this->paymentTemplateLanguage = (string) (config('services.whatsapp.payment_template_language') ?? 'en');
     }
 
     /**
@@ -228,6 +235,54 @@ class WhatsAppService
             invitation: $invitation,
             messageType: 'reminder',
             languagePolicy: $this->reminderLanguagePolicy,
+            guest: $guest,
+            event: $event,
+        );
+    }
+
+    /**
+     * Send the payment thank-you template. The payment_notification template
+     * expects four body parameters in this exact order:
+     *   1. guest full name
+     *   2. event name
+     *   3. amount just paid (e.g. "TSh 40,000")
+     *   4. final sentence (remaining balance, or a completion message)
+     */
+    public function sendPaymentThankYou(Guest $guest, GuestPayment $payment): bool
+    {
+        $event = $guest->event ?? $payment->event;
+
+        if (empty($guest->formatted_phone)) {
+            return false;
+        }
+
+        $template = $this->paymentTemplateName;
+        $language = $this->paymentTemplateLanguage;
+
+        $dbTemplate = WhatsAppTemplate::where('name', $template)->first();
+        if ($dbTemplate) {
+            $language = $dbTemplate->language;
+        }
+
+        $remaining = max(0, $guest->balance);
+        $finalSentence = $remaining > 0
+            ? '📌 *Kiasi kilichobaki:* TSh '.number_format($remaining, 0)
+            : '✅ *Hali:* Umekamilisha mchango wako wote';
+
+        $bodyParameters = [
+            ['type' => 'text', 'text' => $guest->full_name],
+            ['type' => 'text', 'text' => $event?->name ?? ''],
+            ['type' => 'text', 'text' => 'TSh '.number_format((float) $payment->amount, 0)],
+            ['type' => 'text', 'text' => $finalSentence],
+        ];
+
+        return $this->sendTemplateMessage(
+            phone: $guest->formatted_phone,
+            templateName: $template,
+            languageCode: $language,
+            imageUrl: null,
+            bodyParameters: $bodyParameters,
+            messageType: 'payment_thank_you',
             guest: $guest,
             event: $event,
         );

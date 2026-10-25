@@ -131,6 +131,22 @@
                 </div>
             </div>
 
+            <div class="rounded-xl border border-green-200 bg-green-50/60 p-4">
+                <label class="flex cursor-pointer items-start gap-3">
+                    <input type="checkbox" name="payment_thank_you_enabled" value="1"
+                        {{ old('payment_thank_you_enabled') ? 'checked' : '' }}
+                        class="mt-0.5 h-4 w-4 rounded border-surface-300 text-green-600 focus:ring-green-500">
+                    <span>
+                        <span class="block text-sm font-semibold text-surface-800">
+                            <i class="fab fa-whatsapp mr-1 text-green-600"></i> Send payment thank-you messages
+                        </span>
+                        <span class="mt-1 block text-xs leading-relaxed text-surface-500">
+                            Automatically send a WhatsApp thank-you after each payment, including the amount paid and the remaining balance.
+                        </span>
+                    </span>
+                </label>
+            </div>
+
             <div>
                 <label class="label-field">Cover Image (optional)</label>
                 <input type="file" name="cover_image" accept="image/*"

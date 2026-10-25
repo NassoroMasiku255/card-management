@@ -7,6 +7,7 @@ use App\Models\Guest;
 use App\Models\GuestPayment;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 class GuestPaymentTest extends TestCase
@@ -63,6 +64,88 @@ class GuestPaymentTest extends TestCase
         $this->assertSame('paid', $guest->payment_status);
     }
 
+    public function test_a_payment_thank_you_is_sent_when_enabled_for_the_event(): void
+    {
+        [$user, $event, $guest] = $this->eventWithGuest(100000);
+        $event->update(['payment_thank_you_enabled' => true]);
+        $this->configureWhatsApp();
+
+        Http::fake([
+            'graph.facebook.com/*' => Http::response([
+                'messaging_product' => 'whatsapp',
+                'messages' => [['id' => 'wamid.payment']],
+            ]),
+        ]);
+
+        $this->actingAs($user)->post(route('events.guests.payments.store', [$event, $guest]), [
+            'amount' => 40000,
+            'method' => 'mobile_money',
+            'paid_at' => now()->toDateString(),
+        ])->assertRedirect();
+
+        Http::assertSent(function ($request) use ($guest, $event) {
+            $body = $request->data();
+
+            return $request->url() === 'https://graph.facebook.com/v25.0/123456/messages'
+                && $body['to'] === $guest->formatted_phone
+                && $body['template']['name'] === 'payment_notification'
+                && $body['template']['language'] === ['policy' => 'deterministic', 'code' => 'en']
+                && $body['template']['components'][0]['parameters'][0]['text'] === $guest->full_name
+                && $body['template']['components'][0]['parameters'][1]['text'] === $event->name
+                && $body['template']['components'][0]['parameters'][2]['text'] === 'TSh 40,000'
+                && $body['template']['components'][0]['parameters'][3]['text'] === '📌 *Kiasi kilichobaki:* TSh 60,000';
+        });
+
+        $this->assertDatabaseHas('whatsapp_messages', [
+            'guest_id' => $guest->id,
+            'event_id' => $event->id,
+            'message_type' => 'payment_thank_you',
+            'template_name' => 'payment_notification',
+        ]);
+    }
+
+    public function test_a_full_payment_thank_you_confirms_the_contribution_is_complete(): void
+    {
+        [$user, $event, $guest] = $this->eventWithGuest(100000);
+        $event->update(['payment_thank_you_enabled' => true]);
+        $this->configureWhatsApp();
+
+        Http::fake([
+            'graph.facebook.com/*' => Http::response([
+                'messaging_product' => 'whatsapp',
+                'messages' => [['id' => 'wamid.payment-full']],
+            ]),
+        ]);
+
+        $this->actingAs($user)->post(route('events.guests.payments.store', [$event, $guest]), [
+            'amount' => 100000,
+            'method' => 'cash',
+            'paid_at' => now()->toDateString(),
+        ])->assertRedirect();
+
+        Http::assertSent(function ($request) {
+            return $request->data()['template']['components'][0]['parameters'][3]['text']
+                === '✅ *Hali:* Umekamilisha mchango wako wote';
+        });
+    }
+
+    public function test_no_payment_thank_you_is_sent_when_disabled_for_the_event(): void
+    {
+        [$user, $event, $guest] = $this->eventWithGuest(100000);
+        $this->configureWhatsApp();
+
+        Http::fake();
+
+        $this->actingAs($user)->post(route('events.guests.payments.store', [$event, $guest]), [
+            'amount' => 40000,
+            'method' => 'cash',
+            'paid_at' => now()->toDateString(),
+        ])->assertRedirect();
+
+        Http::assertNothingSent();
+        $this->assertDatabaseCount('whatsapp_messages', 0);
+    }
+
     public function test_deleting_a_payment_recalculates_the_guest_balance(): void
     {
         [$user, $event, $guest] = $this->eventWithGuest(100000);
@@ -112,6 +195,17 @@ class GuestPaymentTest extends TestCase
                     && $stats['doubles'] === 1
                     && $stats['estimatedAttendance'] === 3;
             });
+    }
+
+    private function configureWhatsApp(): void
+    {
+        config([
+            'services.whatsapp.api_url' => 'https://graph.facebook.com/v25.0',
+            'services.whatsapp.phone_number_id' => '123456',
+            'services.whatsapp.access_token' => 'test-token',
+            'services.whatsapp.payment_template_name' => 'payment_notification',
+            'services.whatsapp.payment_template_language' => 'en',
+        ]);
     }
 
     private function eventWithGuest(float $pledged, string $cardType = 'single'): array

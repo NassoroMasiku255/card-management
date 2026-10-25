@@ -6,9 +6,11 @@ use App\Models\ActivityLog;
 use App\Models\Event;
 use App\Models\Guest;
 use App\Models\GuestPayment;
+use App\Services\WhatsAppService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class GuestPaymentController extends Controller
 {
@@ -53,6 +55,19 @@ class GuestPaymentController extends Controller
                 'method' => $payment->method,
             ],
         ]);
+
+        if ($event->payment_thank_you_enabled) {
+            try {
+                $guest->refresh();
+                app(WhatsAppService::class)->sendPaymentThankYou($guest, $payment);
+            } catch (\Throwable $e) {
+                Log::channel('whatsapp')->error('Payment thank-you message failed: '.$e->getMessage(), [
+                    'event_id' => $event->id,
+                    'guest_id' => $guest->id,
+                    'payment_id' => $payment->id,
+                ]);
+            }
+        }
 
         return back()->with('success', 'Payment recorded successfully!');
     }
