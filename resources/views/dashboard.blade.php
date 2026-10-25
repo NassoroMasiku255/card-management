@@ -126,7 +126,7 @@
 </div>
 
 <!-- Spotlight + quick actions -->
-<div class="mb-6 grid grid-cols-1 items-start gap-6 xl:grid-cols-3">
+<div class="mb-8 grid grid-cols-1 items-start gap-5 xl:grid-cols-3">
     <div class="self-start xl:col-span-2">
         @if($upcoming)
         @php
@@ -215,7 +215,7 @@
         @endif
     </div>
 
-    <div class="flex flex-col gap-5">
+    <div class="order-3 flex flex-col gap-5 xl:order-none xl:col-start-3 xl:row-span-2 xl:row-start-1 xl:self-start">
         <div class="card-surface p-5">
             <div class="mb-4 flex items-center justify-between">
                 <h3 class="text-sm font-semibold text-surface-900">Quick actions</h3>
@@ -308,10 +308,9 @@
             @endif
         </div>
     </div>
-</div>
 
 <!-- Insights -->
-<div class="mb-8 grid grid-cols-1 gap-5 lg:grid-cols-3">
+<div class="order-2 grid grid-cols-1 gap-5 lg:grid-cols-3 xl:order-none xl:col-span-2 xl:col-start-1 xl:row-start-2">
     <div class="card-surface p-5">
         <div class="flex items-center justify-between">
             <div class="flex items-center gap-2.5">
@@ -401,6 +400,7 @@
             </div>
         </div>
     </div>
+</div>
 </div>
 
 <!-- Events -->
