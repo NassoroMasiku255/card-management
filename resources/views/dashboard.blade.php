@@ -310,94 +310,142 @@
     </div>
 
 <!-- Insights -->
-<div class="order-2 grid grid-cols-1 gap-5 lg:grid-cols-3 xl:order-none xl:col-span-2 xl:col-start-1 xl:row-start-2">
-    <div class="card-surface p-5">
-        <div class="flex items-center justify-between">
-            <div class="flex items-center gap-2.5">
-                <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-green-50 text-green-600"><i class="fas fa-paper-plane text-xs"></i></div>
-                <h3 class="text-sm font-semibold text-surface-900">Invitation delivery</h3>
-            </div>
-            <span class="text-2xl font-bold text-surface-900">{{ $deliveryRate }}%</span>
-        </div>
-        <div class="mt-5 h-2.5 overflow-hidden rounded-full bg-surface-100">
-            <div class="h-full rounded-full bg-gradient-to-r from-green-500 to-emerald-400" style="width: {{ $deliveryRate }}%;"></div>
-        </div>
-        <div class="mt-4 grid grid-cols-3 gap-3 text-center">
-            <div class="rounded-lg bg-surface-50 py-2.5">
-                <p class="text-base font-bold text-surface-900">{{ number_format($totalInvitationsSent) }}</p>
-                <p class="text-[10px] uppercase tracking-wider text-surface-400">Sent</p>
-            </div>
-            <div class="rounded-lg bg-surface-50 py-2.5">
-                <p class="text-base font-bold text-amber-600">{{ number_format($pendingInvitations) }}</p>
-                <p class="text-[10px] uppercase tracking-wider text-surface-400">Pending</p>
-            </div>
-            <div class="rounded-lg bg-surface-50 py-2.5">
-                <p class="text-base font-bold text-surface-900">{{ number_format($totalInvitations) }}</p>
-                <p class="text-[10px] uppercase tracking-wider text-surface-400">Total</p>
-            </div>
-        </div>
-    </div>
-
-    <div class="card-surface p-5">
-        <div class="flex items-center justify-between">
-            <div class="flex items-center gap-2.5">
-                <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-50 text-blue-600"><i class="fas fa-envelope-circle-check text-xs"></i></div>
-                <h3 class="text-sm font-semibold text-surface-900">RSVP breakdown</h3>
+<div class="order-2 grid grid-cols-1 gap-5 lg:grid-cols-5 xl:order-none xl:col-span-2 xl:col-start-1 xl:row-start-2">
+    <!-- Guest response -->
+    <div class="card-surface flex h-full flex-col overflow-hidden lg:col-span-3">
+        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-surface-100 px-5 py-4">
+            <div class="flex items-center gap-3">
+                <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-soft">
+                    <i class="fas fa-chart-simple text-sm"></i>
+                </div>
+                <div>
+                    <h3 class="text-sm font-semibold text-surface-900">Guest response</h3>
+                    <p class="text-[11px] text-surface-400">RSVP, invitations and attendance</p>
+                </div>
             </div>
             <span class="badge bg-blue-50 text-blue-700">{{ $rsvpResponseRate }}% responded</span>
         </div>
-        <div class="mt-5 flex items-center gap-6">
-            <div class="relative h-28 w-28 shrink-0 rounded-full"
-                style="background: conic-gradient(#22c55e 0 {{ $attendPct }}%, #f87171 {{ $attendPct }}% {{ $attendPct + $notAttendPct }}%, #facc15 {{ $attendPct + $notAttendPct }}% 100%);">
-                <div class="absolute inset-[10px] flex flex-col items-center justify-center rounded-full bg-white">
-                    <span class="font-display text-2xl font-bold text-surface-900">{{ number_format($rsvpAttending) }}</span>
-                    <span class="text-[9px] font-semibold uppercase tracking-wider text-surface-400">Attending</span>
+
+        <div class="flex-1 p-5">
+            <div class="flex flex-col items-center gap-6 sm:flex-row">
+                <div class="relative h-32 w-32 shrink-0 rounded-full"
+                    style="background: conic-gradient(#22c55e 0 {{ $attendPct }}%, #f87171 {{ $attendPct }}% {{ $attendPct + $notAttendPct }}%, #facc15 {{ $attendPct + $notAttendPct }}% 100%);">
+                    <div class="absolute inset-[11px] flex flex-col items-center justify-center rounded-full bg-white shadow-inner">
+                        <span class="font-display text-3xl font-bold text-surface-900">{{ number_format($rsvpAttending) }}</span>
+                        <span class="text-[9px] font-semibold uppercase tracking-[0.12em] text-surface-400">attending</span>
+                    </div>
+                </div>
+
+                <div class="min-w-0 flex-1 space-y-3.5">
+                    <div>
+                        <div class="flex items-center justify-between gap-2 text-xs">
+                            <span class="flex items-center gap-2 text-surface-600"><span class="h-2 w-2 rounded-full bg-green-500"></span>Nitafika</span>
+                            <span class="text-surface-400"><strong class="text-sm text-green-600">{{ number_format($rsvpAttending) }}</strong> · {{ $attendPct }}%</span>
+                        </div>
+                        <div class="mt-1.5 h-1.5 overflow-hidden rounded-full bg-surface-100">
+                            <div class="h-full rounded-full bg-green-500" style="width: {{ $attendPct }}%;"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex items-center justify-between gap-2 text-xs">
+                            <span class="flex items-center gap-2 text-surface-600"><span class="h-2 w-2 rounded-full bg-red-400"></span>Sitafika</span>
+                            <span class="text-surface-400"><strong class="text-sm text-red-500">{{ number_format($rsvpNotAttending) }}</strong> · {{ $notAttendPct }}%</span>
+                        </div>
+                        <div class="mt-1.5 h-1.5 overflow-hidden rounded-full bg-surface-100">
+                            <div class="h-full rounded-full bg-red-400" style="width: {{ $notAttendPct }}%;"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex items-center justify-between gap-2 text-xs">
+                            <span class="flex items-center gap-2 text-surface-600"><span class="h-2 w-2 rounded-full bg-yellow-400"></span>Pending</span>
+                            <span class="text-surface-400"><strong class="text-sm text-yellow-600">{{ number_format($rsvpPending) }}</strong> · {{ $pendingPct }}%</span>
+                        </div>
+                        <div class="mt-1.5 h-1.5 overflow-hidden rounded-full bg-surface-100">
+                            <div class="h-full rounded-full bg-yellow-400" style="width: {{ $pendingPct }}%;"></div>
+                        </div>
+                    </div>
                 </div>
             </div>
-            <div class="min-w-0 flex-1 space-y-3">
-                <div class="flex items-center justify-between gap-2">
-                    <span class="flex items-center gap-2 text-xs text-surface-500"><span class="h-2 w-2 rounded-full bg-green-500"></span>Nitafika</span>
-                    <span class="text-sm font-bold text-green-600">{{ number_format($rsvpAttending) }}</span>
+
+            <div class="mt-6 rounded-xl border border-surface-100 bg-surface-50/70 p-4">
+                <div class="flex items-center justify-between">
+                    <span class="flex items-center gap-2 text-xs font-semibold text-surface-700">
+                        <i class="fas fa-paper-plane text-green-500"></i> Invitation delivery
+                    </span>
+                    <span class="text-xs font-bold text-surface-900">{{ number_format($totalInvitationsSent) }} / {{ number_format($totalInvitations) }}</span>
                 </div>
-                <div class="flex items-center justify-between gap-2">
-                    <span class="flex items-center gap-2 text-xs text-surface-500"><span class="h-2 w-2 rounded-full bg-red-400"></span>Sitafika</span>
-                    <span class="text-sm font-bold text-red-500">{{ number_format($rsvpNotAttending) }}</span>
+                <div class="mt-2.5 flex h-2 overflow-hidden rounded-full bg-surface-200">
+                    <div class="h-full bg-gradient-to-r from-green-500 to-emerald-400" style="width: {{ $deliveryRate }}%;"></div>
+                    <div class="h-full bg-amber-300" style="width: {{ 100 - $deliveryRate }}%;"></div>
                 </div>
-                <div class="flex items-center justify-between gap-2">
-                    <span class="flex items-center gap-2 text-xs text-surface-500"><span class="h-2 w-2 rounded-full bg-yellow-400"></span>Pending</span>
-                    <span class="text-sm font-bold text-yellow-600">{{ number_format($rsvpPending) }}</span>
+                <div class="mt-2 flex items-center justify-between text-[10px] text-surface-400">
+                    <span class="flex items-center gap-1.5"><span class="h-1.5 w-1.5 rounded-full bg-green-500"></span>{{ number_format($totalInvitationsSent) }} delivered</span>
+                    <span class="flex items-center gap-1.5"><span class="h-1.5 w-1.5 rounded-full bg-amber-300"></span>{{ number_format($pendingInvitations) }} pending</span>
                 </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-3 divide-x divide-surface-100 border-t border-surface-100 bg-surface-50/50 text-center">
+            <div class="px-3 py-3">
+                <p class="text-sm font-bold text-surface-900">{{ number_format($totalGuests) }}</p>
+                <p class="mt-0.5 text-[9px] font-semibold uppercase tracking-wider text-surface-400">Guests</p>
+            </div>
+            <div class="px-3 py-3">
+                <p class="text-sm font-bold text-primary-600">{{ number_format($checkedIn) }}</p>
+                <p class="mt-0.5 text-[9px] font-semibold uppercase tracking-wider text-surface-400">Checked in</p>
+            </div>
+            <div class="px-3 py-3">
+                <p class="text-sm font-bold text-gold-600">{{ number_format($estimatedAttendance) }}</p>
+                <p class="mt-0.5 text-[9px] font-semibold uppercase tracking-wider text-surface-400">Expected seats</p>
             </div>
         </div>
     </div>
 
-    <div class="card-surface relative overflow-hidden p-5">
-        <div class="absolute -right-8 -top-8 h-28 w-28 rounded-full bg-gold-100/70"></div>
-        <div class="relative">
-            <div class="flex items-center justify-between">
-                <div class="flex items-center gap-2.5">
-                    <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-gold-50 text-gold-600"><i class="fas fa-coins text-xs"></i></div>
-                    <h3 class="text-sm font-semibold text-surface-900">Contributions</h3>
+    <!-- Contributions -->
+    <div class="relative flex h-full flex-col overflow-hidden rounded-2xl bg-gradient-to-br from-[#1c1917] via-[#27272a] to-[#3f2d10] p-5 text-white shadow-soft-lg lg:col-span-2">
+        <div class="absolute -right-10 -top-10 h-36 w-36 rounded-full bg-gold-400/20 blur-2xl"></div>
+        <div class="absolute -bottom-16 -left-10 h-40 w-40 rounded-full bg-primary-500/15 blur-3xl"></div>
+
+        <div class="relative flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="flex h-10 w-10 items-center justify-center rounded-xl border border-gold-300/20 bg-gold-400/15 text-gold-300">
+                    <i class="fas fa-coins"></i>
                 </div>
-                <span class="text-2xl font-bold text-gold-700">{{ $collectionRate }}%</span>
-            </div>
-            <div class="mt-5">
-                <p class="text-[10px] font-semibold uppercase tracking-wider text-surface-400">Total pledged</p>
-                <p class="mt-0.5 font-display text-2xl font-bold text-surface-900">TZS {{ $money($totalPledged) }}</p>
-            </div>
-            <div class="mt-3 h-2.5 overflow-hidden rounded-full bg-surface-100">
-                <div class="h-full rounded-full bg-gradient-to-r from-gold-500 to-amber-400" style="width: {{ $collectionRate }}%;"></div>
-            </div>
-            <div class="mt-4 grid grid-cols-2 gap-3">
-                <div class="rounded-lg bg-green-50 px-3 py-2.5">
-                    <p class="text-[10px] uppercase tracking-wider text-green-600">Collected</p>
-                    <p class="mt-0.5 text-sm font-bold text-green-700">TZS {{ $money($totalPaid) }}</p>
-                </div>
-                <div class="rounded-lg bg-red-50 px-3 py-2.5">
-                    <p class="text-[10px] uppercase tracking-wider text-red-500">Outstanding</p>
-                    <p class="mt-0.5 text-sm font-bold text-red-600">TZS {{ $money($outstanding) }}</p>
+                <div>
+                    <h3 class="text-sm font-semibold">Contributions</h3>
+                    <p class="text-[11px] text-white/40">Pledges and collections</p>
                 </div>
             </div>
+            <span class="rounded-full bg-white/10 px-2.5 py-1 text-[10px] font-semibold text-gold-200">{{ $collectionRate }}% collected</span>
+        </div>
+
+        <div class="relative mt-6">
+            <p class="text-[10px] font-semibold uppercase tracking-[0.14em] text-white/40">Total pledged</p>
+            <p class="mt-1 font-display text-3xl font-bold tracking-tight">TZS {{ $money($totalPledged) }}</p>
+            <div class="mt-4 h-2 overflow-hidden rounded-full bg-white/10">
+                <div class="h-full rounded-full bg-gradient-to-r from-gold-500 to-amber-300" style="width: {{ $collectionRate }}%;"></div>
+            </div>
+        </div>
+
+        <div class="relative mt-5 grid grid-cols-2 gap-2.5">
+            <div class="rounded-xl border border-green-400/15 bg-green-400/10 px-3 py-3">
+                <p class="text-[9px] font-semibold uppercase tracking-wider text-green-300/80">Collected</p>
+                <p class="mt-1 text-sm font-bold text-green-300">TZS {{ $money($totalPaid) }}</p>
+            </div>
+            <div class="rounded-xl border border-rose-400/15 bg-rose-400/10 px-3 py-3">
+                <p class="text-[9px] font-semibold uppercase tracking-wider text-rose-300/80">Outstanding</p>
+                <p class="mt-1 text-sm font-bold text-rose-300">TZS {{ $money($outstanding) }}</p>
+            </div>
+        </div>
+
+        <div class="relative mt-auto pt-5">
+            <div class="mb-2 flex items-center justify-between text-[10px] text-white/35">
+                <span>Collection progress</span>
+                <span>{{ $collectionRate }}%</span>
+            </div>
+            <a href="{{ route('events.index') }}" class="flex items-center justify-between rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 text-xs font-semibold text-white/80 transition hover:bg-white/10">
+                View event reports <i class="fas fa-arrow-right text-[10px]"></i>
+            </a>
         </div>
     </div>
 </div>
