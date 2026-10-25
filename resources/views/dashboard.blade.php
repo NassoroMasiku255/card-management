@@ -478,7 +478,6 @@
     @foreach($recentEvents as $event)
     @php
         $accent = $event->card_accent_color ?: '#e11d48';
-        $cover = $event->cover_image ? asset('storage/'.$event->cover_image) : null;
         $isUpcoming = $event->event_date->isFuture();
         $eventDelivery = $event->invitations_count > 0 ? (int) round(($event->invitations_sent_count / $event->invitations_count) * 100) : 0;
         $eventCheckin = $event->guests_count > 0 ? (int) round(($event->checked_in_count / $event->guests_count) * 100) : 0;
@@ -486,47 +485,60 @@
         $eventPledged = (float) $event->total_pledged;
         $eventCollection = $eventPledged > 0 ? (int) min(100, round(($eventPaid / $eventPledged) * 100)) : 0;
     @endphp
-    <a href="{{ route('events.show', $event) }}" class="group overflow-hidden rounded-2xl border border-surface-200 bg-white shadow-soft transition hover:-translate-y-1 hover:shadow-soft-lg">
-        <div class="relative h-32 overflow-hidden"
-            style="background: {{ $cover ? "linear-gradient(180deg, rgba(18,18,20,.15), rgba(18,18,20,.78)), url('{$cover}') center/cover" : "linear-gradient(135deg, {$accent}, #18181b)" }};">
-            <div class="absolute inset-0 opacity-15" style="background-image: radial-gradient(circle at 20% 20%, #fff 1px, transparent 1px); background-size: 16px 16px;"></div>
-            <div class="absolute left-4 top-4 flex items-center gap-2">
-                <span class="rounded-full bg-white/90 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-surface-700 backdrop-blur">{{ ucfirst($event->status) }}</span>
+    <div class="group relative overflow-hidden rounded-2xl border border-surface-200 bg-white shadow-soft transition hover:-translate-y-1 hover:shadow-soft-lg">
+        <div class="absolute inset-x-0 top-0 h-1" style="background: linear-gradient(90deg, {{ $accent }}, {{ $accent }}66);"></div>
+        <div class="absolute -right-10 -top-10 h-28 w-28 rounded-full opacity-[0.06]" style="background: {{ $accent }}; filter: blur(20px);"></div>
+
+        <div class="relative p-5">
+            <div class="flex items-start justify-between gap-3">
+                <div class="flex min-w-0 items-center gap-3">
+                    <div class="flex h-12 w-12 shrink-0 flex-col items-center justify-center rounded-xl"
+                        style="background: {{ $accent }}14; color: {{ $accent }};">
+                        <span class="text-lg font-bold leading-none">{{ $event->event_date->format('d') }}</span>
+                        <span class="mt-0.5 text-[9px] font-bold uppercase tracking-[0.12em]">{{ $event->event_date->format('M') }}</span>
+                    </div>
+                    <div class="min-w-0">
+                        <a href="{{ route('events.show', $event) }}" class="block truncate font-display text-base font-bold text-surface-900 transition hover:text-primary-600">{{ $event->name }}</a>
+                        <p class="mt-0.5 truncate text-[11px] text-surface-400"><i class="fas fa-location-dot mr-1"></i>{{ $event->location }}</p>
+                    </div>
+                </div>
+                <span class="badge shrink-0 {{ $event->status === 'active' ? 'bg-green-100 text-green-700' : ($event->status === 'completed' ? 'bg-blue-100 text-blue-700' : 'bg-surface-100 text-surface-600') }}">
+                    {{ ucfirst($event->status) }}
+                </span>
+            </div>
+
+            <div class="mt-3 flex flex-wrap items-center gap-1.5">
                 @if($isUpcoming)
-                <span class="rounded-full border border-white/20 bg-black/25 px-2.5 py-1 text-[10px] font-semibold text-white backdrop-blur">
-                    <i class="fas fa-clock mr-1"></i>{{ $event->event_date->diffForHumans(null, true) }} left
+                <span class="inline-flex items-center gap-1 rounded-full bg-surface-50 px-2.5 py-1 text-[10px] font-medium text-surface-500">
+                    <i class="fas fa-clock text-surface-400"></i>{{ $event->event_date->diffForHumans(null, true) }} left
+                </span>
+                @endif
+                <span class="inline-flex items-center gap-1 rounded-full bg-surface-50 px-2.5 py-1 text-[10px] font-medium text-surface-500">
+                    <i class="fas fa-calendar text-surface-400"></i>{{ $event->event_date->format('D, d M Y') }}
+                </span>
+                @if(auth()->user()->isAdmin() && $event->user)
+                <span class="inline-flex items-center gap-1 rounded-full bg-surface-50 px-2.5 py-1 text-[10px] font-medium text-surface-500">
+                    <i class="fas fa-user text-surface-400"></i>{{ $event->user->name }}
                 </span>
                 @endif
             </div>
-            @if(auth()->user()->isAdmin() && $event->user)
-            <span class="absolute right-4 top-4 rounded-full border border-white/20 bg-black/25 px-2.5 py-1 text-[10px] font-medium text-white/85 backdrop-blur">
-                <i class="fas fa-user mr-1"></i>{{ $event->user->name }}
-            </span>
-            @endif
-            <div class="absolute bottom-4 left-4 right-4">
-                <h3 class="truncate font-display text-lg font-bold text-white">{{ $event->name }}</h3>
-                <p class="mt-0.5 truncate text-xs text-white/70"><i class="fas fa-location-dot mr-1"></i>{{ $event->location }}</p>
-            </div>
-        </div>
 
-        <div class="p-5">
-            <div class="flex items-center justify-between text-xs text-surface-500">
-                <span><i class="fas fa-calendar mr-1.5 text-surface-400"></i>{{ $event->event_date->format('d M Y') }}</span>
-                <span class="font-semibold text-surface-700">{{ number_format($event->guests_count) }} guests</span>
-            </div>
-
-            <div class="mt-4 grid grid-cols-3 gap-2 text-center">
-                <div class="rounded-lg bg-surface-50 py-2">
+            <div class="mt-4 grid grid-cols-4 divide-x divide-surface-100 rounded-xl border border-surface-100 bg-surface-50/60 py-2.5 text-center">
+                <div>
+                    <p class="text-sm font-bold text-surface-900">{{ number_format($event->guests_count) }}</p>
+                    <p class="mt-0.5 text-[8px] font-semibold uppercase tracking-wider text-surface-400">Guests</p>
+                </div>
+                <div>
                     <p class="text-sm font-bold text-surface-900">{{ number_format($event->invitations_sent_count) }}</p>
-                    <p class="text-[9px] uppercase tracking-wider text-surface-400">Sent</p>
+                    <p class="mt-0.5 text-[8px] font-semibold uppercase tracking-wider text-surface-400">Invited</p>
                 </div>
-                <div class="rounded-lg bg-surface-50 py-2">
+                <div>
                     <p class="text-sm font-bold text-green-600">{{ number_format($event->rsvp_attending_count) }}</p>
-                    <p class="text-[9px] uppercase tracking-wider text-surface-400">Attending</p>
+                    <p class="mt-0.5 text-[8px] font-semibold uppercase tracking-wider text-surface-400">Attending</p>
                 </div>
-                <div class="rounded-lg bg-surface-50 py-2">
+                <div>
                     <p class="text-sm font-bold text-gold-600">{{ number_format($event->checked_in_count) }}</p>
-                    <p class="text-[9px] uppercase tracking-wider text-surface-400">Checked in</p>
+                    <p class="mt-0.5 text-[8px] font-semibold uppercase tracking-wider text-surface-400">Checked</p>
                 </div>
             </div>
 
@@ -546,13 +558,13 @@
             </div>
 
             <div class="mt-4 flex items-center justify-between border-t border-surface-100 pt-3">
-                <span class="text-[11px] text-surface-400"><i class="fas fa-qrcode mr-1"></i>{{ $eventCheckin }}% checked in</span>
-                <span class="inline-flex items-center gap-1 text-xs font-semibold text-primary-600">
+                <span class="text-[10px] text-surface-400"><i class="fas fa-qrcode mr-1"></i>{{ $eventCheckin }}% checked in</span>
+                <a href="{{ route('events.show', $event) }}" class="inline-flex items-center gap-1 text-xs font-semibold text-primary-600 hover:text-primary-700">
                     Manage <i class="fas fa-arrow-right text-[10px] transition-transform group-hover:translate-x-0.5"></i>
-                </span>
+                </a>
             </div>
         </div>
-    </a>
+    </div>
     @endforeach
 </div>
 @endif
