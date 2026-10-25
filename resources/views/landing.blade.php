@@ -59,7 +59,7 @@
     <header class="sticky top-0 z-50 border-b border-surface-100 bg-white/85 backdrop-blur-xl">
         <div class="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3.5 sm:px-6 lg:px-8">
             <a href="{{ route('home') }}" class="flex shrink-0 items-center">
-                <img src="{{ asset('images/nialike-logo.png') }}" alt="NiaLike by Hamasika Technology" class="h-11 w-auto sm:h-12">
+                <img src="{{ asset('images/nialike-logo.png') }}?v=2" alt="NiaLike by Hamasika Technology" class="h-12 w-auto sm:h-14 lg:h-16">
             </a>
 
             <nav class="hidden items-center gap-8 lg:flex">
@@ -757,7 +757,7 @@
         <div class="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
             <div class="grid gap-10 md:grid-cols-[1.4fr_1fr_1fr]">
                 <div>
-                    <img src="{{ asset('images/nialike-logo.png') }}" alt="NiaLike by Hamasika Technology" class="h-12 w-auto">
+                    <img src="{{ asset('images/nialike-logo.png') }}?v=2" alt="NiaLike by Hamasika Technology" class="h-14 w-auto">
                     <p class="mt-4 max-w-sm text-sm leading-relaxed text-surface-500">
                         Beautiful digital invitations and complete guest management for weddings, send-offs,
                         graduations and corporate events.

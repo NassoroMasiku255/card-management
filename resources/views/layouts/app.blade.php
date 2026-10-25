@@ -15,7 +15,7 @@
         <!-- Sidebar (desktop) -->
         <aside class="hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0 border-r border-surface-200 bg-white">
             <div class="flex items-center gap-2.5 px-6 h-16 border-b border-surface-100">
-                <img src="{{ asset('images/nialike-icon.png') }}" alt="NiaLike" class="h-9 w-9 shrink-0 object-contain">
+                <img src="{{ asset('images/nialike-icon.png') }}?v=2" alt="NiaLike" class="h-10 w-10 shrink-0 object-contain">
                 <div class="leading-tight">
                     <span class="font-display font-bold text-lg text-surface-900 tracking-tight">NiaLike</span>
                     <span class="block text-[9px] font-semibold uppercase tracking-[0.16em] text-surface-400">by Hamasika Technology</span>
@@ -83,7 +83,7 @@
         <header class="md:hidden sticky top-0 z-30 bg-white/95 border-b border-surface-200 backdrop-blur">
             <div class="flex items-center justify-between h-16 px-4 gap-3">
                 <a href="{{ route('dashboard') }}" class="flex items-center gap-2 min-w-0">
-                    <img src="{{ asset('images/nialike-icon.png') }}" alt="NiaLike" class="h-8 w-8 shrink-0 object-contain">
+                    <img src="{{ asset('images/nialike-icon.png') }}?v=2" alt="NiaLike" class="h-8 w-8 shrink-0 object-contain">
                     <div class="leading-tight min-w-0">
                         <span class="font-display font-bold text-surface-900">NiaLike</span>
                         <span class="block text-[8px] font-semibold uppercase tracking-[0.14em] text-surface-400 truncate">by Hamasika</span>

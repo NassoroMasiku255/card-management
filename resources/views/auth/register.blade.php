@@ -17,7 +17,7 @@
 
     <div class="relative max-w-md w-full">
         <div class="text-center mb-8">
-            <img src="{{ asset('images/nialike-logo.png') }}" alt="NiaLike by Hamasika Technology" class="mx-auto h-16 w-auto sm:h-20">
+            <img src="{{ asset('images/nialike-logo.png') }}?v=2" alt="NiaLike by Hamasika Technology" class="mx-auto h-20 w-auto sm:h-24">
             <p class="text-surface-500 mt-4 text-sm">Create your event workspace</p>
         </div>
 

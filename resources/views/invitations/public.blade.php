@@ -332,7 +332,7 @@
             <div class="hero-media" style="background-image: url('{{ $coverUrl ?? 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%221%22 height=%221%22%3E%3C/svg%3E' }}'); background-color: {{ $coverUrl ? '#1c1917' : $accent }};"></div>
             <div class="hero-content">
                 <div class="brand">
-                    <span class="brand-mark"><img src="{{ asset('images/nialike-icon.png') }}" alt="" style="width:100%;height:100%;object-fit:contain;"></span>
+                    <span class="brand-mark"><img src="{{ asset('images/nialike-icon.png') }}?v=2" alt="" style="width:100%;height:100%;object-fit:contain;"></span>
                     NiaLike Invitation
                 </div>
 
