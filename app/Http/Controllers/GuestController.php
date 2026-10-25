@@ -81,7 +81,14 @@ class GuestController extends Controller
 
         $whatsappTemplates = WhatsAppTemplate::orderBy('name')->orderBy('language')->get();
 
-        return view('guests.index', compact('event', 'guests', 'perPage', 'whatsappTemplates'));
+        $summary = [
+            'total' => $event->guests()->count(),
+            'invited' => $event->invitations()->where('send_status', 'sent')->count(),
+            'attending' => $event->invitations()->where('rsvp_status', 'attending')->count(),
+            'checked_in' => $event->invitations()->where('attendance_status', 'attended')->count(),
+        ];
+
+        return view('guests.index', compact('event', 'guests', 'perPage', 'whatsappTemplates', 'summary'));
     }
 
     public function export(Event $event)
