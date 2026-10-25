@@ -3,10 +3,19 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class WebhookLog extends Model
 {
+    public const REPLY_EVENT_TYPES = [
+        'message_reply',
+        'interactive_reply',
+        'button_reply',
+    ];
+
     protected $fillable = [
+        'event_id',
+        'guest_id',
         'direction',
         'method',
         'event_type',
@@ -27,6 +36,44 @@ class WebhookLog extends Model
         'parsed_data' => 'array',
         'processed' => 'boolean',
     ];
+
+    public function event(): BelongsTo
+    {
+        return $this->belongsTo(Event::class);
+    }
+
+    public function guest(): BelongsTo
+    {
+        return $this->belongsTo(Guest::class);
+    }
+
+    public function getReplyTextAttribute(): ?string
+    {
+        if (! in_array($this->event_type, self::REPLY_EVENT_TYPES, true)) {
+            return null;
+        }
+
+        $data = $this->parsed_data ?? [];
+
+        return match ($this->event_type) {
+            'message_reply' => $data['text']['body'] ?? $this->summary,
+            'interactive_reply' => $data['interactive']['button_reply']['title']
+                ?? $data['interactive']['list_reply']['title']
+                ?? $this->summary,
+            'button_reply' => $data['button']['text'] ?? $this->summary,
+            default => $this->summary,
+        };
+    }
+
+    public function getReplyKindAttribute(): ?string
+    {
+        return match ($this->event_type) {
+            'message_reply' => 'Text',
+            'interactive_reply' => 'Quick reply',
+            'button_reply' => 'Button',
+            default => null,
+        };
+    }
 
     /**
      * Create a log entry from an incoming webhook request.

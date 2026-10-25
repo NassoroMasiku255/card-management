@@ -107,6 +107,9 @@
             <a href="{{ route('events.report', $event) }}" class="btn border border-white/25 bg-white/10 text-white hover:bg-white/20">
                 <i class="fas fa-chart-pie"></i> Report
             </a>
+            <a href="{{ route('events.messages.report', $event) }}" class="btn border border-white/25 bg-white/10 text-white hover:bg-white/20">
+                <i class="fas fa-tower-broadcast"></i> Messages
+            </a>
             <a href="{{ route('events.countdown-card', $event) }}" target="_blank" class="btn border border-white/25 bg-white/10 text-white hover:bg-white/20">
                 <i class="fab fa-whatsapp text-green-300"></i> Countdown
             </a>
@@ -175,7 +178,7 @@
 </div>
 
 <!-- Quick access -->
-<div class="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+<div class="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7">
     <a href="{{ route('events.guests.index', $event) }}" class="group rounded-xl border border-surface-200 bg-white p-4 shadow-soft transition hover:-translate-y-0.5 hover:border-primary-200 hover:shadow-soft-lg">
         <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-primary-50 text-primary-600 transition group-hover:bg-primary-500 group-hover:text-white"><i class="fas fa-users text-xs"></i></div>
         <p class="mt-2.5 text-xs font-semibold text-surface-700">Guest list</p>
@@ -195,6 +198,11 @@
         <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-50 text-blue-600 transition group-hover:bg-blue-500 group-hover:text-white"><i class="fas fa-chart-pie text-xs"></i></div>
         <p class="mt-2.5 text-xs font-semibold text-surface-700">Reports</p>
         <p class="mt-0.5 text-[10px] text-surface-400">Full breakdown</p>
+    </a>
+    <a href="{{ route('events.messages.report', $event) }}" class="group rounded-xl border border-surface-200 bg-white p-4 shadow-soft transition hover:-translate-y-0.5 hover:border-green-200 hover:shadow-soft-lg">
+        <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-green-50 text-green-600 transition group-hover:bg-green-500 group-hover:text-white"><i class="fas fa-tower-broadcast text-xs"></i></div>
+        <p class="mt-2.5 text-xs font-semibold text-surface-700">Messages</p>
+        <p class="mt-0.5 text-[10px] text-surface-400">Delivery &amp; replies</p>
     </a>
     <a href="{{ route('events.guests.import', $event) }}" class="group rounded-xl border border-surface-200 bg-white p-4 shadow-soft transition hover:-translate-y-0.5 hover:border-purple-200 hover:shadow-soft-lg">
         <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-purple-50 text-purple-600 transition group-hover:bg-purple-500 group-hover:text-white"><i class="fas fa-file-import text-xs"></i></div>

@@ -5,6 +5,7 @@ use App\Http\Controllers\AdminWhatsAppTemplateController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EventController;
+use App\Http\Controllers\EventMessageReportController;
 use App\Http\Controllers\EventReportController;
 use App\Http\Controllers\GuestController;
 use App\Http\Controllers\GuestPaymentController;
@@ -66,6 +67,7 @@ Route::middleware('auth')->group(function () {
     // Guests (nested under events)
     Route::prefix('events/{event}')->name('events.')->group(function () {
         Route::get('/report', [EventReportController::class, 'show'])->name('report');
+        Route::get('/messages-report', [EventMessageReportController::class, 'show'])->name('messages.report');
         Route::get('/countdown-card', [EventController::class, 'countdownCard'])->name('countdown-card');
 
         Route::get('/guests', [GuestController::class, 'index'])->name('guests.index');

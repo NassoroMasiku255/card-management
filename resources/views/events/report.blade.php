@@ -48,6 +48,9 @@
                     <a href="{{ route('events.guests.index', $event) }}" class="btn btn-outline btn-sm flex-1 sm:flex-none">
                         <i class="fas fa-users"></i> Guests
                     </a>
+                    <a href="{{ route('events.messages.report', $event) }}" class="btn btn-outline btn-sm flex-1 sm:flex-none">
+                        <i class="fas fa-tower-broadcast"></i> Messages
+                    </a>
                     <button type="button" onclick="window.print()" class="btn btn-primary btn-sm flex-1 sm:flex-none">
                         <i class="fas fa-print"></i> Print report
                     </button>

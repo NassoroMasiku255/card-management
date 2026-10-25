@@ -2,9 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Guest;
+use App\Models\Invitation;
 use App\Models\WebhookLog;
+use App\Models\WhatsAppMessage;
 use App\Services\WhatsAppService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -16,9 +20,7 @@ use Symfony\Component\HttpFoundation\Response;
  */
 class WhatsAppWebhookController extends Controller
 {
-    public function __construct(private readonly WhatsAppService $whatsapp)
-    {
-    }
+    public function __construct(private readonly WhatsAppService $whatsapp) {}
 
     public function __invoke(Request $request): Response
     {
@@ -98,7 +100,7 @@ class WhatsAppWebhookController extends Controller
 
             WebhookLog::whereIn('id', $logs->pluck('id'))->update(['processed' => true]);
         } catch (\Throwable $e) {
-            Log::channel('whatsapp')->error('WhatsApp webhook processing failed: ' . $e->getMessage(), [
+            Log::channel('whatsapp')->error('WhatsApp webhook processing failed: '.$e->getMessage(), [
                 'exception' => $e,
             ]);
 
@@ -114,7 +116,7 @@ class WhatsAppWebhookController extends Controller
      * Walk the Cloud API envelope and create a WebhookLog for each
      * meaningful event (status update, message, error).
      */
-    private function extractAndLog(array $payload, array $headers): \Illuminate\Support\Collection
+    private function extractAndLog(array $payload, array $headers): Collection
     {
         $logs = collect();
 
@@ -123,13 +125,18 @@ class WhatsAppWebhookController extends Controller
                 $value = $change['value'] ?? [];
 
                 foreach ($value['statuses'] ?? [] as $status) {
+                    $statusId = $status['id'] ?? null;
+                    $outbound = $statusId ? WhatsAppMessage::where('whatsapp_message_id', $statusId)->first() : null;
+
                     $logs->push(WebhookLog::create([
+                        'event_id' => $outbound?->event_id,
+                        'guest_id' => $outbound?->guest_id,
                         'direction' => 'incoming',
                         'method' => 'POST',
                         'event_type' => 'message_status',
                         'whatsapp_message_id' => $status['id'] ?? null,
                         'source_phone' => $status['recipient_id'] ?? null,
-                        'summary' => 'Status: ' . ($status['status'] ?? 'unknown'),
+                        'summary' => 'Status: '.($status['status'] ?? 'unknown'),
                         'payload' => $payload,
                         'headers' => $headers,
                         'parsed_data' => $status,
@@ -143,10 +150,13 @@ class WhatsAppWebhookController extends Controller
                         'interactive' => 'interactive_reply',
                         'button' => 'button_reply',
                         'text' => 'message_reply',
-                        default => 'message_' . $type,
+                        default => 'message_'.$type,
                     };
+                    $context = $this->resolveIncomingContext($message);
 
                     $logs->push(WebhookLog::create([
+                        'event_id' => $context['event_id'],
+                        'guest_id' => $context['guest_id'],
                         'direction' => 'incoming',
                         'method' => 'POST',
                         'event_type' => $eventType,
@@ -165,7 +175,7 @@ class WhatsAppWebhookController extends Controller
                         'direction' => 'incoming',
                         'method' => 'POST',
                         'event_type' => 'error',
-                        'summary' => 'Error: ' . ($error['message'] ?? $error['title'] ?? 'unknown'),
+                        'summary' => 'Error: '.($error['message'] ?? $error['title'] ?? 'unknown'),
                         'payload' => $payload,
                         'headers' => $headers,
                         'parsed_data' => $error,
@@ -190,16 +200,76 @@ class WhatsAppWebhookController extends Controller
         return $logs;
     }
 
+    /**
+     * Link an incoming message to an event/guest so the per-event message
+     * report can show the guest behind each reply.
+     */
+    private function resolveIncomingContext(array $message): array
+    {
+        $type = $message['type'] ?? null;
+        $reply = match ($type) {
+            'interactive' => $message['interactive']['button_reply']['id']
+                ?? $message['interactive']['list_reply']['id']
+                ?? null,
+            'button' => $message['button']['payload'] ?? null,
+            default => null,
+        };
+
+        if (is_string($reply) && preg_match('/^rsvp_(?:yes|no)_(\d+)$/i', $reply, $matches)) {
+            $invitation = Invitation::with('guest')->find((int) $matches[1]);
+
+            if ($invitation?->guest) {
+                return [
+                    'event_id' => $invitation->event_id,
+                    'guest_id' => $invitation->guest_id,
+                ];
+            }
+        }
+
+        $from = preg_replace('/\D/', '', (string) ($message['from'] ?? ''));
+
+        if ($from !== '') {
+            $outbound = WhatsAppMessage::where('to_phone', $from)
+                ->whereNotNull('guest_id')
+                ->latest('id')
+                ->first();
+
+            if ($outbound?->guest_id) {
+                return [
+                    'event_id' => $outbound->event_id,
+                    'guest_id' => $outbound->guest_id,
+                ];
+            }
+
+            $guest = Guest::query()
+                ->whereRaw(
+                    "REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(phone_number, ' ', ''), '-', ''), '(', ''), ')', ''), '+', '') LIKE ?",
+                    ['%'.substr($from, -9)]
+                )
+                ->latest('id')
+                ->first();
+
+            if ($guest) {
+                return [
+                    'event_id' => $guest->event_id,
+                    'guest_id' => $guest->id,
+                ];
+            }
+        }
+
+        return ['event_id' => null, 'guest_id' => null];
+    }
+
     private function summarizeMessage(array $message): string
     {
         $type = $message['type'] ?? 'unknown';
 
         return match ($type) {
-            'text' => 'Text: ' . mb_substr($message['text']['body'] ?? '', 0, 80),
-            'interactive' => 'Interactive: ' . ($message['interactive']['button_reply']['title']
+            'text' => 'Text: '.mb_substr($message['text']['body'] ?? '', 0, 80),
+            'interactive' => 'Interactive: '.($message['interactive']['button_reply']['title']
                 ?? $message['interactive']['list_reply']['title']
                 ?? 'unknown'),
-            'button' => 'Button: ' . ($message['button']['text'] ?? 'unknown'),
+            'button' => 'Button: '.($message['button']['text'] ?? 'unknown'),
             'image' => 'Image message',
             'video' => 'Video message',
             'audio' => 'Audio message',
@@ -207,7 +277,7 @@ class WhatsAppWebhookController extends Controller
             'location' => 'Location message',
             'sticker' => 'Sticker message',
             'contacts' => 'Contacts message',
-            default => 'Message type: ' . $type,
+            default => 'Message type: '.$type,
         };
     }
 
@@ -217,7 +287,7 @@ class WhatsAppWebhookController extends Controller
      */
     private function hubParam(Request $request, string $name): ?string
     {
-        $value = $request->query('hub_' . $name, $request->query('hub.' . $name));
+        $value = $request->query('hub_'.$name, $request->query('hub.'.$name));
 
         return is_string($value) ? $value : null;
     }
