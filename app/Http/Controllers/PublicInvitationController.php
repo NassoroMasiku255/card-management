@@ -36,6 +36,7 @@ class PublicInvitationController extends Controller
         return view('invitations.card', [
             'event' => $invitation->event,
             'guest' => $invitation->guest,
+            'invitation' => $invitation,
             'backUrl' => route('invitation.public', $qrCode),
         ]);
     }

@@ -117,10 +117,99 @@ class InvitationCardTest extends TestCase
         $this->actingAs($user)
             ->get(route('events.invitations.index', $event))
             ->assertOk()
+            ->assertSee('Upload Card')
+            ->assertSee('upload-card-btn', false)
+            ->assertSee('uploadCardModal', false)
             ->assertSee('Invitation card image')
             ->assertSee('WhatsApp message preview')
             ->assertSee('prepare-invitation-btn', false)
             ->assertSee('Send All Pending');
+    }
+
+    public function test_user_can_upload_card_image_directly_for_guest_invitation(): void
+    {
+        [$user, $event, $guest, $invitation] = $this->makeInvitation();
+
+        $response = $this->actingAs($user)->post(
+            route('events.invitations.upload-card', [$event, $invitation]),
+            ['card_image' => UploadedFile::fake()->image('custom-card.png', 900, 1200)],
+            ['Accept' => 'application/json']
+        );
+
+        $invitation->refresh();
+
+        $response->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('card_image_url', $invitation->card_image_url)
+            ->assertJsonPath('invitation.card_image_url', $invitation->card_image_url);
+
+        $this->assertNotNull($invitation->card_image_path);
+        Storage::disk('public')->assertExists($invitation->card_image_path);
+        $this->assertSame(asset('storage/'.$invitation->card_image_path), $invitation->card_image_url);
+    }
+
+    public function test_uploading_new_card_image_overrides_previous_image(): void
+    {
+        [$user, $event, $guest, $invitation] = $this->makeInvitation();
+
+        // Upload first card
+        $this->actingAs($user)->post(
+            route('events.invitations.upload-card', [$event, $invitation]),
+            ['card_image' => UploadedFile::fake()->image('card1.png', 900, 1200)],
+            ['Accept' => 'application/json']
+        )->assertOk();
+
+        $invitation->refresh();
+        $firstPath = $invitation->card_image_path;
+        Storage::disk('public')->assertExists($firstPath);
+
+        // Upload second card (override)
+        $this->actingAs($user)->post(
+            route('events.invitations.upload-card', [$event, $invitation]),
+            ['card_image' => UploadedFile::fake()->image('card2.jpg', 900, 1200)],
+            ['Accept' => 'application/json']
+        )->assertOk();
+
+        $invitation->refresh();
+        $secondPath = $invitation->card_image_path;
+
+        $this->assertNotEquals($firstPath, $secondPath);
+        Storage::disk('public')->assertMissing($firstPath);
+        Storage::disk('public')->assertExists($secondPath);
+    }
+
+    public function test_card_view_and_download_function_uses_uploaded_card_image(): void
+    {
+        [$user, $event, $guest, $invitation] = $this->makeInvitation('Michael Scott');
+
+        // Without uploaded card, renders template
+        $response1 = $this->actingAs($user)->get(route('events.invitations.card', [$event, $guest]));
+        $response1->assertOk()
+            ->assertSee('Download PNG')
+            ->assertSee('Michael Scott')
+            ->assertSee('id="qr-code"', false);
+
+        // Upload custom card
+        $this->actingAs($user)->post(
+            route('events.invitations.upload-card', [$event, $invitation]),
+            ['card_image' => UploadedFile::fake()->image('scott-card.png', 800, 1200)],
+            ['Accept' => 'application/json']
+        )->assertOk();
+
+        $invitation->refresh();
+
+        // With uploaded card, renders uploaded card image and download card button
+        $response2 = $this->actingAs($user)->get(route('events.invitations.card', [$event, $guest]));
+        $response2->assertOk()
+            ->assertSee('Download Card')
+            ->assertSee($invitation->card_image_url, false)
+            ->assertSee('alt="Invitation Card - Michael Scott"', false);
+
+        // Public card endpoint also serves uploaded card
+        $publicCardResponse = $this->get(route('invitation.public.card', $invitation->qr_code_data));
+        $publicCardResponse->assertOk()
+            ->assertSee('Download Card')
+            ->assertSee($invitation->card_image_url, false);
     }
 
     private function makeInvitation(string $guestName = 'Jane Doe'): array

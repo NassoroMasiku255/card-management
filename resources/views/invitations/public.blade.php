@@ -139,9 +139,10 @@
         }
         .content { margin-top: 18px; display: grid; gap: 18px; }
         .panel {
-            border: 1px solid rgba(228, 228, 231, .85);
+            border: 1px solid color-mix(in srgb, var(--invite-fg) 12%, transparent);
             border-radius: 22px;
-            background: rgba(255, 255, 255, .94);
+            background: var(--invite-bg);
+            color: var(--invite-fg);
             box-shadow: 0 18px 45px -35px rgba(24, 24, 27, .45);
             padding: 24px;
         }
@@ -156,13 +157,14 @@
             font-family: "Playfair Display", Georgia, serif;
             font-size: clamp(1.45rem, 4vw, 2rem);
             line-height: 1.2;
-            color: #18181b;
+            color: var(--invite-fg);
         }
-        .welcome p { margin: 7px 0 0; color: #71717a; font-size: 13px; }
+        .welcome p { margin: 7px 0 0; color: color-mix(in srgb, var(--invite-fg) 62%, transparent); font-size: 13px; }
         .guest-badge {
             flex: none;
+            border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
             border-radius: 16px;
-            background: {{ $accent }}12;
+            background: color-mix(in srgb, var(--accent) 14%, var(--invite-bg));
             color: var(--accent);
             padding: 10px 14px;
             text-align: center;
@@ -175,30 +177,30 @@
             gap: 10px;
         }
         .detail {
-            border: 1px solid #f0efee;
+            border: 1px solid color-mix(in srgb, var(--invite-fg) 10%, transparent);
             border-radius: 14px;
-            background: #faf9f8;
+            background: color-mix(in srgb, var(--invite-fg) 5%, var(--invite-bg));
             padding: 12px 14px;
         }
         .detail-label {
             display: flex;
             align-items: center;
             gap: 6px;
-            color: #a1a1aa;
+            color: color-mix(in srgb, var(--invite-fg) 52%, transparent);
             font-size: 9px;
             font-weight: 700;
             letter-spacing: .11em;
             text-transform: uppercase;
         }
         .detail-label i { color: var(--accent); font-size: 10px; }
-        .detail-value { margin-top: 5px; color: #27272a; font-size: 13px; font-weight: 600; line-height: 1.35; }
+        .detail-value { margin-top: 5px; color: var(--invite-fg); font-size: 13px; font-weight: 600; line-height: 1.35; }
         .section-title {
             margin: 0 0 4px;
             font-family: "Playfair Display", Georgia, serif;
             font-size: 20px;
-            color: #18181b;
+            color: var(--invite-fg);
         }
-        .section-subtitle { margin: 0 0 16px; color: #a1a1aa; font-size: 12px; }
+        .section-subtitle { margin: 0 0 16px; color: color-mix(in srgb, var(--invite-fg) 52%, transparent); font-size: 12px; }
         .actions { display: flex; flex-wrap: wrap; gap: 10px; }
         .btn-invite {
             display: inline-flex;
@@ -216,8 +218,12 @@
         }
         .btn-invite:hover { transform: translateY(-1px); }
         .btn-primary-invite { background: var(--accent); color: #fff; }
-        .btn-outline-invite { border-color: #e4e4e7; background: #fff; color: #3f3f46; }
-        .btn-outline-invite:hover { background: #fafafa; }
+        .btn-outline-invite {
+            border-color: color-mix(in srgb, var(--invite-fg) 16%, transparent);
+            background: var(--invite-bg);
+            color: var(--invite-fg);
+        }
+        .btn-outline-invite:hover { background: color-mix(in srgb, var(--invite-fg) 7%, var(--invite-bg)); }
         .btn-rsvp-yes { background: #16a34a; color: #fff; }
         .btn-rsvp-no { background: #f4f4f5; color: #52525b; }
         .btn-rsvp-yes.is-selected { box-shadow: 0 0 0 3px #16a34a33; }
@@ -228,9 +234,9 @@
             gap: 7px;
             margin-bottom: 14px;
             border-radius: 999px;
-            background: #f4f4f5;
+            background: color-mix(in srgb, var(--invite-fg) 7%, var(--invite-bg));
             padding: 6px 10px;
-            color: #52525b;
+            color: color-mix(in srgb, var(--invite-fg) 72%, transparent);
             font-size: 10px;
             font-weight: 700;
             text-transform: uppercase;
@@ -245,15 +251,16 @@
             justify-content: center;
             width: 150px;
             height: 150px;
-            border: 1px solid #e4e4e7;
+            border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
             border-radius: 16px;
-            background: #fff;
+            background: var(--invite-bg);
             padding: 8px;
+            box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 10%, transparent);
         }
         .qr-box img, .qr-box canvas { width: 132px !important; height: 132px !important; }
         .qr-code-text {
             margin-top: 9px;
-            color: #a1a1aa;
+            color: color-mix(in srgb, var(--invite-fg) 52%, transparent);
             font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
             font-size: 9px;
             word-break: break-all;
@@ -266,25 +273,25 @@
         .link-box input {
             min-width: 0;
             flex: 1;
-            border: 1px solid #e4e4e7;
+            border: 1px solid color-mix(in srgb, var(--invite-fg) 14%, transparent);
             border-radius: 10px;
-            background: #fafafa;
+            background: color-mix(in srgb, var(--invite-fg) 4%, var(--invite-bg));
             padding: 9px 11px;
-            color: #71717a;
+            color: color-mix(in srgb, var(--invite-fg) 62%, transparent);
             font-size: 10px;
         }
         .link-box button {
-            border: 1px solid #e4e4e7;
+            border: 1px solid color-mix(in srgb, var(--invite-fg) 14%, transparent);
             border-radius: 10px;
-            background: #fff;
+            background: var(--invite-bg);
             padding: 0 12px;
-            color: #52525b;
+            color: var(--invite-fg);
             font-size: 11px;
             font-weight: 700;
             cursor: pointer;
         }
         .description {
-            color: #52525b;
+            color: color-mix(in srgb, var(--invite-fg) 68%, transparent);
             font-size: 13px;
             line-height: 1.7;
         }
@@ -385,7 +392,7 @@
                 </div>
 
                 @if($event->description)
-                <div class="mt-5 border-t border-surface-100 pt-4">
+                <div class="mt-5 border-t pt-4" style="border-color: color-mix(in srgb, var(--invite-fg) 12%, transparent);">
                     <p class="description">{!! nl2br(e($event->description)) !!}</p>
                 </div>
                 @endif
@@ -423,9 +430,9 @@
                         </form>
                     </div>
 
-                    <div class="mt-5 rounded-xl border border-dashed border-surface-200 bg-surface-50 p-3">
-                        <p class="text-[10px] font-bold uppercase tracking-[.12em] text-surface-400">Your private link</p>
-                        <p class="mt-1 text-[11px] text-surface-500">Save this link to reopen your invitation anytime.</p>
+                    <div class="mt-5 rounded-xl border border-dashed p-3" style="border-color: color-mix(in srgb, var(--invite-fg) 18%, transparent); background: color-mix(in srgb, var(--invite-fg) 4%, var(--invite-bg));">
+                        <p class="text-[10px] font-bold uppercase tracking-[.12em]" style="color: color-mix(in srgb, var(--invite-fg) 52%, transparent);">Your private link</p>
+                        <p class="mt-1 text-[11px]" style="color: color-mix(in srgb, var(--invite-fg) 62%, transparent);">Save this link to reopen your invitation anytime.</p>
                         <div class="link-box">
                             <input id="publicInviteUrl" type="text" readonly value="{{ $publicUrl }}">
                             <button type="button" onclick="copyPublicInviteUrl()"><i class="fas fa-copy mr-1"></i> Copy</button>
@@ -440,7 +447,7 @@
                         <div id="publicQrCode" data-qr="{{ $invitation->qr_code_data }}"></div>
                     </div>
                     <div class="qr-code-text">{{ $invitation->qr_code_data }}</div>
-                    <p class="mt-3 text-[10px] leading-relaxed text-surface-400">
+                    <p class="mt-3 text-[10px] leading-relaxed" style="color: color-mix(in srgb, var(--invite-fg) 52%, transparent);">
                         Keep this invitation private. The QR code is unique to you and will be used for check-in.
                     </p>
                 </section>
@@ -481,8 +488,8 @@
                 text: holder.dataset.qr,
                 width: 132,
                 height: 132,
-                colorDark: '#18181b',
-                colorLight: '#ffffff',
+                colorDark: {!! json_encode($fg) !!},
+                colorLight: {!! json_encode($bg) !!},
                 correctLevel: QRCode.CorrectLevel.H
             });
         });

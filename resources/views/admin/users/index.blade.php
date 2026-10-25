@@ -8,9 +8,14 @@
         <h1 class="font-display text-2xl font-bold text-surface-900">Users &amp; Event Access</h1>
         <p class="text-surface-500 mt-1">Create team members and assign the events they are allowed to manage.</p>
     </div>
-    <a href="{{ route('admin.users.create') }}" class="btn btn-primary">
-        <i class="fas fa-user-plus"></i> New User
-    </a>
+    <div class="flex items-center gap-2">
+        <a href="{{ route('admin.whatsapp-templates.index') }}" class="btn btn-outline">
+            <i class="fab fa-whatsapp"></i> WhatsApp Templates
+        </a>
+        <a href="{{ route('admin.users.create') }}" class="btn btn-primary">
+            <i class="fas fa-user-plus"></i> New User
+        </a>
+    </div>
 </div>
 
 <div class="card-surface p-4 mb-6 border-l-4 border-primary-500">

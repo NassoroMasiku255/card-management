@@ -33,7 +33,7 @@ class EventController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'event_date' => 'required|date|after:today',
-            'event_time' => 'nullable|date_format:H:i',
+            'event_time' => 'nullable|date_format:H:i,H:i:s',
             'location' => 'required|string|max:255',
             'hall' => 'nullable|string|max:255',
             'description' => 'nullable|string',
@@ -46,6 +46,7 @@ class EventController extends Controller
             'cover_image' => 'nullable|image|max:5120',
         ]);
 
+        $validated['event_time'] = $this->normalizeEventTime($validated['event_time'] ?? null);
         $validated['user_id'] = Auth::id();
         $validated['status'] = 'active';
 
@@ -119,7 +120,7 @@ class EventController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'event_date' => 'required|date',
-            'event_time' => 'nullable|date_format:H:i',
+            'event_time' => 'nullable|date_format:H:i,H:i:s',
             'location' => 'required|string|max:255',
             'hall' => 'nullable|string|max:255',
             'description' => 'nullable|string',
@@ -132,6 +133,8 @@ class EventController extends Controller
             'cover_image' => 'nullable|image|max:5120',
             'status' => 'nullable|in:draft,active,completed,cancelled',
         ]);
+
+        $validated['event_time'] = $this->normalizeEventTime($validated['event_time'] ?? null);
 
         if ($request->hasFile('cover_image')) {
             if ($event->cover_image) {
@@ -150,6 +153,15 @@ class EventController extends Controller
         $this->authorizeEvent($event);
         $event->delete();
         return redirect()->route('events.index')->with('success', 'Event deleted successfully!');
+    }
+
+    private function normalizeEventTime(?string $time): ?string
+    {
+        if (empty($time)) {
+            return null;
+        }
+
+        return substr($time, 0, 5);
     }
 
     private function getCardTemplates(): array

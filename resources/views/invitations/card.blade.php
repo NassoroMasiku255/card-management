@@ -3,6 +3,8 @@
     $bg = $event->card_background_color ?: '#ffffff';
     $fg = $event->card_text_color ?: '#333333';
     $accent = $event->card_accent_color ?: '#d4af37';
+    $invitation = $invitation ?? $guest->invitation;
+    $uploadedCardUrl = $invitation?->card_image_url;
     $invitationCardType = $event->cardTypeForAmount((float) $guest->paid_amount);
     $backUrl = $backUrl ?? route('events.invitations.index', $event);
 @endphp
@@ -27,7 +29,7 @@
 
     <div class="no-print fixed top-4 right-4 flex flex-wrap gap-2 z-20">
         <button type="button" id="download-card-btn" onclick="downloadCard()" class="btn btn-primary btn-sm shadow-soft-lg">
-            <i class="fas fa-download"></i> Download PNG
+            <i class="fas fa-download"></i> {{ $uploadedCardUrl ? 'Download Card' : 'Download PNG' }}
         </button>
         <button type="button" onclick="window.print()" class="btn btn-outline btn-sm shadow-soft-lg bg-white">
             <i class="fas fa-print"></i> Print
@@ -37,10 +39,19 @@
         </a>
     </div>
 
+    @if($uploadedCardUrl)
+    {{-- =====================================================
+         UPLOADED CUSTOM CARD IMAGE
+    ====================================================== --}}
+    <div class="card-container relative max-w-md w-full rounded-2xl shadow-2xl overflow-hidden text-center"
+        style="background: {{ $accent }}; padding: 8px;">
+        <img src="{{ $uploadedCardUrl }}" alt="Invitation Card - {{ $guest->full_name }}"
+            class="w-full h-auto object-contain block mx-auto rounded-xl" style="background: {{ $bg }};">
+    </div>
+    @elseif($tpl === 'elegant')
     {{-- =====================================================
          ELEGANT — gold foil, formal double border, serif type
     ====================================================== --}}
-    @if($tpl === 'elegant')
     <div class="card-container relative max-w-md w-full rounded-2xl shadow-2xl overflow-hidden"
         style="background-color: {{ $bg }}; color: {{ $fg }};">
         <div class="absolute inset-3 border rounded-xl pointer-events-none" style="border-color: {{ $accent }}66;"></div>
@@ -89,7 +100,7 @@
             </div>
 
             <div class="py-4">
-                <div class="inline-block bg-white p-3 rounded-xl shadow-soft">
+                <div class="inline-block p-3 rounded-xl shadow-soft" style="background: {{ $bg }}; border: 1px solid {{ $accent }}44;">
                     <div id="qr-code" class="flex justify-center"></div>
                 </div>
             </div>
@@ -112,7 +123,7 @@
         <div class="text-left pt-10 px-9">
             <div class="w-8 h-1 mb-4" style="background-color: {{ $accent }};"></div>
             <div class="text-[11px] uppercase tracking-[0.25em] mb-1 opacity-60">Invitation</div>
-            <h1 class="text-2xl font-bold tracking-tight">{{ $event->name }}</h1>
+            <h1 class="text-2xl font-bold tracking-tight" style="color: {{ $accent }};">{{ $event->name }}</h1>
         </div>
 
         <div class="px-9 py-7 space-y-6">
@@ -140,7 +151,7 @@
             </div>
 
             <div class="flex items-center gap-6 pt-3">
-                <div class="inline-block bg-white p-2.5 rounded-lg shadow-soft">
+                <div class="inline-block p-2.5 rounded-lg shadow-soft" style="background: {{ $bg }}; border: 1px solid {{ $accent }}44;">
                     <div id="qr-code"></div>
                 </div>
                 <div>
@@ -199,7 +210,7 @@
                 <div class="text-xs mt-1 opacity-60">{{ $invitationCardType === 'double' ? 'Couple Invitation' : 'Single Invitation' }}</div>
             </div>
 
-            <div class="rounded-2xl py-4 space-y-2" style="background: {{ $accent }}0f;">
+            <div class="rounded-2xl py-4 space-y-2 border" style="background: {{ $accent }}0f; border-color: {{ $accent }}22;">
                 <div class="flex items-center justify-center gap-2">
                     <span class="text-sm opacity-70">Date:</span>
                     <span class="font-semibold">{{ $event->event_date->format('d M Y') }}</span>
@@ -223,7 +234,7 @@
             </div>
 
             <div class="py-3">
-                <div class="inline-block bg-white p-3 rounded-xl shadow-soft">
+                <div class="inline-block p-3 rounded-xl shadow-soft" style="background: {{ $bg }}; border: 1px solid {{ $accent }}44;">
                     <div id="qr-code" class="flex justify-center"></div>
                 </div>
             </div>
@@ -232,6 +243,7 @@
         <div class="relative text-center pb-8 px-8">
             <div class="text-xs opacity-50">Please present this QR code at the entrance</div>
         </div>
+        <div class="h-2" style="background-color: {{ $accent }};"></div>
     </div>
 
     {{-- =====================================================
@@ -288,7 +300,7 @@
             </div>
 
             <div class="py-4">
-                <div class="inline-block bg-white p-3 rounded-xl shadow-soft">
+                <div class="inline-block p-3 rounded-xl shadow-soft" style="background: {{ $bg }}; border: 1px solid {{ $accent }}44;">
                     <div id="qr-code" class="flex justify-center"></div>
                 </div>
             </div>
@@ -297,6 +309,7 @@
         <div class="relative text-center pb-7 px-8">
             <div class="text-xs opacity-50">Please present this QR code at the entrance</div>
         </div>
+        <div class="h-2" style="background-color: {{ $accent }};"></div>
     </div>
 
     {{-- =====================================================
@@ -355,7 +368,7 @@
             </div>
 
             <div class="py-4">
-                <div class="inline-block bg-white p-3 rounded-xl shadow-soft">
+                <div class="inline-block p-3 rounded-xl shadow-soft" style="background: {{ $bg }}; border: 1px solid {{ $accent }}44;">
                     <div id="qr-code" class="flex justify-center"></div>
                 </div>
             </div>
@@ -369,31 +382,72 @@
     @endif
 
     <script>
-        loadScriptWithFallback([
-            'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js',
-            'https://unpkg.com/qrcodejs@1.0.0/qrcode.min.js',
-            'https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js'
-        ], function () {
-            new QRCode(document.getElementById('qr-code'), {
-                text: '{{ $guest->unique_id }}',
-                width: 150,
-                height: 150,
-                colorDark: '#1a1a1a',
-                colorLight: '#ffffff',
-                correctLevel: QRCode.CorrectLevel.H
-            });
-        });
+        const uploadedCardUrl = {!! json_encode($uploadedCardUrl) !!};
 
-        loadScriptWithFallback([
-            'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js',
-            'https://unpkg.com/html2canvas@1.4.1/dist/html2canvas.min.js',
-            'https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js'
-        ]);
+        if (!uploadedCardUrl) {
+            loadScriptWithFallback([
+                'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js',
+                'https://unpkg.com/qrcodejs@1.0.0/qrcode.min.js',
+                'https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js'
+            ], function () {
+                const qrEl = document.getElementById('qr-code');
+                if (qrEl) {
+                    new QRCode(qrEl, {
+                        text: '{{ $guest->unique_id }}',
+                        width: 150,
+                        height: 150,
+                        colorDark: @json($fg),
+                        colorLight: @json($bg),
+                        correctLevel: QRCode.CorrectLevel.H
+                    });
+                }
+            });
+
+            loadScriptWithFallback([
+                'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js',
+                'https://unpkg.com/html2canvas@1.4.1/dist/html2canvas.min.js',
+                'https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js'
+            ]);
+        }
 
         async function downloadCard() {
-            const target = document.querySelector('.card-container');
             const button = document.getElementById('download-card-btn');
+            if (!button) return;
 
+            const originalLabel = button.innerHTML;
+
+            if (uploadedCardUrl) {
+                button.disabled = true;
+                button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Downloading...';
+                try {
+                    const response = await fetch(uploadedCardUrl);
+                    const blob = await response.blob();
+                    const blobUrl = window.URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    const cleanUrl = uploadedCardUrl.split('?')[0];
+                    const extension = cleanUrl.substring(cleanUrl.lastIndexOf('.') + 1).toLowerCase() || 'png';
+                    link.download = 'invitation-{{ \Illuminate\Support\Str::slug($guest->full_name) }}.' + (extension.length <= 4 ? extension : 'png');
+                    link.href = blobUrl;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    window.URL.revokeObjectURL(blobUrl);
+                } catch (error) {
+                    const link = document.createElement('a');
+                    link.href = uploadedCardUrl;
+                    link.download = 'invitation-{{ \Illuminate\Support\Str::slug($guest->full_name) }}';
+                    link.target = '_blank';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                } finally {
+                    button.disabled = false;
+                    button.innerHTML = originalLabel;
+                }
+                return;
+            }
+
+            const target = document.querySelector('.card-container');
             if (!target) {
                 return;
             }
@@ -403,7 +457,6 @@
                 return;
             }
 
-            const originalLabel = button.innerHTML;
             button.disabled = true;
             button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Preparing...';
 
@@ -418,7 +471,9 @@
                 const link = document.createElement('a');
                 link.download = 'invitation-{{ \Illuminate\Support\Str::slug($guest->full_name) }}.png';
                 link.href = canvas.toDataURL('image/png');
+                document.body.appendChild(link);
                 link.click();
+                document.body.removeChild(link);
             } catch (error) {
                 window.alert('Could not generate the image. Please use Print instead.');
             } finally {

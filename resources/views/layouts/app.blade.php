@@ -39,6 +39,11 @@
                     {{ request()->routeIs('admin.users.*') ? 'bg-primary-50 text-primary-700' : 'text-surface-600 hover:bg-surface-100 hover:text-surface-900' }}">
                     <i class="fas fa-users-gear w-4 text-center"></i> Users
                 </a>
+                <a href="{{ route('admin.whatsapp-templates.index') }}"
+                    class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition
+                    {{ request()->routeIs('admin.whatsapp-templates.*') ? 'bg-primary-50 text-primary-700' : 'text-surface-600 hover:bg-surface-100 hover:text-surface-900' }}">
+                    <i class="fas fa-file-lines w-4 text-center"></i> Templates
+                </a>
                 <a href="{{ route('webhook-logs.index') }}"
                     class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition
                     {{ request()->routeIs('webhook-logs.*') ? 'bg-primary-50 text-primary-700' : 'text-surface-600 hover:bg-surface-100 hover:text-surface-900' }}">
@@ -164,6 +169,11 @@
                 class="flex flex-col items-center gap-1 rounded-xl py-2 text-[10px] font-semibold transition {{ request()->routeIs('admin.users.*') ? 'text-primary-600' : 'text-surface-500' }}">
                 <i class="fas fa-users-gear text-base"></i>
                 <span>Users</span>
+            </a>
+            <a href="{{ route('admin.whatsapp-templates.index') }}"
+                class="flex flex-col items-center gap-1 rounded-xl py-2 text-[10px] font-semibold transition {{ request()->routeIs('admin.whatsapp-templates.*') ? 'text-primary-600' : 'text-surface-500' }}">
+                <i class="fas fa-file-lines text-base"></i>
+                <span>Templates</span>
             </a>
             <a href="{{ route('webhook-logs.index') }}"
                 class="flex flex-col items-center gap-1 rounded-xl py-2 text-[10px] font-semibold transition {{ request()->routeIs('webhook-logs.*') ? 'text-primary-600' : 'text-surface-500' }}">

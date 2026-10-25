@@ -160,14 +160,6 @@
                                 {{ ucfirst($paidCardType) }}
                             </span>
                             <div class="text-[10px] text-surface-400 mt-1">Paid {{ number_format($invitation->guest->paid_amount) }}</div>
-                            <div class="mt-2" id="card-thumb-{{ $invitation->id }}">
-                                @if($invitation->card_image_path)
-                                <img src="{{ $invitation->card_image_url }}" alt="Invitation card for {{ $invitation->guest->full_name }}"
-                                    class="h-14 w-10 rounded border border-surface-200 object-cover">
-                                @else
-                                <span class="text-[10px] text-surface-400">No card image</span>
-                                @endif
-                            </div>
                         </div>
                     </td>
                     <td class="px-6 py-3" id="status-cell-{{ $invitation->id }}" data-label="Send status">
@@ -204,7 +196,15 @@
                     </td>
                     <td class="px-6 py-3 mobile-actions" id="action-cell-{{ $invitation->id }}" data-label="">
                         <div class="flex flex-wrap items-center gap-2 sm:gap-3">
-                            <a href="{{ route('events.invitations.card', [$event, $invitation->guest]) }}" target="_blank" class="icon-action text-blue-600 hover:text-blue-700" title="View generated card">
+                            <button type="button" class="upload-card-btn icon-action text-brand-600 hover:text-brand-700"
+                                data-invitation-id="{{ $invitation->id }}"
+                                data-guest-name="{{ $invitation->guest->full_name }}"
+                                data-upload-url="{{ route('events.invitations.upload-card', [$event, $invitation]) }}"
+                                data-card-image-url="{{ $invitation->card_image_url }}"
+                                title="{{ $invitation->card_image_path ? 'Change uploaded card image' : 'Upload card image' }}">
+                                <i class="fas fa-cloud-arrow-up"></i>
+                            </button>
+                            <a href="{{ route('events.invitations.card', [$event, $invitation->guest]) }}" target="_blank" class="icon-action text-blue-600 hover:text-blue-700" title="View card">
                                 <i class="fas fa-id-card"></i>
                             </a>
                             <button type="button" class="copy-public-link-btn icon-action text-surface-500 hover:text-surface-700"
@@ -221,8 +221,8 @@
                                 data-action-url="{{ route('events.invitations.send', [$event, $invitation]) }}"
                                 data-card-image-url="{{ $invitation->card_image_url }}"
                                 data-public-url="{{ route('invitation.public', $invitation->qr_code_data) }}"
-                                title="Upload a card, preview, and send">
-                                <i class="fas fa-upload"></i> <span class="hidden sm:inline">Send</span>
+                                title="Send WhatsApp invitation">
+                                <i class="fas fa-paper-plane"></i> <span class="hidden sm:inline">Send</span>
                             </button>
                             @elseif($canSendWhatsApp && $invitation->send_status === 'failed')
                             <button type="button" class="prepare-invitation-btn icon-action text-amber-600 hover:text-amber-700 font-medium"
@@ -233,7 +233,7 @@
                                 data-action-url="{{ route('events.invitations.resend', [$event, $invitation]) }}"
                                 data-card-image-url="{{ $invitation->card_image_url }}"
                                 data-public-url="{{ route('invitation.public', $invitation->qr_code_data) }}"
-                                title="Upload a card, preview, and retry">
+                                title="Retry WhatsApp invitation">
                                 <i class="fas fa-rotate-right"></i> <span class="hidden sm:inline">Retry</span>
                             </button>
                             @elseif($canSendWhatsApp)
@@ -253,13 +253,66 @@
     @endif
 </div>
 
+<!-- Dedicated Upload Card Modal -->
+<div id="uploadCardModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="bg-white rounded-t-2xl sm:rounded-xl shadow-xl w-full max-w-md overflow-hidden" style="max-height: 92dvh;">
+        <div class="px-6 py-4 border-b border-surface-100 flex items-center justify-between">
+            <div>
+                <h3 class="font-display font-bold text-lg text-surface-900">Upload Invitation Card</h3>
+                <p class="text-xs text-surface-400 mt-0.5">Guest: <span id="uploadCardGuestName" class="font-semibold text-surface-800"></span></p>
+            </div>
+            <button type="button" onclick="closeUploadCardModal()" class="text-surface-400 hover:text-surface-600" title="Close">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <form id="uploadCardForm" method="POST" action="" enctype="multipart/form-data" data-no-loading>
+            @csrf
+            <div class="p-6 space-y-4 overflow-y-auto" style="max-height: calc(92vh - 145px);">
+                <div id="uploadCardCurrentSection" class="hidden rounded-xl border border-surface-200 bg-surface-50 p-3 text-center">
+                    <p class="text-xs font-medium uppercase tracking-wide text-surface-400 mb-2">Current Uploaded Card</p>
+                    <img id="uploadCardCurrentImg" src="" alt="Current card" class="mx-auto max-h-48 rounded-lg border border-surface-200 object-contain shadow-sm">
+                </div>
+
+                <div>
+                    <label for="uploadCardFileInput" class="block text-sm font-medium text-surface-700 mb-1">
+                        Select Card Image (JPG, PNG, WEBP)
+                    </label>
+                    <input type="file" name="card_image" id="uploadCardFileInput" accept="image/jpeg,image/png,image/webp" required
+                        class="block w-full text-sm text-surface-500 file:mr-3 file:rounded-lg file:border-0 file:bg-brand-50 file:px-3 file:py-2 file:text-sm file:font-medium file:text-brand-700 hover:file:bg-brand-100">
+                    <p class="text-[11px] text-surface-400 mt-1">
+                        Max size: 5 MB. If a card is already uploaded, uploading a new one will override it.
+                    </p>
+                </div>
+
+                <div id="uploadCardNewPreviewSection" class="hidden rounded-xl border border-brand-200 bg-brand-50/40 p-3 text-center">
+                    <p class="text-xs font-semibold text-brand-700 mb-2">New Card Preview</p>
+                    <img id="uploadCardNewPreviewImg" src="" alt="New card preview" class="mx-auto max-h-48 rounded-lg border border-brand-200 object-contain shadow-sm">
+                </div>
+
+                <div id="uploadCardProgress" class="hidden rounded-lg bg-surface-50 p-3">
+                    <div class="flex items-center gap-2 text-xs text-surface-500">
+                        <i class="fas fa-spinner fa-spin text-brand-600"></i>
+                        <span>Uploading card image...</span>
+                    </div>
+                </div>
+            </div>
+            <div class="px-6 py-4 bg-surface-50 border-t border-surface-100 flex justify-end gap-3">
+                <button type="button" onclick="closeUploadCardModal()" class="btn btn-outline">Cancel</button>
+                <button type="submit" id="uploadCardSubmitBtn" class="btn btn-primary">
+                    <i class="fas fa-cloud-arrow-up mr-2"></i> Upload Card
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
 @if($canSendWhatsApp)
 <div id="invitationModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
     <div class="bg-white rounded-t-2xl sm:rounded-xl shadow-xl w-full max-w-xl overflow-hidden" style="max-height: 92dvh;">
         <div class="px-6 py-4 border-b border-surface-100 flex items-center justify-between">
             <div>
                 <h3 class="font-display font-bold text-lg text-surface-900">Prepare Invitation</h3>
-                <p class="text-xs text-surface-400 mt-0.5">Upload the guest card, review the message, then send.</p>
+                <p class="text-xs text-surface-400 mt-0.5">Upload or review the guest card, review the message, then send.</p>
             </div>
             <button type="button" onclick="closeInvitationModal()" class="text-surface-400 hover:text-surface-600" title="Close">
                 <i class="fas fa-times"></i>
@@ -280,9 +333,26 @@
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label for="invitationTemplateInput" class="block text-sm font-medium text-surface-700 mb-1">
-                            WhatsApp template
-                        </label>
+                        <div class="flex items-center justify-between mb-1">
+                            <label for="invitationTemplateInput" class="block text-sm font-medium text-surface-700">
+                                WhatsApp template
+                            </label>
+                            @if(Auth::user()->isAdmin())
+                            <a href="{{ route('admin.whatsapp-templates.index') }}" target="_blank" class="text-xs text-primary-600 hover:text-primary-700 inline-flex items-center gap-1">
+                                <i class="fas fa-rotate text-[10px]"></i> Sync Templates
+                            </a>
+                            @endif
+                        </div>
+                        @if(!empty($whatsappTemplates) && $whatsappTemplates->isNotEmpty())
+                        <select name="template_name" id="invitationTemplateInput" class="input-field">
+                            @foreach($whatsappTemplates as $tmpl)
+                            <option value="{{ $tmpl->name }}" data-language="{{ $tmpl->language }}" {{ ($tmpl->name === config('services.whatsapp.template_name')) ? 'selected' : '' }}>
+                                {{ $tmpl->name }} ({{ $tmpl->language }}) @if($tmpl->status !== 'APPROVED') [{{ $tmpl->status }}] @endif
+                            </option>
+                            @endforeach
+                        </select>
+                        <input type="hidden" name="template_language" id="invitationTemplateLanguage" value="{{ $whatsappTemplates->firstWhere('name', config('services.whatsapp.template_name'))?->language ?? $whatsappTemplates->first()?->language ?? config('services.whatsapp.template_language') }}">
+                        @else
                         <input type="text" name="template_name" id="invitationTemplateInput"
                             list="invitationTemplateOptions"
                             value="{{ config('services.whatsapp.template_name') }}"
@@ -292,6 +362,8 @@
                             <option value="{{ $template }}"></option>
                             @endforeach
                         </datalist>
+                        <input type="hidden" name="template_language" id="invitationTemplateLanguage" value="{{ config('services.whatsapp.template_language') }}">
+                        @endif
                         <p class="text-[10px] text-surface-400 mt-1">
                             Your approved template must contain 4 body parameters: guest name, guest ID, event date, and public invitation link.
                         </p>
@@ -312,30 +384,50 @@
                     </div>
                 </div>
 
-                <div>
-                    <label for="invitationCardInput" class="block text-sm font-medium text-surface-700 mb-1">
-                        Invitation card image
-                    </label>
-                    <input type="file" name="card_image" id="invitationCardInput" accept="image/jpeg,image/png"
-                        class="block w-full text-sm text-surface-500 file:mr-3 file:rounded-lg file:border-0 file:bg-green-50 file:px-3 file:py-2 file:text-sm file:font-medium file:text-green-700 hover:file:bg-green-100">
-                    <p class="text-[11px] text-surface-400 mt-1">
-                        JPG or PNG up to 5 MB. This image becomes the WhatsApp header for this guest.
-                    </p>
-                </div>
+                <div id="invitationCardSection" class="space-y-3">
+                    <!-- Notice when no card is uploaded yet -->
+                    <div id="invitationCardNotUploadedNotice" class="hidden rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800 flex items-start gap-2">
+                        <i class="fas fa-circle-exclamation mt-0.5 text-amber-600 shrink-0"></i>
+                        <div>
+                            <p class="font-semibold">No invitation card uploaded yet for this guest.</p>
+                            <p class="mt-0.5 text-amber-700">Please upload the card image below for this guest so they receive their personalized card.</p>
+                        </div>
+                    </div>
 
-                <div class="rounded-xl border border-surface-200 bg-surface-50 p-3">
-                    <div class="flex items-center justify-between gap-3">
-                        <span id="invitationCardPreviewLabel" class="text-xs font-medium uppercase tracking-wide text-surface-400">Card preview</span>
-                        <a id="invitationCurrentCardLink" href="#" target="_blank" class="hidden text-xs text-blue-600 hover:text-blue-700">
-                            Open current image
-                        </a>
+                    <!-- Notice when card is already uploaded -->
+                    <div id="invitationCardAlreadyUploadedNotice" class="hidden rounded-xl border border-green-200 bg-green-50 p-3 text-xs text-green-800 flex items-start gap-2">
+                        <i class="fas fa-circle-check mt-0.5 text-green-600 shrink-0"></i>
+                        <div>
+                            <p class="font-semibold">Invitation card is already uploaded.</p>
+                            <p class="mt-0.5 text-green-700">The current card is displayed below. Uploading a new image will override it.</p>
+                        </div>
                     </div>
-                    <div id="invitationCardPreviewWrap" class="hidden mt-3">
-                        <img id="invitationCardPreview" src="" alt="Invitation card preview"
-                            class="mx-auto max-h-56 rounded-lg border border-surface-200 bg-white object-contain shadow-sm">
+
+                    <div>
+                        <label for="invitationCardInput" id="invitationCardInputLabel" class="block text-sm font-medium text-surface-700 mb-1">
+                            Invitation card image
+                        </label>
+                        <input type="file" name="card_image" id="invitationCardInput" accept="image/jpeg,image/png,image/webp"
+                            class="block w-full text-sm text-surface-500 file:mr-3 file:rounded-lg file:border-0 file:bg-green-50 file:px-3 file:py-2 file:text-sm file:font-medium file:text-green-700 hover:file:bg-green-100">
+                        <p class="text-[11px] text-surface-400 mt-1" id="invitationCardInputHelp">
+                            JPG, PNG or WEBP up to 5 MB.
+                        </p>
                     </div>
-                    <div id="invitationCardEmpty" class="mt-3 rounded-lg border border-dashed border-surface-300 bg-white px-4 py-8 text-center text-xs text-surface-400">
-                        No guest card uploaded yet. The event cover or default image will be used.
+
+                    <div class="rounded-xl border border-surface-200 bg-surface-50 p-3">
+                        <div class="flex items-center justify-between gap-3">
+                            <span id="invitationCardPreviewLabel" class="text-xs font-medium uppercase tracking-wide text-surface-400">Card preview</span>
+                            <a id="invitationCurrentCardLink" href="#" target="_blank" class="hidden text-xs text-blue-600 hover:text-blue-700">
+                                Open current image <i class="fas fa-external-link-alt ml-1"></i>
+                            </a>
+                        </div>
+                        <div id="invitationCardPreviewWrap" class="hidden mt-3">
+                            <img id="invitationCardPreview" src="" alt="Invitation card preview"
+                                class="mx-auto max-h-56 rounded-lg border border-surface-200 bg-white object-contain shadow-sm">
+                        </div>
+                        <div id="invitationCardEmpty" class="mt-3 rounded-lg border border-dashed border-surface-300 bg-white px-4 py-8 text-center text-xs text-surface-400">
+                            No guest card uploaded yet. Select an image above to upload and preview.
+                        </div>
                     </div>
                 </div>
 
@@ -398,14 +490,14 @@ loadScriptWithFallback([
 
 const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
 const invitationPreviewData = {
-    eventName: @json($event->name),
-    eventDate: @json($event->event_date->format('l, d M Y')),
-    eventTime: @json($event->event_time),
-    location: @json($event->location),
-    hall: @json($event->hall),
-    coverImageUrl: @json($event->cover_image ? asset('storage/'.$event->cover_image) : config('services.whatsapp.default_image_url')),
-    templateName: @json(config('services.whatsapp.template_name')),
-    pendingUrl: @json(route('events.invitations.pending', $event)),
+    eventName: {!! json_encode($event->name) !!},
+    eventDate: {!! json_encode($event->event_date->format('l, d M Y')) !!},
+    eventTime: {!! json_encode($event->event_time) !!},
+    location: {!! json_encode($event->location) !!},
+    hall: {!! json_encode($event->hall) !!},
+    coverImageUrl: {!! json_encode($event->cover_image ? asset('storage/'.$event->cover_image) : config('services.whatsapp.default_image_url')) !!},
+    templateName: {!! json_encode(config('services.whatsapp.template_name')) !!},
+    pendingUrl: {!! json_encode(route('events.invitations.pending', $event)) !!},
     publicUrl: null,
 };
 
@@ -415,6 +507,10 @@ let sendingInvitation = false;
 let sendingAllInvitations = false;
 let stopBulkInvitations = false;
 let invitationToastTimer = null;
+
+let activeUploadInvitation = null;
+let uploadPreviewObjectUrl = null;
+let uploadingCard = false;
 
 function escapeHtml(value) {
     return String(value ?? '').replace(/[&<>"']/g, function (char) {
@@ -449,14 +545,57 @@ function updateStatCounters(stats) {
 
 function updateInvitationThumbnail(invitationId, url) {
     const container = document.getElementById('card-thumb-' + invitationId);
-    if (!container || !url) return;
+    if (container) {
+        if (url) {
+            container.innerHTML = `
+                <a href="${escapeHtml(url)}" target="_blank" title="View uploaded card" class="block shrink-0">
+                    <img src="${escapeHtml(url)}" alt="Invitation card" class="h-14 w-10 rounded border border-surface-200 object-cover shadow-xs hover:opacity-90">
+                </a>
+            `;
+        } else {
+            container.innerHTML = '';
+        }
+    }
 
-    container.innerHTML = '';
-    const image = document.createElement('img');
-    image.src = url;
-    image.alt = 'Invitation card';
-    image.className = 'h-14 w-10 rounded border border-surface-200 object-cover';
-    container.appendChild(image);
+    // Update upload button and prepare/send button data attributes across the row
+    const uploadButtons = document.querySelectorAll(`.upload-card-btn[data-invitation-id="${invitationId}"]`);
+    uploadButtons.forEach(btn => {
+        btn.dataset.cardImageUrl = url || '';
+        btn.setAttribute('title', url ? 'Change uploaded card image' : 'Upload card image');
+    });
+
+    const prepareBtn = document.querySelector(`.prepare-invitation-btn[data-invitation-id="${invitationId}"]`);
+    if (prepareBtn) {
+        prepareBtn.dataset.cardImageUrl = url || '';
+    }
+
+    if (activeInvitation && String(activeInvitation.id) === String(invitationId)) {
+        activeInvitation.cardImageUrl = url || null;
+        const currentLink = document.getElementById('invitationCurrentCardLink');
+        const notUploadedNotice = document.getElementById('invitationCardNotUploadedNotice');
+        const alreadyUploadedNotice = document.getElementById('invitationCardAlreadyUploadedNotice');
+        const cardInputLabel = document.getElementById('invitationCardInputLabel');
+        const cardInputHelp = document.getElementById('invitationCardInputHelp');
+
+        if (url) {
+            if (currentLink) {
+                currentLink.href = url;
+                currentLink.classList.remove('hidden');
+            }
+            if (alreadyUploadedNotice) alreadyUploadedNotice.classList.remove('hidden');
+            if (notUploadedNotice) notUploadedNotice.classList.add('hidden');
+            if (cardInputLabel) cardInputLabel.textContent = 'Replace / Override Card Image (optional)';
+            if (cardInputHelp) cardInputHelp.textContent = 'JPG, PNG or WEBP up to 5 MB. Uploading a new image will override the current card for this guest.';
+            setInvitationImage(url, 'Uploaded guest card (Ready to send)');
+        } else {
+            if (currentLink) currentLink.classList.add('hidden');
+            if (alreadyUploadedNotice) alreadyUploadedNotice.classList.add('hidden');
+            if (notUploadedNotice) notUploadedNotice.classList.remove('hidden');
+            if (cardInputLabel) cardInputLabel.textContent = 'Upload Invitation Card Image';
+            if (cardInputHelp) cardInputHelp.textContent = 'JPG, PNG or WEBP up to 5 MB. Please upload a card image for this guest.';
+            setInvitationImage(invitationPreviewData.coverImageUrl, 'Event cover fallback (No guest card uploaded)');
+        }
+    }
 }
 
 function invitationStatusBadge(data) {
@@ -524,7 +663,8 @@ function setInvitationImage(url, label) {
     const emptyState = document.getElementById('invitationCardEmpty');
     const messageImage = document.getElementById('invitationMessageImage');
 
-    document.getElementById('invitationCardPreviewLabel').textContent = label;
+    const previewLabelEl = document.getElementById('invitationCardPreviewLabel');
+    if (previewLabelEl) previewLabelEl.textContent = label;
 
     if (url) {
         cardImage.src = url;
@@ -547,7 +687,8 @@ function resetInvitationModalState() {
         invitationPreviewObjectUrl = null;
     }
 
-    document.getElementById('invitationCardInput').value = '';
+    const cardInput = document.getElementById('invitationCardInput');
+    if (cardInput) cardInput.value = '';
     document.getElementById('invitationSendProgress').classList.add('hidden');
 
     const submitButton = document.getElementById('invitationSubmitBtn');
@@ -557,36 +698,68 @@ function resetInvitationModalState() {
 }
 
 function openInvitationModal(button) {
+    const cardImageUrl = (button.dataset.cardImageUrl && button.dataset.cardImageUrl.trim() !== '')
+        ? button.dataset.cardImageUrl.trim()
+        : null;
+
     activeInvitation = {
         id: button.dataset.invitationId,
         guestName: button.dataset.guestName,
         guestUniqueId: button.dataset.guestUniqueId,
         phone: button.dataset.phone,
         actionUrl: button.dataset.actionUrl,
-        cardImageUrl: button.dataset.cardImageUrl || null,
+        cardImageUrl: cardImageUrl,
         publicUrl: button.dataset.publicUrl || '',
     };
 
     invitationPreviewData.publicUrl = activeInvitation.publicUrl;
 
     document.getElementById('invitationForm').action = activeInvitation.actionUrl;
-    document.getElementById('invitationTemplateInput').value = invitationPreviewData.templateName;
+    const templateInput = document.getElementById('invitationTemplateInput');
+    const templateLangInput = document.getElementById('invitationTemplateLanguage');
+    if (templateInput) {
+        if (templateInput.tagName === 'SELECT') {
+            const selectedOpt = templateInput.options[templateInput.selectedIndex];
+            if (templateLangInput && selectedOpt) {
+                templateLangInput.value = selectedOpt.dataset.language || '';
+            }
+            const langLabel = selectedOpt && selectedOpt.dataset.language ? ' (' + selectedOpt.dataset.language + ')' : '';
+            document.getElementById('invitationTemplateName').textContent = 'Template: ' + (templateInput.value || '') + langLabel;
+        } else {
+            templateInput.value = invitationPreviewData.templateName;
+            document.getElementById('invitationTemplateName').textContent = 'Template: ' + invitationPreviewData.templateName;
+        }
+    }
     document.getElementById('invitationPublicUrl').value = activeInvitation.publicUrl;
     document.getElementById('invitationGuestName').textContent = activeInvitation.guestName;
     document.getElementById('invitationGuestPhone').textContent = activeInvitation.phone || 'No phone';
     document.getElementById('invitationGuestId').textContent = activeInvitation.guestUniqueId;
-    document.getElementById('invitationTemplateName').textContent = 'Template: ' + invitationPreviewData.templateName;
     document.getElementById('invitationMessageText').textContent =
         invitationPreviewText(activeInvitation.guestName, activeInvitation.guestUniqueId);
 
     const currentLink = document.getElementById('invitationCurrentCardLink');
+    const notUploadedNotice = document.getElementById('invitationCardNotUploadedNotice');
+    const alreadyUploadedNotice = document.getElementById('invitationCardAlreadyUploadedNotice');
+    const cardInputLabel = document.getElementById('invitationCardInputLabel');
+    const cardInputHelp = document.getElementById('invitationCardInputHelp');
+
     if (activeInvitation.cardImageUrl) {
-        currentLink.href = activeInvitation.cardImageUrl;
-        currentLink.classList.remove('hidden');
-        setInvitationImage(activeInvitation.cardImageUrl, 'Uploaded guest card');
+        if (currentLink) {
+            currentLink.href = activeInvitation.cardImageUrl;
+            currentLink.classList.remove('hidden');
+        }
+        if (alreadyUploadedNotice) alreadyUploadedNotice.classList.remove('hidden');
+        if (notUploadedNotice) notUploadedNotice.classList.add('hidden');
+        if (cardInputLabel) cardInputLabel.textContent = 'Replace / Override Card Image (optional)';
+        if (cardInputHelp) cardInputHelp.textContent = 'JPG, PNG or WEBP up to 5 MB. Uploading a new image will override the current card for this guest.';
+        setInvitationImage(activeInvitation.cardImageUrl, 'Uploaded guest card (Ready to send)');
     } else {
-        currentLink.classList.add('hidden');
-        setInvitationImage(invitationPreviewData.coverImageUrl, 'Event cover fallback');
+        if (currentLink) currentLink.classList.add('hidden');
+        if (alreadyUploadedNotice) alreadyUploadedNotice.classList.add('hidden');
+        if (notUploadedNotice) notUploadedNotice.classList.remove('hidden');
+        if (cardInputLabel) cardInputLabel.textContent = 'Upload Invitation Card Image';
+        if (cardInputHelp) cardInputHelp.textContent = 'JPG, PNG or WEBP up to 5 MB. Please upload a card image for this guest.';
+        setInvitationImage(invitationPreviewData.coverImageUrl, 'Event cover fallback (No guest card uploaded)');
     }
 
     resetInvitationModalState();
@@ -602,18 +775,167 @@ function closeInvitationModal() {
     resetInvitationModalState();
 }
 
+function openUploadCardModal(button) {
+    activeUploadInvitation = {
+        id: button.dataset.invitationId,
+        guestName: button.dataset.guestName,
+        uploadUrl: button.dataset.uploadUrl,
+        cardImageUrl: button.dataset.cardImageUrl || null,
+    };
+
+    document.getElementById('uploadCardGuestName').textContent = activeUploadInvitation.guestName;
+    document.getElementById('uploadCardForm').action = activeUploadInvitation.uploadUrl;
+    document.getElementById('uploadCardFileInput').value = '';
+
+    const currentSection = document.getElementById('uploadCardCurrentSection');
+    const currentImg = document.getElementById('uploadCardCurrentImg');
+    const newSection = document.getElementById('uploadCardNewPreviewSection');
+    const newImg = document.getElementById('uploadCardNewPreviewImg');
+
+    if (activeUploadInvitation.cardImageUrl) {
+        currentImg.src = activeUploadInvitation.cardImageUrl;
+        currentSection.classList.remove('hidden');
+    } else {
+        currentImg.removeAttribute('src');
+        currentSection.classList.add('hidden');
+    }
+
+    newSection.classList.add('hidden');
+    newImg.removeAttribute('src');
+    if (uploadPreviewObjectUrl) {
+        URL.revokeObjectURL(uploadPreviewObjectUrl);
+        uploadPreviewObjectUrl = null;
+    }
+
+    document.getElementById('uploadCardProgress').classList.add('hidden');
+    const submitBtn = document.getElementById('uploadCardSubmitBtn');
+    submitBtn.disabled = false;
+    submitBtn.classList.remove('opacity-70', 'cursor-not-allowed');
+    submitBtn.innerHTML = '<i class="fas fa-cloud-arrow-up mr-2"></i> Upload Card';
+
+    document.getElementById('uploadCardModal').classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeUploadCardModal() {
+    if (uploadingCard) return;
+
+    document.getElementById('uploadCardModal').classList.add('hidden');
+    document.body.style.overflow = 'auto';
+    if (uploadPreviewObjectUrl) {
+        URL.revokeObjectURL(uploadPreviewObjectUrl);
+        uploadPreviewObjectUrl = null;
+    }
+}
+
+document.getElementById('uploadCardFileInput')?.addEventListener('change', function (e) {
+    const file = e.target.files[0];
+    const newSection = document.getElementById('uploadCardNewPreviewSection');
+    const newImg = document.getElementById('uploadCardNewPreviewImg');
+
+    if (uploadPreviewObjectUrl) {
+        URL.revokeObjectURL(uploadPreviewObjectUrl);
+        uploadPreviewObjectUrl = null;
+    }
+
+    if (file) {
+        uploadPreviewObjectUrl = URL.createObjectURL(file);
+        newImg.src = uploadPreviewObjectUrl;
+        newSection.classList.remove('hidden');
+    } else {
+        newSection.classList.add('hidden');
+        newImg.removeAttribute('src');
+    }
+});
+
+document.getElementById('uploadCardForm')?.addEventListener('submit', async function (e) {
+    e.preventDefault();
+    if (uploadingCard || !activeUploadInvitation) return;
+
+    const form = e.currentTarget;
+    const submitBtn = document.getElementById('uploadCardSubmitBtn');
+    const progress = document.getElementById('uploadCardProgress');
+    const invitationId = activeUploadInvitation.id;
+    const guestName = activeUploadInvitation.guestName;
+
+    uploadingCard = true;
+    submitBtn.disabled = true;
+    submitBtn.classList.add('opacity-70', 'cursor-not-allowed');
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Uploading...';
+    progress.classList.remove('hidden');
+
+    try {
+        const response = await fetch(form.action, {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': csrfToken,
+                'Accept': 'application/json',
+            },
+            body: new FormData(form),
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.success) {
+            const cardUrl = data.card_image_url || data.invitation?.card_image_url || '';
+            updateInvitationThumbnail(invitationId, cardUrl);
+            uploadingCard = false;
+            closeUploadCardModal();
+            showInvitationToast('Card image uploaded for ' + guestName + '!', 'success');
+            return;
+        }
+
+        const msg = data.errors ? Object.values(data.errors)[0]?.[0] : (data.message || 'Could not upload card image.');
+        showInvitationToast(msg, 'warning');
+    } catch (err) {
+        showInvitationToast('Network error while uploading card.', 'warning');
+    } finally {
+        uploadingCard = false;
+        submitBtn.disabled = false;
+        submitBtn.classList.remove('opacity-70', 'cursor-not-allowed');
+        submitBtn.innerHTML = '<i class="fas fa-cloud-arrow-up mr-2"></i> Upload Card';
+        progress.classList.add('hidden');
+    }
+});
+
+document.getElementById('invitationTemplateInput')?.addEventListener('change', function () {
+    const templateLangInput = document.getElementById('invitationTemplateLanguage');
+    if (this.tagName === 'SELECT') {
+        const selectedOpt = this.options[this.selectedIndex];
+        if (templateLangInput && selectedOpt) {
+            templateLangInput.value = selectedOpt.dataset.language || '';
+        }
+        const langLabel = selectedOpt && selectedOpt.dataset.language ? ' (' + selectedOpt.dataset.language + ')' : '';
+        document.getElementById('invitationTemplateName').textContent = 'Template: ' + (this.value.trim() || '') + langLabel;
+    } else {
+        document.getElementById('invitationTemplateName').textContent = 'Template: ' + (this.value.trim() || invitationPreviewData.templateName);
+    }
+});
+
 document.getElementById('invitationTemplateInput')?.addEventListener('input', function () {
-    document.getElementById('invitationTemplateName').textContent = 'Template: ' + (this.value.trim() || invitationPreviewData.templateName);
+    if (this.tagName !== 'SELECT') {
+        document.getElementById('invitationTemplateName').textContent = 'Template: ' + (this.value.trim() || invitationPreviewData.templateName);
+    }
 });
 
 document.getElementById('invitationCardInput')?.addEventListener('change', function (event) {
     const file = event.target.files[0];
     const currentLink = document.getElementById('invitationCurrentCardLink');
+    const notUploadedNotice = document.getElementById('invitationCardNotUploadedNotice');
+    const alreadyUploadedNotice = document.getElementById('invitationCardAlreadyUploadedNotice');
 
     if (!file) {
-        const fallback = activeInvitation?.cardImageUrl || invitationPreviewData.coverImageUrl;
-        currentLink.classList.toggle('hidden', !activeInvitation?.cardImageUrl);
-        setInvitationImage(fallback, activeInvitation?.cardImageUrl ? 'Uploaded guest card' : 'Event cover fallback');
+        if (activeInvitation?.cardImageUrl) {
+            currentLink.classList.remove('hidden');
+            if (alreadyUploadedNotice) alreadyUploadedNotice.classList.remove('hidden');
+            if (notUploadedNotice) notUploadedNotice.classList.add('hidden');
+            setInvitationImage(activeInvitation.cardImageUrl, 'Uploaded guest card (Ready to send)');
+        } else {
+            currentLink.classList.add('hidden');
+            if (alreadyUploadedNotice) alreadyUploadedNotice.classList.add('hidden');
+            if (notUploadedNotice) notUploadedNotice.classList.remove('hidden');
+            setInvitationImage(invitationPreviewData.coverImageUrl, 'Event cover fallback (No guest card uploaded)');
+        }
         return;
     }
 
@@ -623,7 +945,9 @@ document.getElementById('invitationCardInput')?.addEventListener('change', funct
 
     invitationPreviewObjectUrl = URL.createObjectURL(file);
     currentLink.classList.add('hidden');
-    setInvitationImage(invitationPreviewObjectUrl, 'Selected guest card');
+    if (notUploadedNotice) notUploadedNotice.classList.add('hidden');
+    if (alreadyUploadedNotice) alreadyUploadedNotice.classList.remove('hidden');
+    setInvitationImage(invitationPreviewObjectUrl, activeInvitation?.cardImageUrl ? 'New card to override existing' : 'Selected guest card');
 });
 
 document.getElementById('invitationForm')?.addEventListener('submit', async function (event) {
@@ -712,6 +1036,12 @@ async function copyTextToClipboard(value) {
 }
 
 document.querySelector('tbody')?.addEventListener('click', function (event) {
+    const uploadBtn = event.target.closest('.upload-card-btn');
+    if (uploadBtn) {
+        openUploadCardModal(uploadBtn);
+        return;
+    }
+
     const copyButton = event.target.closest('.copy-public-link-btn');
     if (copyButton) {
         copyTextToClipboard(copyButton.dataset.publicUrl);

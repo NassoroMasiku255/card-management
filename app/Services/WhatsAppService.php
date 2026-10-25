@@ -6,6 +6,7 @@ use App\Models\Event;
 use App\Models\Guest;
 use App\Models\Invitation;
 use App\Models\WhatsAppMessage;
+use App\Models\WhatsAppTemplate;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -14,6 +15,8 @@ class WhatsAppService
     private string $apiUrl;
 
     private string $phoneNumberId;
+
+    private string $businessAccountId;
 
     private string $accessToken;
 
@@ -35,17 +38,95 @@ class WhatsAppService
 
     public function __construct()
     {
-        $this->apiUrl = config('services.whatsapp.api_url') ?? '';
-        $this->phoneNumberId = config('services.whatsapp.phone_number_id') ?? '';
-        $this->accessToken = config('services.whatsapp.access_token') ?? '';
-        $this->templateName = config('services.whatsapp.template_name') ?? '';
-        $this->templateLanguage = config('services.whatsapp.template_language') ?? 'en';
-        $this->defaultImageUrl = config('services.whatsapp.default_image_url') ?? '';
-        $this->reminderTemplateName = config('services.whatsapp.reminder_template_name') ?? 'reminder_sw';
-        $this->reminderTemplateLanguage = config('services.whatsapp.reminder_template_language') ?? 'sw';
-        $this->reminderLanguagePolicy = config('services.whatsapp.reminder_language_policy') ?? 'deterministic';
-        $this->reminderPaymentDetails = config('services.whatsapp.reminder_payment_details') ?? '';
-        $this->reminderAmountPrefix = config('services.whatsapp.reminder_amount_prefix') ?? 'Mchango';
+        $this->apiUrl = config('services.whatsapp.api_url') ?? 'https://graph.facebook.com/v25.0';
+        $this->phoneNumberId = (string) (config('services.whatsapp.phone_number_id') ?? '');
+        $this->businessAccountId = (string) (config('services.whatsapp.business_account_id') ?? '1088196013963166');
+        $this->accessToken = (string) (config('services.whatsapp.access_token') ?? '');
+        $this->templateName = (string) (config('services.whatsapp.template_name') ?? 'wedding_invitation');
+        $this->templateLanguage = (string) (config('services.whatsapp.template_language') ?? 'en_US');
+        $this->defaultImageUrl = (string) (config('services.whatsapp.default_image_url') ?? '');
+        $this->reminderTemplateName = (string) (config('services.whatsapp.reminder_template_name') ?? 'reminder_sw');
+        $this->reminderTemplateLanguage = (string) (config('services.whatsapp.reminder_template_language') ?? 'sw');
+        $this->reminderLanguagePolicy = (string) (config('services.whatsapp.reminder_language_policy') ?? 'deterministic');
+        $this->reminderPaymentDetails = (string) (config('services.whatsapp.reminder_payment_details') ?? '');
+        $this->reminderAmountPrefix = (string) (config('services.whatsapp.reminder_amount_prefix') ?? 'Mchango');
+    }
+
+    /**
+     * Fetch and synchronize message templates from Meta WhatsApp Business API into local database.
+     */
+    public function syncTemplates(): array
+    {
+        $accountId = $this->businessAccountId ?: $this->phoneNumberId;
+        if (empty($this->accessToken) || empty($accountId)) {
+            throw new \RuntimeException('WhatsApp access token or Business Account ID is not configured.');
+        }
+
+        $url = rtrim($this->apiUrl, '/')."/{$accountId}/message_templates";
+        $synced = 0;
+        $nextUrl = $url.'?limit=100';
+
+        while ($nextUrl) {
+            $response = Http::withToken($this->accessToken)
+                ->acceptJson()
+                ->get($nextUrl);
+
+            if (! $response->successful()) {
+                $errorMsg = $response->json('error.message') ?? $response->body();
+                Log::channel('whatsapp')->error('Failed to fetch WhatsApp templates', [
+                    'status' => $response->status(),
+                    'error' => $errorMsg,
+                ]);
+                throw new \RuntimeException("WhatsApp API error: {$errorMsg}");
+            }
+
+            $data = $response->json('data') ?? [];
+
+            foreach ($data as $item) {
+                if (empty($item['name']) || empty($item['language'])) {
+                    continue;
+                }
+
+                $components = $item['components'] ?? [];
+                $bodyText = null;
+                $headerType = null;
+
+                foreach ($components as $component) {
+                    $type = strtoupper((string) ($component['type'] ?? ''));
+                    if ($type === 'BODY') {
+                        $bodyText = $component['text'] ?? null;
+                    } elseif ($type === 'HEADER') {
+                        $headerType = strtoupper((string) ($component['format'] ?? 'TEXT'));
+                    }
+                }
+
+                WhatsAppTemplate::updateOrCreate(
+                    [
+                        'name' => $item['name'],
+                        'language' => $item['language'],
+                    ],
+                    [
+                        'template_id' => $item['id'] ?? null,
+                        'category' => $item['category'] ?? null,
+                        'status' => strtoupper((string) ($item['status'] ?? 'APPROVED')),
+                        'components' => $components,
+                        'body_text' => $bodyText,
+                        'header_type' => $headerType,
+                        'synced_at' => now(),
+                    ]
+                );
+
+                $synced++;
+            }
+
+            $nextUrl = $response->json('paging.next');
+        }
+
+        return [
+            'success' => true,
+            'count' => $synced,
+            'message' => "Successfully synced {$synced} template(s) from WhatsApp.",
+        ];
     }
 
     /**
@@ -67,7 +148,7 @@ class WhatsAppService
      *   }
      * }
      */
-    public function sendInvitation(Invitation $invitation, ?string $templateName = null): bool
+    public function sendInvitation(Invitation $invitation, ?string $templateName = null, ?string $templateLanguage = null): bool
     {
         $guest = $invitation->guest;
         $event = $invitation->event;
@@ -78,6 +159,16 @@ class WhatsAppService
                 : $this->defaultImageUrl);
 
         $template = $templateName ?? $this->templateName;
+        $language = $templateLanguage;
+
+        if (! $language && $template) {
+            $dbTemplate = WhatsAppTemplate::where('name', $template)->first();
+            if ($dbTemplate) {
+                $language = $dbTemplate->language;
+            }
+        }
+
+        $language = $language ?: $this->templateLanguage;
 
         $bodyParameters = [
             ['type' => 'text', 'text' => $guest->full_name],
@@ -89,7 +180,7 @@ class WhatsAppService
         return $this->sendTemplateMessage(
             phone: $guest->formatted_phone,
             templateName: $template,
-            languageCode: $this->templateLanguage,
+            languageCode: $language,
             imageUrl: $imageUrl,
             bodyParameters: $bodyParameters,
             invitation: $invitation,
@@ -105,9 +196,21 @@ class WhatsAppService
      *   3. event name
      *   4. payment details (bank accounts / mobile money)
      */
-    public function sendReminder(Guest $guest, ?Invitation $invitation = null, ?string $templateName = null): bool
+    public function sendReminder(Guest $guest, ?Invitation $invitation = null, ?string $templateName = null, ?string $templateLanguage = null): bool
     {
         $event = $guest->event;
+
+        $template = $templateName ?: $this->reminderTemplateName;
+        $language = $templateLanguage;
+
+        if (! $language && $template) {
+            $dbTemplate = WhatsAppTemplate::where('name', $template)->first();
+            if ($dbTemplate) {
+                $language = $dbTemplate->language;
+            }
+        }
+
+        $language = $language ?: $this->reminderTemplateLanguage;
 
         $bodyParameters = [
             ['type' => 'text', 'text' => $guest->full_name],
@@ -118,8 +221,8 @@ class WhatsAppService
 
         return $this->sendTemplateMessage(
             phone: $guest->formatted_phone,
-            templateName: $templateName ?: $this->reminderTemplateName,
-            languageCode: $this->reminderTemplateLanguage,
+            templateName: $template,
+            languageCode: $language,
             imageUrl: null,
             bodyParameters: $bodyParameters,
             invitation: $invitation,

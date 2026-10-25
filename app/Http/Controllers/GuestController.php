@@ -6,6 +6,7 @@ use App\Models\ActivityLog;
 use App\Models\Event;
 use App\Models\Guest;
 use App\Models\Invitation;
+use App\Models\WhatsAppTemplate;
 use App\Services\ExcelImportService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -78,7 +79,9 @@ class GuestController extends Controller
             $guests = $query->paginate($perPage)->appends($request->query());
         }
 
-        return view('guests.index', compact('event', 'guests', 'perPage'));
+        $whatsappTemplates = WhatsAppTemplate::orderBy('name')->orderBy('language')->get();
+
+        return view('guests.index', compact('event', 'guests', 'perPage', 'whatsappTemplates'));
     }
 
     public function export(Event $event)

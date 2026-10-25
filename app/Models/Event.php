@@ -67,6 +67,19 @@ class Event extends Model
         return $this->hasMany(GuestPayment::class);
     }
 
+    public function getEventTimeAttribute($value): ?string
+    {
+        if (empty($value)) {
+            return null;
+        }
+
+        try {
+            return \Carbon\Carbon::parse($value)->format('H:i');
+        } catch (\Throwable $e) {
+            return (string) $value;
+        }
+    }
+
     public function getAttendingCountAttribute(): int
     {
         return $this->invitations()->where('rsvp_status', 'attending')->count();

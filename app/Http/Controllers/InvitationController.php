@@ -7,6 +7,7 @@ use App\Models\Event;
 use App\Models\Guest;
 use App\Models\Invitation;
 use App\Models\WhatsAppMessage;
+use App\Models\WhatsAppTemplate;
 use App\Services\WhatsAppService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -25,10 +26,15 @@ class InvitationController extends Controller
             ->paginate(25)
             ->appends($request->query());
 
+        $whatsappTemplates = WhatsAppTemplate::orderBy('name')
+            ->orderBy('language')
+            ->get();
+
         return view('invitations.index', [
             'event' => $event,
             'invitations' => $invitations,
             'stats' => $this->sendStats($event),
+            'whatsappTemplates' => $whatsappTemplates,
         ]);
     }
 
@@ -45,7 +51,54 @@ class InvitationController extends Controller
     {
         $this->authorizeEvent($event);
 
-        return view('invitations.card', compact('event', 'guest'));
+        $invitation = $guest->invitation;
+
+        return view('invitations.card', compact('event', 'guest', 'invitation'));
+    }
+
+    public function uploadCard(Request $request, Event $event, Invitation $invitation)
+    {
+        $this->authorizeEvent($event);
+
+        $this->validateCardImage($request);
+
+        if (! $request->hasFile('card_image')) {
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Please select a valid image file to upload.',
+                ], 422);
+            }
+
+            return back()->with('error', 'Please select a valid image file.');
+        }
+
+        $this->storeCardImage($request, $event, $invitation);
+
+        ActivityLog::create([
+            'event_id' => $event->id,
+            'user_id' => Auth::id(),
+            'action' => 'card_image_uploaded',
+            'description' => "Uploaded invitation card image for {$invitation->guest->full_name}.",
+        ]);
+
+        $invitation->refresh();
+
+        $message = "Invitation card uploaded for {$invitation->guest->full_name}.";
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => $message,
+                'card_image_url' => $invitation->card_image_url,
+                'invitation' => [
+                    'id' => $invitation->id,
+                    'card_image_url' => $invitation->card_image_url,
+                ],
+            ]);
+        }
+
+        return back()->with('success', $message);
     }
 
     public function pending(Event $event)
@@ -83,12 +136,18 @@ class InvitationController extends Controller
             return $this->ineligibleInvitationResponse($request, $invitation->guest);
         }
 
-        $request->validate(['template_name' => 'nullable|string|max:255']);
+        $request->validate([
+            'template_name' => 'nullable|string|max:255',
+            'template_language' => 'nullable|string|max:32',
+        ]);
 
         $this->validateCardImage($request);
         $this->storeCardImage($request, $event, $invitation);
 
-        $success = $this->whatsapp->sendInvitation($invitation, $request->filled('template_name') ? $request->string('template_name')->toString() : null);
+        $templateName = $request->filled('template_name') ? $request->string('template_name')->toString() : null;
+        $templateLanguage = $request->filled('template_language') ? $request->string('template_language')->toString() : null;
+
+        $success = $this->whatsapp->sendInvitation($invitation, $templateName, $templateLanguage);
 
         $message = $success
             ? "Invitation sent to {$invitation->guest->full_name}!"
@@ -160,14 +219,20 @@ class InvitationController extends Controller
             return $this->ineligibleInvitationResponse($request, $invitation->guest);
         }
 
-        $request->validate(['template_name' => 'nullable|string|max:255']);
+        $request->validate([
+            'template_name' => 'nullable|string|max:255',
+            'template_language' => 'nullable|string|max:32',
+        ]);
 
         $this->validateCardImage($request);
         $this->storeCardImage($request, $event, $invitation);
 
         $invitation->update(['send_status' => 'pending']);
 
-        $success = $this->whatsapp->sendInvitation($invitation, $request->filled('template_name') ? $request->string('template_name')->toString() : null);
+        $templateName = $request->filled('template_name') ? $request->string('template_name')->toString() : null;
+        $templateLanguage = $request->filled('template_language') ? $request->string('template_language')->toString() : null;
+
+        $success = $this->whatsapp->sendInvitation($invitation, $templateName, $templateLanguage);
 
         $message = $success
             ? "Invitation resent to {$invitation->guest->full_name}!"
@@ -190,6 +255,7 @@ class InvitationController extends Controller
 
         $request->validate([
             'template_name' => 'required|string',
+            'template_language' => 'nullable|string|max:32',
             'message_type' => 'required|string|in:reminder,invitation,other',
         ]);
 
@@ -207,9 +273,32 @@ class InvitationController extends Controller
             ]);
         }
 
-        $success = $request->message_type === 'reminder'
-            ? $this->whatsapp->sendReminder($guest, $invitation, $request->template_name)
-            : $this->whatsapp->sendInvitation($invitation, $request->template_name);
+        if ($request->hasFile('card_image')) {
+            $this->validateCardImage($request);
+            $this->storeCardImage($request, $event, $invitation);
+            $invitation->refresh();
+        }
+
+        $templateName = $request->input('template_name');
+        $templateLanguage = $request->input('template_language');
+
+        $success = match ($request->message_type) {
+            'reminder' => $this->whatsapp->sendReminder($guest, $invitation, $templateName, $templateLanguage),
+            'invitation' => $this->whatsapp->sendInvitation($invitation, $templateName, $templateLanguage),
+            default => $this->whatsapp->sendTemplateMessage(
+                phone: $guest->formatted_phone,
+                templateName: $templateName,
+                languageCode: $templateLanguage ?: ($this->whatsappTemplateLanguage($templateName) ?: config('services.whatsapp.template_language', 'en_US')),
+                imageUrl: $invitation?->card_image_url,
+                bodyParameters: [
+                    ['type' => 'text', 'text' => $guest->full_name],
+                ],
+                invitation: $invitation,
+                messageType: $request->message_type,
+                guest: $guest,
+                event: $event,
+            ),
+        };
 
         $latestMessage = WhatsAppMessage::where('guest_id', $guest->id)->latest('id')->first();
 
@@ -273,7 +362,7 @@ class InvitationController extends Controller
     private function validateCardImage(Request $request): void
     {
         $request->validate([
-            'card_image' => 'nullable|image|mimes:jpg,jpeg,png|max:5120',
+            'card_image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120',
         ]);
     }
 
@@ -364,5 +453,10 @@ class InvitationController extends Controller
         }
 
         return back()->with('error', $message);
+    }
+
+    private function whatsappTemplateLanguage(string $templateName): ?string
+    {
+        return WhatsAppTemplate::where('name', $templateName)->value('language');
     }
 }

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AdminUserController;
+use App\Http\Controllers\AdminWhatsAppTemplateController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EventController;
@@ -53,6 +54,12 @@ Route::middleware('auth')->group(function () {
         Route::put('/{user}', [AdminUserController::class, 'update'])->name('update');
     });
 
+    // Admin WhatsApp Templates management & sync
+    Route::prefix('admin/whatsapp-templates')->name('admin.whatsapp-templates.')->group(function () {
+        Route::get('/', [AdminWhatsAppTemplateController::class, 'index'])->name('index');
+        Route::post('/sync', [AdminWhatsAppTemplateController::class, 'sync'])->name('sync');
+    });
+
     // Events
     Route::resource('events', EventController::class);
 
@@ -78,6 +85,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/invitations/pending', [InvitationController::class, 'pending'])->name('invitations.pending');
         Route::get('/invitations/export', [InvitationController::class, 'export'])->name('invitations.export');
         Route::get('/invitations/{guest}/card', [InvitationController::class, 'card'])->name('invitations.card');
+        Route::post('/invitations/{invitation}/upload-card', [InvitationController::class, 'uploadCard'])->name('invitations.upload-card');
         Route::post('/invitations/{invitation}/send', [InvitationController::class, 'send'])->name('invitations.send');
         Route::post('/invitations/send-all', [InvitationController::class, 'sendAll'])->name('invitations.sendAll');
         Route::post('/invitations/{invitation}/resend', [InvitationController::class, 'resend'])->name('invitations.resend');

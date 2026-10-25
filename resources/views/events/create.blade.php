@@ -145,4 +145,30 @@
         </form>
     </div>
 </div>
+
+@push('scripts')
+<script>
+    const templateColors = {
+        elegant: { bg: '#ffffff', text: '#333333', accent: '#d4af37' },
+        modern: { bg: '#ffffff', text: '#18181b', accent: '#2563eb' },
+        floral: { bg: '#fff5f7', text: '#374151', accent: '#e11d48' },
+        royal: { bg: '#ffffff', text: '#1f2937', accent: '#7c3aed' },
+        rustic: { bg: '#fcfbf7', text: '#292524', accent: '#15803d' }
+    };
+
+    document.querySelectorAll('input[name="card_template"]').forEach(radio => {
+        radio.addEventListener('change', function () {
+            const colors = templateColors[this.value];
+            if (colors) {
+                const bgInput = document.querySelector('input[name="card_background_color"]');
+                const textInput = document.querySelector('input[name="card_text_color"]');
+                const accentInput = document.querySelector('input[name="card_accent_color"]');
+                if (bgInput) bgInput.value = colors.bg;
+                if (textInput) textInput.value = colors.text;
+                if (accentInput) accentInput.value = colors.accent;
+            }
+        });
+    });
+</script>
+@endpush
 @endsection

@@ -278,12 +278,23 @@
                     </select>
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-surface-700 mb-1">WhatsApp Template Name</label>
+                    <label class="block text-sm font-medium text-surface-700 mb-1">WhatsApp Template</label>
+                    @if(!empty($whatsappTemplates) && $whatsappTemplates->isNotEmpty())
+                    <select name="template_name" id="templateName" required class="input-field" onchange="syncTemplateLanguage()">
+                        @foreach($whatsappTemplates as $tmpl)
+                        <option value="{{ $tmpl->name }}" data-language="{{ $tmpl->language }}" data-category="{{ $tmpl->category }}" {{ ($tmpl->name === config('services.whatsapp.template_name')) ? 'selected' : '' }}>
+                            {{ $tmpl->name }} ({{ $tmpl->language }}) @if($tmpl->status !== 'APPROVED') [{{ $tmpl->status }}] @endif
+                        </option>
+                        @endforeach
+                    </select>
+                    <input type="hidden" name="template_language" id="templateLanguage" value="{{ $whatsappTemplates->firstWhere('name', config('services.whatsapp.template_name'))?->language ?? $whatsappTemplates->first()?->language ?? config('services.whatsapp.template_language') }}">
+                    @else
                     <input type="text" name="template_name" id="templateName" required value="{{ config('services.whatsapp.template_name') }}"
                         placeholder="e.g. wedding_reminder" class="input-field">
+                    <input type="hidden" name="template_language" id="templateLanguage" value="{{ config('services.whatsapp.template_language') }}">
+                    @endif
                     <p class="text-[10px] text-surface-400 mt-1" id="templateHint">
-                        Must match the template name in your Meta WhatsApp Business Manager. Invitation templates need
-                        4 body parameters: guest name, guest ID, event date and public invitation link.
+                        Invitation templates need 4 body parameters: guest name, guest ID, event date and public invitation link.
                     </p>
                     <p id="reminderHint" class="text-[10px] text-surface-400 mt-1 hidden">
                         Reminder body: guest name, contribution amount, event name and the payment details configured in
@@ -400,14 +411,47 @@
         other: ''
     };
 
+    function syncTemplateLanguage() {
+        const select = document.getElementById('templateName');
+        const langInput = document.getElementById('templateLanguage');
+        if (select && select.tagName === 'SELECT' && langInput) {
+            const opt = select.options[select.selectedIndex];
+            langInput.value = opt ? (opt.dataset.language || '') : '';
+        }
+    }
+
     function syncTemplateName() {
         const type = document.getElementById('messageType').value;
         const input = document.getElementById('templateName');
         const reminderHint = document.getElementById('reminderHint');
         const templateHint = document.getElementById('templateHint');
 
-        if (type !== 'other') {
-            input.value = templateDefaults[type] || '';
+        if (input.tagName === 'SELECT') {
+            const targetName = templateDefaults[type];
+            let matched = false;
+            if (targetName) {
+                for (let i = 0; i < input.options.length; i++) {
+                    if (input.options[i].value === targetName) {
+                        input.selectedIndex = i;
+                        matched = true;
+                        break;
+                    }
+                }
+            }
+            if (!matched && type === 'reminder') {
+                for (let i = 0; i < input.options.length; i++) {
+                    if (input.options[i].value.toLowerCase().includes('reminder')) {
+                        input.selectedIndex = i;
+                        matched = true;
+                        break;
+                    }
+                }
+            }
+            syncTemplateLanguage();
+        } else {
+            if (type !== 'other') {
+                input.value = templateDefaults[type] || '';
+            }
         }
 
         reminderHint.classList.toggle('hidden', type !== 'reminder');
@@ -580,6 +624,7 @@
 
         const messageType = document.getElementById('messageType').value;
         const templateName = document.getElementById('templateName').value.trim();
+        const templateLanguage = document.getElementById('templateLanguage')?.value || '';
         if (!templateName) {
             document.getElementById('templateName').focus();
             return;
@@ -622,7 +667,7 @@
                         'Accept': 'application/json',
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ message_type: messageType, template_name: templateName }),
+                    body: JSON.stringify({ message_type: messageType, template_name: templateName, template_language: templateLanguage }),
                 });
 
                 let data = {};
