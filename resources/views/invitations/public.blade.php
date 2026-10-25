@@ -333,7 +333,7 @@
             <div class="hero-content">
                 <div class="brand">
                     <span class="brand-mark"><i class="fas fa-envelope-open-text"></i></span>
-                    CardMS Invitation
+                    NiaLike Invitation
                 </div>
 
                 <div class="hero-main">
@@ -454,7 +454,7 @@
             </div>
 
             <div class="footer">
-                <strong>{{ $event->name }}</strong> &middot; Powered by CardMS
+                <strong>{{ $event->name }}</strong> &middot; Powered by NiaLike by Hamasika Technology
             </div>
         </div>
     </div>

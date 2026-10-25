@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'New User - Card Management')
+@section('title', 'New User - NiaLike')
 
 @section('content')
 <div class="max-w-4xl mx-auto">

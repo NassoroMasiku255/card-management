@@ -7,9 +7,12 @@ use Tests\TestCase;
 
 class ExampleTest extends TestCase
 {
-    public function test_the_root_route_sends_guests_to_the_login_page(): void
+    public function test_the_root_route_shows_the_landing_page_to_guests(): void
     {
-        $this->get('/')->assertRedirect('/login');
+        $this->get('/')
+            ->assertOk()
+            ->assertSee('NiaLike')
+            ->assertSee('Hamasika Technology');
     }
 
     public function test_the_login_page_renders(): void

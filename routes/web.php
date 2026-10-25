@@ -15,10 +15,10 @@ use App\Http\Controllers\WebhookLogController;
 use App\Http\Controllers\WhatsAppWebhookController;
 use Illuminate\Support\Facades\Route;
 
-// Public routes
+// Public landing page
 Route::get('/', function () {
-    return redirect('/login');
-});
+    return auth()->check() ? redirect()->route('dashboard') : view('landing');
+})->name('home');
 
 // Auth routes
 Route::middleware('guest')->group(function () {

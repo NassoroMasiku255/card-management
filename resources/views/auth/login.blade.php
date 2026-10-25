@@ -3,21 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Card Management System</title>
+    <title>Sign in - NiaLike by Hamasika Technology</title>
     @include('partials.head-assets')
 </head>
-<body class="min-h-screen bg-surface-50 flex items-center justify-center relative overflow-hidden px-4">
+<body class="min-h-screen bg-surface-50 flex items-center justify-center relative overflow-hidden px-4 py-8">
 
     <div class="absolute -top-24 -left-24 w-80 h-80 bg-primary-200/50 rounded-full decorative-blob"></div>
     <div class="absolute -bottom-24 -right-24 w-96 h-96 bg-gold-200/50 rounded-full decorative-blob"></div>
 
+    <a href="{{ route('home') }}" class="absolute left-5 top-5 z-10 inline-flex items-center gap-2 text-sm font-medium text-surface-500 transition hover:text-surface-800 sm:left-8 sm:top-8">
+        <i class="fas fa-arrow-left text-xs"></i> Back to home
+    </a>
+
     <div class="relative max-w-md w-full">
         <div class="text-center mb-8">
-            <div class="w-14 h-14 bg-primary-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-soft-lg">
-                <i class="fas fa-envelope-open-text text-white text-xl"></i>
+            <div class="w-14 h-14 bg-gradient-to-br from-primary-600 to-primary-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-soft-lg">
+                <i class="fas fa-heart text-white text-xl"></i>
             </div>
-            <h1 class="font-display text-3xl font-bold text-surface-900">Card Management</h1>
-            <p class="text-surface-500 mt-1.5 text-sm">Wedding &amp; event invitation system</p>
+            <h1 class="font-display text-3xl font-bold text-surface-900">NiaLike</h1>
+            <p class="text-surface-500 mt-1.5 text-sm">Event invitations &amp; guest management · Hamasika Technology</p>
         </div>
 
         <div class="card-surface shadow-soft-lg p-8">

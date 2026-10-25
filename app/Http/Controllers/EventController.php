@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Event;
 use App\Models\ActivityLog;
+use App\Models\Event;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -15,7 +15,20 @@ class EventController extends Controller
         $user = Auth::user();
 
         $events = ($user->isAdmin() ? Event::query()->with('user') : $user->events())
-            ->withCount('guests', 'invitations')
+            ->with('user')
+            ->withCount([
+                'guests',
+                'guests as single_guests_count' => fn ($query) => $query->where('card_type', 'single'),
+                'guests as double_guests_count' => fn ($query) => $query->where('card_type', 'double'),
+                'invitations',
+                'invitations as invitations_sent_count' => fn ($query) => $query->where('send_status', 'sent'),
+                'invitations as rsvp_attending_count' => fn ($query) => $query->where('rsvp_status', 'attending'),
+                'invitations as rsvp_not_attending_count' => fn ($query) => $query->where('rsvp_status', 'not_attending'),
+                'invitations as rsvp_pending_count' => fn ($query) => $query->where('rsvp_status', 'pending'),
+                'invitations as checked_in_count' => fn ($query) => $query->where('attendance_status', 'attended'),
+            ])
+            ->withSum('guests as total_pledged', 'amount_contributed')
+            ->withSum('guests as total_paid', 'paid_amount')
             ->latest()
             ->get();
 
@@ -25,6 +38,7 @@ class EventController extends Controller
     public function create()
     {
         $templates = $this->getCardTemplates();
+
         return view('events.create', compact('templates'));
     }
 
@@ -70,24 +84,46 @@ class EventController extends Controller
     {
         $this->authorizeEvent($event);
 
-        $event->load(['guests', 'invitations.guest']);
+        $event->load(['guests.invitation', 'invitations.guest']);
+
+        $totalPledged = $event->guests->sum('amount_contributed');
+        $totalPaid = $event->guests->sum('paid_amount');
+        $singles = $event->guests->where('card_type', 'single')->count();
+        $doubles = $event->guests->where('card_type', 'double')->count();
 
         $stats = [
             'total_guests' => $event->guests->count(),
             'invitations_sent' => $event->invitations->where('send_status', 'sent')->count(),
+            'invitations_pending' => $event->invitations->where('send_status', 'pending')->count(),
             'rsvp_attending' => $event->invitations->where('rsvp_status', 'attending')->count(),
             'rsvp_not_attending' => $event->invitations->where('rsvp_status', 'not_attending')->count(),
             'rsvp_pending' => $event->invitations->where('rsvp_status', 'pending')->count(),
             'checked_in' => $event->invitations->where('attendance_status', 'attended')->count(),
             'not_checked_in' => $event->invitations->where('attendance_status', 'pending')->count(),
-            'total_contribution' => $event->guests->sum('amount_contributed'),
-            'total_pledged' => $event->guests->sum('amount_contributed'),
-            'total_paid' => $event->guests->sum('paid_amount'),
-            'outstanding' => max(0, $event->guests->sum('amount_contributed') - $event->guests->sum('paid_amount')),
+            'total_contribution' => $totalPledged,
+            'total_pledged' => $totalPledged,
+            'total_paid' => $totalPaid,
+            'outstanding' => max(0, $totalPledged - $totalPaid),
             'estimated_attendance' => $event->guests->sum(fn ($guest) => $guest->estimated_attendees),
+            'singles' => $singles,
+            'doubles' => $doubles,
+            'collection_rate' => $totalPledged > 0
+                ? (int) min(100, round(($totalPaid / $totalPledged) * 100))
+                : ($totalPaid > 0 ? 100 : 0),
         ];
 
-        return view('events.show', compact('event', 'stats'));
+        $topGuests = $event->guests
+            ->sortByDesc(fn ($guest) => (float) $guest->paid_amount)
+            ->take(5)
+            ->values();
+
+        $activityLogs = $event->activityLogs()
+            ->with('user')
+            ->latest()
+            ->take(8)
+            ->get();
+
+        return view('events.show', compact('event', 'stats', 'topGuests', 'activityLogs'));
     }
 
     public function countdownCard(Event $event)
@@ -110,6 +146,7 @@ class EventController extends Controller
     {
         $this->authorizeEvent($event);
         $templates = $this->getCardTemplates();
+
         return view('events.edit', compact('event', 'templates'));
     }
 
@@ -152,6 +189,7 @@ class EventController extends Controller
     {
         $this->authorizeEvent($event);
         $event->delete();
+
         return redirect()->route('events.index')->with('success', 'Event deleted successfully!');
     }
 
