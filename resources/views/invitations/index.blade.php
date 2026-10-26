@@ -125,7 +125,7 @@
             </div>
             <select name="send_status" class="input-field !py-2 !w-auto">
                 <option value="">All Send Status</option>
-                @foreach(['pending' => 'Pending', 'sent' => 'Sent', 'failed' => 'Failed', 'delivered' => 'Delivered'] as $value => $label)
+                @foreach(['pending' => 'Pending', 'sent' => 'Sent', 'failed' => 'Failed', 'delivered' => 'Delivered', 'read' => 'Read'] as $value => $label)
                 <option value="{{ $value }}" {{ request('send_status') === $value ? 'selected' : '' }}>{{ $label }}</option>
                 @endforeach
             </select>
@@ -202,7 +202,7 @@
                 @php
                     $initials = collect(preg_split('/\s+/', trim($invitation->guest->full_name)))->filter()->take(2)->map(fn ($part) => mb_strtoupper(mb_substr($part, 0, 1)))->implode('');
                     $paidCardType = $event->cardTypeForAmount((float) $invitation->guest->paid_amount);
-                    $statusDot = $invitation->send_status === 'sent' || $invitation->send_status === 'delivered' ? 'bg-green-500' : ($invitation->send_status === 'failed' ? 'bg-red-500' : 'bg-amber-500');
+                    $statusDot = in_array($invitation->send_status, ['sent', 'delivered', 'read'], true) ? 'bg-green-500' : ($invitation->send_status === 'failed' ? 'bg-red-500' : 'bg-amber-500');
                 @endphp
                 <tr class="group transition hover:bg-green-50/20" id="row-{{ $invitation->id }}">
                     <td class="px-5 py-3.5" data-label="Guest">
@@ -246,7 +246,8 @@
                                 {{ $invitation->send_status === 'sent' ? 'bg-green-100 text-green-700' : '' }}
                                 {{ $invitation->send_status === 'pending' ? 'bg-amber-100 text-amber-700' : '' }}
                                 {{ $invitation->send_status === 'failed' ? 'bg-red-100 text-red-700' : '' }}
-                                {{ $invitation->send_status === 'delivered' ? 'bg-blue-100 text-blue-700' : '' }}">
+                                {{ $invitation->send_status === 'delivered' ? 'bg-blue-100 text-blue-700' : '' }}
+                                {{ $invitation->send_status === 'read' ? 'bg-teal-100 text-teal-700' : '' }}">
                                 <span class="h-1.5 w-1.5 rounded-full {{ $statusDot }}"></span>{{ ucfirst($invitation->send_status) }}
                             </span>
                             @if($invitation->sent_at)

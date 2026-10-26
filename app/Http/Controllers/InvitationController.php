@@ -398,7 +398,9 @@ class InvitationController extends Controller
 
         return [
             'total' => (int) $counts->sum(),
-            'sent' => (int) $counts->get('sent', 0),
+            'sent' => (int) $counts->get('sent', 0)
+                + (int) $counts->get('delivered', 0)
+                + (int) $counts->get('read', 0),
             'pending' => (int) $counts->get('pending', 0),
             'failed' => (int) $counts->get('failed', 0),
         ];
@@ -420,7 +422,7 @@ class InvitationController extends Controller
             });
         }
 
-        if (in_array($sendStatus = $request->input('send_status'), ['pending', 'sent', 'failed', 'delivered'], true)) {
+        if (in_array($sendStatus = $request->input('send_status'), ['pending', 'sent', 'failed', 'delivered', 'read'], true)) {
             $query->where('send_status', $sendStatus);
         }
 

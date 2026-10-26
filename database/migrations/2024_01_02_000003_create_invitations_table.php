@@ -14,7 +14,7 @@ return new class extends Migration
             $table->foreignId('guest_id')->constrained()->onDelete('cascade');
             $table->string('qr_code_data');
             $table->string('qr_code_path')->nullable();
-            $table->enum('send_status', ['pending', 'sent', 'failed', 'delivered'])->default('pending');
+            $table->enum('send_status', ['pending', 'sent', 'failed', 'delivered', 'read'])->default('pending');
             $table->timestamp('sent_at')->nullable();
             $table->enum('rsvp_status', ['pending', 'attending', 'not_attending'])->default('pending');
             $table->timestamp('rsvp_responded_at')->nullable();

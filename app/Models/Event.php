@@ -129,7 +129,7 @@ class Event extends Model
 
     public function getSentInvitationsCountAttribute(): int
     {
-        return $this->invitations()->where('send_status', 'sent')->count();
+        return $this->invitations()->whereIn('send_status', ['sent', 'delivered', 'read'])->count();
     }
 
     public function getTotalGuestsAttribute(): int

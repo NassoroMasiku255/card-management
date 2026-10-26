@@ -162,6 +162,31 @@ class WhatsAppWebhookTest extends TestCase
         $this->assertSame('Ndiyo nitakuja', $log->reply_text);
     }
 
+    public function test_read_status_callback_updates_the_invitation_to_read(): void
+    {
+        $invitation = $this->makeInvitation(['whatsapp_message_id' => 'wamid.read']);
+
+        $this->postSigned([
+            'object' => 'whatsapp_business_account',
+            'entry' => [[
+                'id' => '123',
+                'changes' => [[
+                    'field' => 'messages',
+                    'value' => [
+                        'messaging_product' => 'whatsapp',
+                        'statuses' => [[
+                            'id' => 'wamid.read',
+                            'status' => 'read',
+                            'recipient_id' => '255712345678',
+                        ]],
+                    ],
+                ]],
+            ]],
+        ])->assertOk();
+
+        $this->assertSame('read', $invitation->fresh()->send_status);
+    }
+
     public function test_status_callback_updates_the_send_status(): void
     {
         $invitation = $this->makeInvitation(['whatsapp_message_id' => 'wamid.sent']);

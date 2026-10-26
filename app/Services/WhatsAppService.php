@@ -655,12 +655,13 @@ class WhatsAppService
 
         $sendStatus = match ($state) {
             'sent' => 'sent',
-            'delivered', 'read' => 'delivered',
+            'delivered' => 'delivered',
+            'read' => 'read',
             'failed' => 'failed',
             default => null,
         };
 
-        if ($sendStatus && $invitation->send_status !== $sendStatus) {
+        if ($sendStatus && $this->shouldApplyInvitationStatus($invitation->send_status, $sendStatus)) {
             $invitation->update(['send_status' => $sendStatus]);
         }
 
@@ -671,6 +672,26 @@ class WhatsAppService
                 'errors' => $status['errors'] ?? [],
             ]);
         }
+    }
+
+    private function shouldApplyInvitationStatus(?string $current, string $incoming): bool
+    {
+        if ($current === 'failed') {
+            return $incoming === 'failed';
+        }
+
+        if ($incoming === 'failed') {
+            return true;
+        }
+
+        $rank = [
+            'pending' => 0,
+            'sent' => 2,
+            'delivered' => 3,
+            'read' => 4,
+        ];
+
+        return ($rank[$incoming] ?? -1) >= ($rank[$current] ?? -1);
     }
 
     /**

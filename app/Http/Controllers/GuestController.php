@@ -83,7 +83,7 @@ class GuestController extends Controller
 
         $summary = [
             'total' => $event->guests()->count(),
-            'invited' => $event->invitations()->where('send_status', 'sent')->count(),
+            'invited' => $event->invitations()->whereIn('send_status', ['sent', 'delivered', 'read'])->count(),
             'attending' => $event->invitations()->where('rsvp_status', 'attending')->count(),
             'checked_in' => $event->invitations()->where('attendance_status', 'attended')->count(),
         ];

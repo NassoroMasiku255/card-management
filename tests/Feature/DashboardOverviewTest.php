@@ -44,7 +44,7 @@ class DashboardOverviewTest extends TestCase
             'event_id' => $event->id,
             'guest_id' => $guest->id,
             'qr_code_data' => 'test-qr-code',
-            'send_status' => 'sent',
+            'send_status' => 'read',
             'sent_at' => now(),
             'rsvp_status' => 'attending',
             'attendance_status' => 'attended',
@@ -64,11 +64,13 @@ class DashboardOverviewTest extends TestCase
             ->assertSee('Amina &amp; Hassan Wedding', false)
             ->assertSee('Invitations delivered');
 
-        $this->actingAs($user)
+        $eventResponse = $this->actingAs($user)
             ->get(route('events.show', $event))
             ->assertOk()
             ->assertSee('Amina &amp; Hassan Wedding', false)
             ->assertSee('Check-in progress')
             ->assertSee('Top contributors');
+
+        $this->assertSame(1, $eventResponse->viewData('stats')['invitations_sent']);
     }
 }

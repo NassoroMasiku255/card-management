@@ -298,6 +298,8 @@
                                 @if($guest->invitation)
                                     <span class="badge
                                         {{ $guest->invitation->send_status === 'sent' ? 'bg-green-100 text-green-700' : '' }}
+                                        {{ $guest->invitation->send_status === 'delivered' ? 'bg-blue-100 text-blue-700' : '' }}
+                                        {{ $guest->invitation->send_status === 'read' ? 'bg-teal-100 text-teal-700' : '' }}
                                         {{ $guest->invitation->send_status === 'pending' ? 'bg-surface-100 text-surface-600' : '' }}
                                         {{ $guest->invitation->send_status === 'failed' ? 'bg-red-100 text-red-700' : '' }}">
                                         {{ ucfirst($guest->invitation->send_status) }}

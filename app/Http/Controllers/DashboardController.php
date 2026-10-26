@@ -21,7 +21,7 @@ class DashboardController extends Controller
                 'guests as single_guests_count' => fn ($query) => $query->where('card_type', 'single'),
                 'guests as double_guests_count' => fn ($query) => $query->where('card_type', 'double'),
                 'invitations',
-                'invitations as invitations_sent_count' => fn ($query) => $query->where('send_status', 'sent'),
+                'invitations as invitations_sent_count' => fn ($query) => $query->whereIn('send_status', ['sent', 'delivered', 'read']),
                 'invitations as rsvp_attending_count' => fn ($query) => $query->where('rsvp_status', 'attending'),
                 'invitations as rsvp_not_attending_count' => fn ($query) => $query->where('rsvp_status', 'not_attending'),
                 'invitations as rsvp_pending_count' => fn ($query) => $query->where('rsvp_status', 'pending'),

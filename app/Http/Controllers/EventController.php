@@ -24,7 +24,7 @@ class EventController extends Controller
                 'guests as single_guests_count' => fn ($query) => $query->where('card_type', 'single'),
                 'guests as double_guests_count' => fn ($query) => $query->where('card_type', 'double'),
                 'invitations',
-                'invitations as invitations_sent_count' => fn ($query) => $query->where('send_status', 'sent'),
+                'invitations as invitations_sent_count' => fn ($query) => $query->whereIn('send_status', ['sent', 'delivered', 'read']),
                 'invitations as rsvp_attending_count' => fn ($query) => $query->where('rsvp_status', 'attending'),
                 'invitations as rsvp_not_attending_count' => fn ($query) => $query->where('rsvp_status', 'not_attending'),
                 'invitations as rsvp_pending_count' => fn ($query) => $query->where('rsvp_status', 'pending'),
@@ -99,7 +99,7 @@ class EventController extends Controller
 
         $stats = [
             'total_guests' => $event->guests->count(),
-            'invitations_sent' => $event->invitations->where('send_status', 'sent')->count(),
+            'invitations_sent' => $event->invitations->whereIn('send_status', ['sent', 'delivered', 'read'])->count(),
             'invitations_pending' => $event->invitations->where('send_status', 'pending')->count(),
             'rsvp_attending' => $event->invitations->where('rsvp_status', 'attending')->count(),
             'rsvp_not_attending' => $event->invitations->where('rsvp_status', 'not_attending')->count(),
