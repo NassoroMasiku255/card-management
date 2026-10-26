@@ -51,6 +51,9 @@
                     <a href="{{ route('events.messages.report', $event) }}" class="btn btn-outline btn-sm flex-1 sm:flex-none">
                         <i class="fas fa-tower-broadcast"></i> Messages
                     </a>
+                    <a href="{{ route('events.budget.index', $event) }}" class="btn btn-outline btn-sm flex-1 sm:flex-none">
+                        <i class="fas fa-calculator"></i> Budget
+                    </a>
                     <button type="button" onclick="window.print()" class="btn btn-primary btn-sm flex-1 sm:flex-none">
                         <i class="fas fa-print"></i> Print report
                     </button>
@@ -124,6 +127,80 @@
         <div class="mt-4 flex items-center gap-2">
             <span class="rounded-full bg-red-50 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-red-600">{{ number_format($stats['statusCounts']['partial']) }} partial</span>
             <span class="rounded-full bg-surface-100 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-surface-500">{{ number_format($stats['statusCounts']['unpaid']) }} unpaid</span>
+        </div>
+    </div>
+</div>
+
+<!-- Budget & vendor position -->
+<div class="card-surface mb-6 overflow-hidden">
+    <div class="flex flex-wrap items-center justify-between gap-3 border-b border-surface-100 px-5 py-4">
+        <div class="flex items-center gap-3">
+            <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-gold-400 to-amber-600 text-white shadow-soft">
+                <i class="fas fa-calculator text-sm"></i>
+            </div>
+            <div>
+                <h2 class="text-sm font-semibold text-surface-900">Budget &amp; vendor position</h2>
+                <p class="text-[11px] text-surface-400">How event costs relate to guest contributions</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-2 print:hidden">
+            <a href="{{ route('events.budget.report', $event) }}" class="text-xs font-semibold text-primary-600 hover:text-primary-700">Budget report</a>
+            <span class="text-surface-300">|</span>
+            <a href="{{ route('events.budget.index', $event) }}" class="text-xs font-semibold text-primary-600 hover:text-primary-700">Manage budget</a>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-2 gap-3 p-5 sm:grid-cols-3 xl:grid-cols-6">
+        <div class="rounded-xl border border-surface-100 bg-surface-50/60 p-3.5">
+            <p class="text-[9px] font-bold uppercase tracking-wider text-surface-400">Event budget</p>
+            <p class="mt-1 text-lg font-bold text-surface-900">{{ number_format($budgetPosition['totalBudget']) }}</p>
+            <p class="text-[10px] text-surface-400">{{ $budget['itemCount'] }} services</p>
+        </div>
+        <div class="rounded-xl border border-green-100 bg-green-50/60 p-3.5">
+            <p class="text-[9px] font-bold uppercase tracking-wider text-green-600/70">Paid to vendors</p>
+            <p class="mt-1 text-lg font-bold text-green-700">{{ number_format($budgetPosition['vendorPaid']) }}</p>
+            <p class="text-[10px] text-green-600/70">{{ $budgetPosition['paidRate'] }}% of budget</p>
+        </div>
+        <div class="rounded-xl border border-red-100 bg-red-50/60 p-3.5">
+            <p class="text-[9px] font-bold uppercase tracking-wider text-red-500">Vendor balance</p>
+            <p class="mt-1 text-lg font-bold text-red-600">{{ number_format($budgetPosition['vendorOutstanding']) }}</p>
+            <p class="text-[10px] text-red-500/70">still to pay</p>
+        </div>
+        <div class="rounded-xl border border-surface-100 bg-surface-50/60 p-3.5">
+            <p class="text-[9px] font-bold uppercase tracking-wider text-surface-400">Guest pledges</p>
+            <p class="mt-1 text-lg font-bold text-surface-900">{{ number_format($stats['totalPledged']) }}</p>
+            <p class="text-[10px] text-surface-400">{{ $budgetPosition['fundingCoverage'] }}% of budget</p>
+        </div>
+        <div class="rounded-xl border {{ $budgetPosition['projectedBalance'] >= 0 ? 'border-green-100 bg-green-50/60' : 'border-amber-100 bg-amber-50/60' }} p-3.5">
+            <p class="text-[9px] font-bold uppercase tracking-wider {{ $budgetPosition['projectedBalance'] >= 0 ? 'text-green-600/70' : 'text-amber-600/80' }}">{{ $budgetPosition['projectedBalance'] >= 0 ? 'Projected surplus' : 'Funding gap' }}</p>
+            <p class="mt-1 text-lg font-bold {{ $budgetPosition['projectedBalance'] >= 0 ? 'text-green-700' : 'text-amber-700' }}">{{ number_format(abs($budgetPosition['projectedBalance'])) }}</p>
+            <p class="text-[10px] {{ $budgetPosition['projectedBalance'] >= 0 ? 'text-green-600/70' : 'text-amber-600/80' }}">pledges vs budget</p>
+        </div>
+        <div class="rounded-xl border border-surface-100 bg-surface-50/60 p-3.5">
+            <p class="text-[9px] font-bold uppercase tracking-wider text-surface-400">Cost per guest</p>
+            <p class="mt-1 text-lg font-bold text-surface-900">{{ $budgetPosition['estimatedGuests'] > 0 ? number_format($budgetPosition['costPerGuest']) : '—' }}</p>
+            <p class="text-[10px] text-surface-400">{{ $budgetPosition['estimatedGuests'] > 0 ? number_format($budgetPosition['estimatedGuests']).' expected guests' : 'estimated guests not set' }}</p>
+        </div>
+    </div>
+
+    <div class="grid gap-4 border-t border-surface-100 bg-surface-50/30 px-5 py-4 sm:grid-cols-2">
+        <div>
+            <div class="flex items-center justify-between text-[11px]">
+                <span class="text-surface-500">Guest funding covers budget</span>
+                <span class="font-bold text-surface-800">{{ $budgetPosition['fundingCoverage'] }}%</span>
+            </div>
+            <div class="mt-2 h-2 overflow-hidden rounded-full bg-surface-200">
+                <div class="h-full rounded-full bg-gradient-to-r from-gold-500 to-amber-300" style="width: {{ $budgetPosition['fundingCoverage'] }}%;"></div>
+            </div>
+        </div>
+        <div>
+            <div class="flex items-center justify-between text-[11px]">
+                <span class="text-surface-500">Vendor payments made</span>
+                <span class="font-bold text-surface-800">{{ $budgetPosition['paidRate'] }}%</span>
+            </div>
+            <div class="mt-2 h-2 overflow-hidden rounded-full bg-surface-200">
+                <div class="h-full rounded-full bg-gradient-to-r from-green-500 to-emerald-300" style="width: {{ $budgetPosition['paidRate'] }}%;"></div>
+            </div>
         </div>
     </div>
 </div>

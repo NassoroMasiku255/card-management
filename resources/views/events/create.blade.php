@@ -131,6 +131,16 @@
                 </div>
             </div>
 
+            <div class="rounded-xl border border-surface-200 bg-surface-50 p-4">
+                <h3 class="font-display text-sm font-bold text-surface-800 mb-1">Guest Planning</h3>
+                <p class="text-xs text-surface-400 mb-3">Used to calculate your budget cost per expected guest.</p>
+                <div class="max-w-xs">
+                    <label class="label-field">Approximate number of guests</label>
+                    <input type="number" name="estimated_guests" value="{{ old('estimated_guests') }}"
+                        min="1" max="100000" step="1" class="input-field" placeholder="e.g., 250">
+                </div>
+            </div>
+
             <div class="rounded-xl border border-green-200 bg-green-50/60 p-4">
                 <label class="flex cursor-pointer items-start gap-3">
                     <input type="checkbox" name="payment_thank_you_enabled" value="1"

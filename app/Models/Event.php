@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -17,7 +18,8 @@ class Event extends Model
         'user_id', 'name', 'slug', 'event_date', 'event_time', 'location',
         'hall', 'description', 'card_template', 'card_background_color',
         'card_text_color', 'card_accent_color', 'single_card_min_amount',
-        'double_card_min_amount', 'payment_thank_you_enabled', 'cover_image', 'status',
+        'double_card_min_amount', 'payment_thank_you_enabled', 'estimated_guests',
+        'cover_image', 'status',
     ];
 
     protected $casts = [
@@ -25,6 +27,7 @@ class Event extends Model
         'single_card_min_amount' => 'decimal:2',
         'double_card_min_amount' => 'decimal:2',
         'payment_thank_you_enabled' => 'boolean',
+        'estimated_guests' => 'integer',
     ];
 
     protected static function boot()
@@ -68,6 +71,11 @@ class Event extends Model
         return $this->hasMany(GuestPayment::class);
     }
 
+    public function budgetItems(): HasMany
+    {
+        return $this->hasMany(EventBudgetItem::class);
+    }
+
     public function getEventTimeAttribute($value): ?string
     {
         if (empty($value)) {
@@ -75,7 +83,7 @@ class Event extends Model
         }
 
         try {
-            return \Carbon\Carbon::parse($value)->format('H:i');
+            return Carbon::parse($value)->format('H:i');
         } catch (\Throwable $e) {
             return (string) $value;
         }

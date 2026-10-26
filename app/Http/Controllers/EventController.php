@@ -4,12 +4,15 @@ namespace App\Http\Controllers;
 
 use App\Models\ActivityLog;
 use App\Models\Event;
+use App\Services\EventBudgetService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 
 class EventController extends Controller
 {
+    public function __construct(private readonly EventBudgetService $budgetService) {}
+
     public function index()
     {
         $user = Auth::user();
@@ -58,6 +61,7 @@ class EventController extends Controller
             'single_card_min_amount' => 'nullable|numeric|min:1',
             'double_card_min_amount' => 'nullable|numeric|min:1',
             'payment_thank_you_enabled' => 'nullable|boolean',
+            'estimated_guests' => 'nullable|integer|min:1|max:100000',
             'cover_image' => 'nullable|image|max:5120',
         ]);
 
@@ -125,7 +129,9 @@ class EventController extends Controller
             ->take(8)
             ->get();
 
-        return view('events.show', compact('event', 'stats', 'topGuests', 'activityLogs'));
+        $budget = $this->budgetService->summary($event);
+
+        return view('events.show', compact('event', 'stats', 'topGuests', 'activityLogs', 'budget'));
     }
 
     public function countdownCard(Event $event)
@@ -170,6 +176,7 @@ class EventController extends Controller
             'single_card_min_amount' => 'nullable|numeric|min:1',
             'double_card_min_amount' => 'nullable|numeric|min:1',
             'payment_thank_you_enabled' => 'nullable|boolean',
+            'estimated_guests' => 'nullable|integer|min:1|max:100000',
             'cover_image' => 'nullable|image|max:5120',
             'status' => 'nullable|in:draft,active,completed,cancelled',
         ]);

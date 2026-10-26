@@ -4,10 +4,13 @@ namespace App\Http\Controllers;
 
 use App\Models\Event;
 use App\Models\GuestPayment;
+use App\Services\EventBudgetService;
 use Illuminate\Support\Collection;
 
 class EventReportController extends Controller
 {
+    public function __construct(private readonly EventBudgetService $budgetService) {}
+
     public function show(Event $event)
     {
         $this->authorizeEvent($event);
@@ -78,6 +81,22 @@ class EventReportController extends Controller
             ->limit(10)
             ->get();
 
+        $budget = $this->budgetService->summary($event);
+        $budgetPosition = [
+            'totalBudget' => $budget['totalBudget'],
+            'vendorPaid' => $budget['totalPaid'],
+            'vendorOutstanding' => $budget['outstanding'],
+            'fundingGap' => round(max(0, $budget['totalBudget'] - $totalPledged), 2),
+            'projectedBalance' => round($totalPledged - $budget['totalBudget'], 2),
+            'availableAfterVendors' => round($totalPaid - $budget['totalPaid'], 2),
+            'fundingCoverage' => $budget['totalBudget'] > 0
+                ? (int) min(100, round(($totalPledged / $budget['totalBudget']) * 100))
+                : 0,
+            'estimatedGuests' => $budget['estimatedGuests'],
+            'costPerGuest' => $budget['costPerGuest'],
+            'paidRate' => $budget['paidRate'],
+        ];
+
         $stats = compact(
             'totalPledged',
             'totalPaid',
@@ -98,7 +117,9 @@ class EventReportController extends Controller
             'guests',
             'outstandingGuests',
             'categoryBreakdown',
-            'recentPayments'
+            'recentPayments',
+            'budget',
+            'budgetPosition'
         ));
     }
 }

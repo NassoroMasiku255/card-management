@@ -4,6 +4,7 @@ use App\Http\Controllers\AdminUserController;
 use App\Http\Controllers\AdminWhatsAppTemplateController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\EventBudgetController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\EventMessageReportController;
 use App\Http\Controllers\EventReportController;
@@ -69,6 +70,14 @@ Route::middleware('auth')->group(function () {
         Route::get('/report', [EventReportController::class, 'show'])->name('report');
         Route::get('/messages-report', [EventMessageReportController::class, 'show'])->name('messages.report');
         Route::get('/countdown-card', [EventController::class, 'countdownCard'])->name('countdown-card');
+
+        // Event budget & vendor management
+        Route::get('/budget', [EventBudgetController::class, 'index'])->name('budget.index');
+        Route::get('/budget/report', [EventBudgetController::class, 'report'])->name('budget.report');
+        Route::post('/budget', [EventBudgetController::class, 'store'])->name('budget.store');
+        Route::put('/budget/estimated-guests', [EventBudgetController::class, 'updateEstimatedGuests'])->name('budget.estimated-guests');
+        Route::put('/budget/{budgetItem}', [EventBudgetController::class, 'update'])->name('budget.update');
+        Route::delete('/budget/{budgetItem}', [EventBudgetController::class, 'destroy'])->name('budget.destroy');
 
         Route::get('/guests', [GuestController::class, 'index'])->name('guests.index');
         Route::get('/guests/create', [GuestController::class, 'create'])->name('guests.create');

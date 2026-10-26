@@ -110,6 +110,9 @@
             <a href="{{ route('events.messages.report', $event) }}" class="btn border border-white/25 bg-white/10 text-white hover:bg-white/20">
                 <i class="fas fa-tower-broadcast"></i> Messages
             </a>
+            <a href="{{ route('events.budget.index', $event) }}" class="btn border border-white/25 bg-white/10 text-white hover:bg-white/20">
+                <i class="fas fa-calculator"></i> Budget
+            </a>
             <a href="{{ route('events.countdown-card', $event) }}" target="_blank" class="btn border border-white/25 bg-white/10 text-white hover:bg-white/20">
                 <i class="fab fa-whatsapp text-green-300"></i> Countdown
             </a>
@@ -178,7 +181,7 @@
 </div>
 
 <!-- Quick access -->
-<div class="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7">
+<div class="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
     <a href="{{ route('events.guests.index', $event) }}" class="group rounded-xl border border-surface-200 bg-white p-4 shadow-soft transition hover:-translate-y-0.5 hover:border-primary-200 hover:shadow-soft-lg">
         <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-primary-50 text-primary-600 transition group-hover:bg-primary-500 group-hover:text-white"><i class="fas fa-users text-xs"></i></div>
         <p class="mt-2.5 text-xs font-semibold text-surface-700">Guest list</p>
@@ -203,6 +206,11 @@
         <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-green-50 text-green-600 transition group-hover:bg-green-500 group-hover:text-white"><i class="fas fa-tower-broadcast text-xs"></i></div>
         <p class="mt-2.5 text-xs font-semibold text-surface-700">Messages</p>
         <p class="mt-0.5 text-[10px] text-surface-400">Delivery &amp; replies</p>
+    </a>
+    <a href="{{ route('events.budget.index', $event) }}" class="group rounded-xl border border-surface-200 bg-white p-4 shadow-soft transition hover:-translate-y-0.5 hover:border-gold-200 hover:shadow-soft-lg">
+        <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-gold-50 text-gold-600 transition group-hover:bg-gold-500 group-hover:text-white"><i class="fas fa-calculator text-xs"></i></div>
+        <p class="mt-2.5 text-xs font-semibold text-surface-700">Budget</p>
+        <p class="mt-0.5 text-[10px] text-surface-400">Services &amp; vendors</p>
     </a>
     <a href="{{ route('events.guests.import', $event) }}" class="group rounded-xl border border-surface-200 bg-white p-4 shadow-soft transition hover:-translate-y-0.5 hover:border-purple-200 hover:shadow-soft-lg">
         <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-purple-50 text-purple-600 transition group-hover:bg-purple-500 group-hover:text-white"><i class="fas fa-file-import text-xs"></i></div>
@@ -328,6 +336,7 @@
                         'guest_added', 'guests_imported' => ['fa-user-plus', 'bg-blue-50 text-blue-600 ring-blue-100'],
                         'invitation_sent', 'bulk_invitations_sent', 'whatsapp_message_sent' => ['fa-paper-plane', 'bg-green-50 text-green-600 ring-green-100'],
                         'payment_recorded', 'payment_deleted' => ['fa-coins', 'bg-gold-50 text-gold-600 ring-gold-100'],
+                        'budget_item_added', 'budget_item_updated', 'budget_item_removed', 'budget_guests_updated' => ['fa-calculator', 'bg-gold-50 text-gold-600 ring-gold-100'],
                         'guest_checked_in' => ['fa-qrcode', 'bg-primary-50 text-primary-600 ring-primary-100'],
                         'card_image_uploaded' => ['fa-image', 'bg-purple-50 text-purple-600 ring-purple-100'],
                         default => ['fa-circle-info', 'bg-surface-100 text-surface-500 ring-surface-100'],
@@ -451,6 +460,47 @@
             </div>
             <div class="mt-4 rounded-lg bg-surface-50 px-3 py-2.5 text-center text-[11px] text-surface-500">
                 <i class="fas fa-chair mr-1 text-surface-400"></i>{{ number_format($stats['estimated_attendance']) }} estimated seats · {{ number_format($confirmedAttendance) }} confirmed
+            </div>
+        </div>
+
+        <!-- Budget & vendors -->
+        <div class="card-surface overflow-hidden">
+            <div class="flex items-center justify-between border-b border-surface-100 px-5 py-4">
+                <div class="flex items-center gap-2.5">
+                    <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-gold-50 text-gold-600"><i class="fas fa-calculator text-xs"></i></div>
+                    <div>
+                        <h3 class="text-sm font-semibold text-surface-900">Budget &amp; vendors</h3>
+                        <p class="text-[10px] text-surface-400">{{ $budget['itemCount'] }} services · {{ $budget['vendorCount'] }} vendors</p>
+                    </div>
+                </div>
+                <span class="badge bg-gold-50 text-gold-700">{{ $budget['paidRate'] }}% paid</span>
+            </div>
+            <div class="p-5">
+                <div class="flex items-end justify-between gap-3">
+                    <div>
+                        <p class="text-[10px] font-bold uppercase tracking-wider text-surface-400">Total budget</p>
+                        <p class="mt-0.5 font-display text-xl font-bold text-surface-900">TZS {{ $money($budget['totalBudget']) }}</p>
+                    </div>
+                    @if($budget['estimatedGuests'] > 0)
+                    <p class="text-right text-[10px] text-surface-400">{{ number_format($budget['estimatedGuests']) }} guests<br><span class="font-semibold text-surface-600">TZS {{ $money($budget['costPerGuest']) }}/guest</span></p>
+                    @endif
+                </div>
+                <div class="mt-3 h-2 overflow-hidden rounded-full bg-surface-100">
+                    <div class="h-full rounded-full bg-gradient-to-r from-gold-500 to-amber-300" style="width: {{ $budget['paidRate'] }}%;"></div>
+                </div>
+                <div class="mt-3 grid grid-cols-2 gap-2">
+                    <div class="rounded-lg bg-green-50 px-3 py-2">
+                        <p class="text-[9px] font-bold uppercase tracking-wider text-green-600/70">Vendor paid</p>
+                        <p class="mt-0.5 text-xs font-bold text-green-700">TZS {{ $money($budget['totalPaid']) }}</p>
+                    </div>
+                    <div class="rounded-lg bg-red-50 px-3 py-2">
+                        <p class="text-[9px] font-bold uppercase tracking-wider text-red-500">Outstanding</p>
+                        <p class="mt-0.5 text-xs font-bold text-red-600">TZS {{ $money($budget['outstanding']) }}</p>
+                    </div>
+                </div>
+                <a href="{{ route('events.budget.index', $event) }}" class="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-primary-600 hover:text-primary-700">
+                    Manage budget <i class="fas fa-arrow-right text-[9px]"></i>
+                </a>
             </div>
         </div>
 
