@@ -343,7 +343,7 @@
                     <div class="badges">
                         <span class="badge badge-{{ $paidCardType }}">{{ ucfirst($paidCardType) }}</span>
                         <span class="badge badge-{{ $invitation->rsvp_status }}">
-                            {{ $invitation->rsvp_status === 'attending' ? 'Nitafika' : ($invitation->rsvp_status === 'not_attending' ? 'Sitafika' : 'RSVP Pending') }}
+                            {{ $invitation->rsvp_status === 'attending' ? 'Nitahudhuria' : ($invitation->rsvp_status === 'not_attending' ? 'Sitahudhuria' : 'RSVP Pending') }}
                         </span>
                         <span class="badge badge-{{ $invitation->send_status }}">{{ ucfirst($invitation->send_status) }}</span>
                     </div>

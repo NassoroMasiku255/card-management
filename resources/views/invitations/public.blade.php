@@ -418,14 +418,14 @@
                             @csrf
                             <input type="hidden" name="rsvp_status" value="attending">
                             <button type="submit" class="btn-invite btn-rsvp-yes {{ $invitation->rsvp_status === 'attending' ? 'is-selected' : '' }}">
-                                <i class="fas fa-check"></i> Yes, I will attend
+                                <i class="fas fa-check"></i> Nitahudhuria
                             </button>
                         </form>
                         <form method="POST" action="{{ route('invitation.public.rsvp', $invitation->qr_code_data) }}">
                             @csrf
                             <input type="hidden" name="rsvp_status" value="not_attending">
                             <button type="submit" class="btn-invite btn-rsvp-no {{ $invitation->rsvp_status === 'not_attending' ? 'is-selected' : '' }}">
-                                <i class="fas fa-xmark"></i> Sorry, I cannot attend
+                                <i class="fas fa-xmark"></i> Sitahudhuria
                             </button>
                         </form>
                     </div>

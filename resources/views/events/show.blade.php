@@ -288,7 +288,7 @@
                                         {{ $guest->invitation->rsvp_status === 'attending' ? 'bg-green-100 text-green-700' : '' }}
                                         {{ $guest->invitation->rsvp_status === 'not_attending' ? 'bg-red-100 text-red-700' : '' }}
                                         {{ $guest->invitation->rsvp_status === 'pending' ? 'bg-yellow-100 text-yellow-700' : '' }}">
-                                        {{ $guest->invitation->rsvp_status === 'attending' ? 'Nitafika' : ($guest->invitation->rsvp_status === 'not_attending' ? 'Sitafika' : 'Pending') }}
+                                        {{ $guest->invitation->rsvp_status === 'attending' ? 'Nitahudhuria' : ($guest->invitation->rsvp_status === 'not_attending' ? 'Sitahudhuria' : 'Pending') }}
                                     </span>
                                 @else
                                     <span class="badge bg-surface-100 text-surface-500">No invite</span>
@@ -445,11 +445,11 @@
                 </div>
                 <div class="min-w-0 flex-1 space-y-3">
                     <div class="flex items-center justify-between gap-2">
-                        <span class="flex items-center gap-2 text-xs text-surface-500"><span class="h-2 w-2 rounded-full bg-green-500"></span>Nitafika</span>
+                        <span class="flex items-center gap-2 text-xs text-surface-500"><span class="h-2 w-2 rounded-full bg-green-500"></span>Nitahudhuria</span>
                         <span class="text-sm font-bold text-green-600">{{ number_format($stats['rsvp_attending']) }}</span>
                     </div>
                     <div class="flex items-center justify-between gap-2">
-                        <span class="flex items-center gap-2 text-xs text-surface-500"><span class="h-2 w-2 rounded-full bg-red-400"></span>Sitafika</span>
+                        <span class="flex items-center gap-2 text-xs text-surface-500"><span class="h-2 w-2 rounded-full bg-red-400"></span>Sitahudhuria</span>
                         <span class="text-sm font-bold text-red-500">{{ number_format($stats['rsvp_not_attending']) }}</span>
                     </div>
                     <div class="flex items-center justify-between gap-2">

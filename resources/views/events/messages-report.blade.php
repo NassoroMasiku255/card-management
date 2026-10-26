@@ -495,9 +495,9 @@
                     <p class="text-xs font-bold text-surface-800">{{ $replyGuest?->full_name ?? 'Unknown guest' }}</p>
                     <span class="badge bg-surface-100 text-surface-500">{{ $reply->reply_kind ?? 'Reply' }}</span>
                     @if($rsvp === 'attending')
-                    <span class="badge bg-green-100 text-green-700">RSVP · Nitafika</span>
+                    <span class="badge bg-green-100 text-green-700">RSVP · Nitahudhuria</span>
                     @elseif($rsvp === 'not_attending')
-                    <span class="badge bg-red-100 text-red-600">RSVP · Sitafika</span>
+                    <span class="badge bg-red-100 text-red-600">RSVP · Sitahudhuria</span>
                     @elseif($rsvp === 'pending')
                     <span class="badge bg-amber-100 text-amber-700">RSVP pending</span>
                     @endif

@@ -339,7 +339,7 @@
                 <div class="min-w-0 flex-1 space-y-3.5">
                     <div>
                         <div class="flex items-center justify-between gap-2 text-xs">
-                            <span class="flex items-center gap-2 text-surface-600"><span class="h-2 w-2 rounded-full bg-green-500"></span>Nitafika</span>
+                            <span class="flex items-center gap-2 text-surface-600"><span class="h-2 w-2 rounded-full bg-green-500"></span>Nitahudhuria</span>
                             <span class="text-surface-400"><strong class="text-sm text-green-600">{{ number_format($rsvpAttending) }}</strong> · {{ $attendPct }}%</span>
                         </div>
                         <div class="mt-1.5 h-1.5 overflow-hidden rounded-full bg-surface-100">
@@ -348,7 +348,7 @@
                     </div>
                     <div>
                         <div class="flex items-center justify-between gap-2 text-xs">
-                            <span class="flex items-center gap-2 text-surface-600"><span class="h-2 w-2 rounded-full bg-red-400"></span>Sitafika</span>
+                            <span class="flex items-center gap-2 text-surface-600"><span class="h-2 w-2 rounded-full bg-red-400"></span>Sitahudhuria</span>
                             <span class="text-surface-400"><strong class="text-sm text-red-500">{{ number_format($rsvpNotAttending) }}</strong> · {{ $notAttendPct }}%</span>
                         </div>
                         <div class="mt-1.5 h-1.5 overflow-hidden rounded-full bg-surface-100">

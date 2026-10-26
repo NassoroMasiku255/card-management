@@ -131,8 +131,8 @@
             </select>
             <select name="rsvp" class="input-field !py-2 !w-auto">
                 <option value="">All RSVP</option>
-                <option value="attending" {{ request('rsvp') === 'attending' ? 'selected' : '' }}>Nitafika</option>
-                <option value="not_attending" {{ request('rsvp') === 'not_attending' ? 'selected' : '' }}>Sitafika</option>
+                <option value="attending" {{ request('rsvp') === 'attending' ? 'selected' : '' }}>Nitahudhuria</option>
+                <option value="not_attending" {{ request('rsvp') === 'not_attending' ? 'selected' : '' }}>Sitahudhuria</option>
                 <option value="pending" {{ request('rsvp') === 'pending' ? 'selected' : '' }}>Pending</option>
             </select>
             <button type="submit" class="btn btn-primary btn-sm">
@@ -265,7 +265,7 @@
                             {{ $invitation->rsvp_status === 'not_attending' ? 'bg-red-100 text-red-700' : '' }}
                             {{ $invitation->rsvp_status === 'pending' ? 'bg-surface-100 text-surface-600' : '' }}">
                             <span class="h-1.5 w-1.5 rounded-full {{ $invitation->rsvp_status === 'attending' ? 'bg-green-500' : ($invitation->rsvp_status === 'not_attending' ? 'bg-red-500' : 'bg-surface-400') }}"></span>
-                            {{ $invitation->rsvp_status === 'attending' ? 'Nitafika' : ($invitation->rsvp_status === 'not_attending' ? 'Sitafika' : 'Pending') }}
+                            {{ $invitation->rsvp_status === 'attending' ? 'Nitahudhuria' : ($invitation->rsvp_status === 'not_attending' ? 'Sitahudhuria' : 'Pending') }}
                         </span>
                     </td>
                     <td class="px-5 py-3.5" data-label="QR code">

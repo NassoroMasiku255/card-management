@@ -130,8 +130,8 @@ class PublicInvitationTest extends TestCase
                 ['type' => 'HEADER', 'format' => 'IMAGE'],
                 ['type' => 'BODY', 'text' => 'Habari {{1}}, mwaliko wako ni {{2}}.'],
                 ['type' => 'BUTTONS', 'buttons' => [
-                    ['type' => 'QUICK_REPLY', 'text' => 'Nitafika'],
-                    ['type' => 'QUICK_REPLY', 'text' => 'Sitafika'],
+                    ['type' => 'QUICK_REPLY', 'text' => 'Nitahudhuria'],
+                    ['type' => 'QUICK_REPLY', 'text' => 'Sitahudhuria'],
                     ['type' => 'URL', 'text' => 'View', 'url' => 'https://example.test/invitation/{{1}}'],
                 ]],
             ],

@@ -212,7 +212,7 @@ function showGuestInfo(guest) {
                 </div>
                 <div class="flex justify-between items-center">
                     <span class="text-sm text-surface-500">RSVP:</span>
-                    <span class="badge ${guest.rsvp_status === 'attending' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}">${guest.rsvp_status === 'attending' ? 'Nitafika' : (guest.rsvp_status === 'not_attending' ? 'Sitafika' : 'Pending')}</span>
+                    <span class="badge ${guest.rsvp_status === 'attending' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}">${guest.rsvp_status === 'attending' ? 'Nitahudhuria' : (guest.rsvp_status === 'not_attending' ? 'Sitahudhuria' : 'Pending')}</span>
                 </div>
                 ${guest.table_number ? `<div class="flex justify-between items-center"><span class="text-sm text-surface-500">Table:</span><span class="text-surface-900">${guest.table_number}</span></div>` : ''}
                 ${guest.category ? `<div class="flex justify-between items-center"><span class="text-sm text-surface-500">Category:</span><span class="text-surface-900">${guest.category}</span></div>` : ''}

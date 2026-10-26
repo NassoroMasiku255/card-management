@@ -698,35 +698,50 @@ class WhatsAppService
     {
         $type = $message['type'] ?? null;
         $from = $message['from'] ?? null;
+        $replies = $this->messageReplyCandidates($message);
 
-        $reply = match ($type) {
-            'interactive' => $message['interactive']['button_reply']['id']
-                ?? $message['interactive']['list_reply']['id']
-                ?? null,
-            'button' => $message['button']['payload'] ?? $message['button']['text'] ?? null,
-            'text' => $message['text']['body'] ?? null,
-            default => null,
-        };
-
-        if (! is_string($reply) || $reply === '') {
+        if (empty($replies)) {
             return;
         }
 
-        $invitation = $this->resolveInvitation($reply, $from);
+        $invitation = null;
+
+        foreach ($replies as $reply) {
+            $invitation = $this->resolveInvitation($reply, $from);
+
+            if ($invitation) {
+                break;
+            }
+        }
 
         if (! $invitation) {
             Log::channel('whatsapp')->info('WhatsApp reply could not be matched to an invitation', [
                 'from' => $from,
                 'type' => $type,
-                'reply' => $reply,
+                'replies' => $replies,
             ]);
 
             return;
         }
 
-        $rsvp = $this->resolveRsvpStatus($reply);
+        $rsvp = null;
+
+        foreach ($replies as $reply) {
+            $rsvp = $this->resolveRsvpStatus($reply);
+
+            if ($rsvp) {
+                break;
+            }
+        }
 
         if (! $rsvp) {
+            Log::channel('whatsapp')->info('WhatsApp reply did not contain a recognised RSVP status', [
+                'invitation_id' => $invitation->id,
+                'from' => $from,
+                'type' => $type,
+                'replies' => $replies,
+            ]);
+
             return;
         }
 
@@ -737,6 +752,30 @@ class WhatsAppService
             'status' => $rsvp,
             'from' => $from,
         ]);
+    }
+
+    private function messageReplyCandidates(array $message): array
+    {
+        $type = $message['type'] ?? null;
+        $replies = match ($type) {
+            'interactive' => [
+                $message['interactive']['button_reply']['id'] ?? null,
+                $message['interactive']['button_reply']['title'] ?? null,
+                $message['interactive']['list_reply']['id'] ?? null,
+                $message['interactive']['list_reply']['title'] ?? null,
+            ],
+            'button' => [
+                $message['button']['payload'] ?? null,
+                $message['button']['text'] ?? null,
+            ],
+            'text' => [$message['text']['body'] ?? null],
+            default => [],
+        };
+
+        return array_values(array_unique(array_filter(
+            $replies,
+            fn ($reply) => is_string($reply) && trim($reply) !== ''
+        )));
     }
 
     /**
@@ -773,8 +812,8 @@ class WhatsAppService
         }
 
         return match (true) {
-            in_array($normalized, ['yes', 'y', 'ndiyo', 'nitakuja', 'attending', 'confirm'], true) => 'attending',
-            in_array($normalized, ['no', 'n', 'hapana', 'sitakuja', 'not attending', 'decline'], true) => 'not_attending',
+            in_array($normalized, ['yes', 'y', 'ndiyo', 'nitakuja', 'nitahudhuria', 'attending', 'confirm'], true) => 'attending',
+            in_array($normalized, ['no', 'n', 'hapana', 'sitakuja', 'sitahudhuria', 'not attending', 'decline'], true) => 'not_attending',
             default => null,
         };
     }

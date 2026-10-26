@@ -91,6 +91,38 @@ class WhatsAppWebhookTest extends TestCase
         ]);
     }
 
+    public function test_button_reply_title_is_used_when_the_payload_is_unknown(): void
+    {
+        $invitation = $this->makeInvitation();
+
+        $this->postSigned([
+            'object' => 'whatsapp_business_account',
+            'entry' => [[
+                'id' => '123',
+                'changes' => [[
+                    'field' => 'messages',
+                    'value' => [
+                        'messaging_product' => 'whatsapp',
+                        'messages' => [[
+                            'from' => '255712345678',
+                            'id' => 'wamid.reply-title',
+                            'type' => 'interactive',
+                            'interactive' => [
+                                'type' => 'button_reply',
+                                'button_reply' => [
+                                    'id' => 'template-button-id',
+                                    'title' => 'Nitahudhuria',
+                                ],
+                            ],
+                        ]],
+                    ],
+                ]],
+            ]],
+        ])->assertOk();
+
+        $this->assertSame('attending', $invitation->fresh()->rsvp_status);
+    }
+
     public function test_text_reply_is_linked_to_the_event_and_guest(): void
     {
         $invitation = $this->makeInvitation();

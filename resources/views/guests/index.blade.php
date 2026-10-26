@@ -138,8 +138,8 @@
         </select>
         <select name="rsvp" class="input-field !py-2 !w-auto">
             <option value="">All RSVP</option>
-            <option value="attending" {{ request('rsvp') === 'attending' ? 'selected' : '' }}>Nitafika</option>
-            <option value="not_attending" {{ request('rsvp') === 'not_attending' ? 'selected' : '' }}>Sitafika</option>
+            <option value="attending" {{ request('rsvp') === 'attending' ? 'selected' : '' }}>Nitahudhuria</option>
+            <option value="not_attending" {{ request('rsvp') === 'not_attending' ? 'selected' : '' }}>Sitahudhuria</option>
             <option value="pending" {{ request('rsvp') === 'pending' ? 'selected' : '' }}>Pending</option>
         </select>
         <select name="message_status" class="input-field !py-2 !w-auto">
@@ -290,7 +290,7 @@
                             {{ $guest->invitation->rsvp_status === 'not_attending' ? 'bg-red-100 text-red-700' : '' }}
                             {{ $guest->invitation->rsvp_status === 'pending' ? 'bg-amber-100 text-amber-700' : '' }}">
                             <span class="h-1.5 w-1.5 rounded-full {{ $guest->invitation->rsvp_status === 'attending' ? 'bg-green-500' : ($guest->invitation->rsvp_status === 'not_attending' ? 'bg-red-500' : 'bg-amber-500') }}"></span>
-                            {{ $guest->invitation->rsvp_status === 'attending' ? 'Nitafika' : ($guest->invitation->rsvp_status === 'not_attending' ? 'Sitafika' : 'Pending') }}
+                            {{ $guest->invitation->rsvp_status === 'attending' ? 'Nitahudhuria' : ($guest->invitation->rsvp_status === 'not_attending' ? 'Sitahudhuria' : 'Pending') }}
                         </span>
                         @else
                         <span class="text-xs text-surface-300">No invitation</span>
