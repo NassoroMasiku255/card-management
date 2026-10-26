@@ -425,12 +425,12 @@
                         @if(!empty($whatsappTemplates) && $whatsappTemplates->isNotEmpty())
                         <select name="template_name" id="invitationTemplateInput" class="input-field">
                             @foreach($whatsappTemplates as $tmpl)
-                            <option value="{{ $tmpl->name }}" data-language="{{ $tmpl->language }}" {{ ($tmpl->name === config('services.whatsapp.template_name')) ? 'selected' : '' }}>
+                            <option value="{{ $tmpl->name }}" data-language="{{ $tmpl->language }}" {{ ($defaultInvitationTemplate?->id === $tmpl->id) ? 'selected' : '' }}>
                                 {{ $tmpl->name }} ({{ $tmpl->language }}) @if($tmpl->status !== 'APPROVED') [{{ $tmpl->status }}] @endif
                             </option>
                             @endforeach
                         </select>
-                        <input type="hidden" name="template_language" id="invitationTemplateLanguage" value="{{ $whatsappTemplates->firstWhere('name', config('services.whatsapp.template_name'))?->language ?? $whatsappTemplates->first()?->language ?? config('services.whatsapp.template_language') }}">
+                        <input type="hidden" name="template_language" id="invitationTemplateLanguage" value="{{ $defaultInvitationTemplate?->language ?? $whatsappTemplates->first()?->language ?? config('services.whatsapp.template_language') }}">
                         @else
                         <input type="text" name="template_name" id="invitationTemplateInput"
                             list="invitationTemplateOptions"
@@ -584,7 +584,7 @@ const invitationPreviewData = {
     eventVenue: {!! json_encode(trim(implode(' ', array_filter([$event->hall, $event->location])))) !!},
     invitationButtonIndex: {{ (int) config('services.whatsapp.invitation_button_index', 2) }},
     coverImageUrl: {!! json_encode($event->cover_image ? asset('storage/'.$event->cover_image) : config('services.whatsapp.default_image_url')) !!},
-    templateName: {!! json_encode(config('services.whatsapp.template_name')) !!},
+    templateName: {!! json_encode($defaultInvitationTemplate?->name ?? config('services.whatsapp.template_name')) !!},
     pendingUrl: {!! json_encode(route('events.invitations.pending', $event)) !!},
     publicUrl: null,
 };
@@ -746,14 +746,36 @@ function invitationTemplateRecord() {
     return Object.values(invitationTemplates).find(template => template.name === name) || null;
 }
 
-function invitationMessageValues(guestName) {
-    return [
-        guestName,
-        invitationPreviewData.eventName,
-        invitationPreviewData.eventDate,
-        invitationPreviewData.eventVenue,
-        invitationPreviewData.eventTime || '',
-    ];
+function invitationBodyParameterCount(text) {
+    const matches = String(text || '').match(/\{\{\s*(\d+)\s*\}\}/g) || [];
+    const indexes = matches.map(match => Number(match.replace(/\D/g, ''))).filter(Number.isFinite);
+
+    return indexes.length ? Math.max(...indexes) : 0;
+}
+
+function invitationParameterKeys(text) {
+    const count = invitationBodyParameterCount(text);
+
+    if (count === 1) return ['name'];
+    if (count === 2) return ['name', 'code'];
+    if (count === 3) return ['name', 'event', 'date'];
+    if (count === 4) return ['name', 'code', 'date', 'link'];
+
+    return ['name', 'event', 'date', 'venue', 'time', 'code', 'link'].slice(0, count || 5);
+}
+
+function invitationMessageValues(template, guestName) {
+    const values = {
+        name: guestName,
+        event: invitationPreviewData.eventName,
+        date: invitationPreviewData.eventDate,
+        venue: invitationPreviewData.eventVenue,
+        time: invitationPreviewData.eventTime || '',
+        code: activeInvitation?.guestUniqueId || '',
+        link: activeInvitation?.publicUrl || '',
+    };
+
+    return invitationParameterKeys(template?.body_text).map(key => values[key] ?? '');
 }
 
 function fillTemplatePlaceholders(text, values) {
@@ -794,7 +816,7 @@ function updateInvitationMessagePreview() {
     if (!activeInvitation) return;
 
     const template = invitationTemplateRecord();
-    const values = invitationMessageValues(activeInvitation.guestName);
+    const values = invitationMessageValues(template, activeInvitation.guestName);
     const text = template?.body_text
         ? fillTemplatePlaceholders(template.body_text, values)
         : invitationFallbackText(values);

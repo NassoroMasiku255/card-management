@@ -35,6 +35,7 @@ class InvitationController extends Controller
             'invitations' => $invitations,
             'stats' => $this->sendStats($event),
             'whatsappTemplates' => $whatsappTemplates,
+            'defaultInvitationTemplate' => $this->whatsapp->defaultInvitationTemplate(),
         ]);
     }
 
@@ -353,6 +354,8 @@ class InvitationController extends Controller
                 'whatsapp_status' => $invitation->latestInvitationMessage ? [
                     'label' => $invitation->latestInvitationMessage->status_label,
                     'badge_class' => $invitation->latestInvitationMessage->status_badge_class,
+                    'error_code' => $invitation->latestInvitationMessage->error_code,
+                    'error_message' => $invitation->latestInvitationMessage->error_message,
                 ] : null,
             ],
             'stats' => $this->sendStats($event),

@@ -6,6 +6,7 @@ use App\Models\Event;
 use App\Models\Guest;
 use App\Models\Invitation;
 use App\Models\User;
+use App\Models\WhatsAppTemplate;
 use App\Services\WhatsAppService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
@@ -107,6 +108,48 @@ class PublicInvitationTest extends TestCase
                 && $button['sub_type'] === 'url'
                 && $button['index'] === '2'
                 && $button['parameters'][0]['text'] === $invitation->qr_code_data;
+        });
+    }
+
+    public function test_invitation_uses_the_selected_templates_actual_body_parameter_count(): void
+    {
+        Http::fake([
+            'graph.facebook.com/*' => Http::response([
+                'messaging_product' => 'whatsapp',
+                'messages' => [['id' => 'wamid.two-param-template']],
+            ]),
+        ]);
+
+        WhatsAppTemplate::create([
+            'name' => 'nassoro_wedding_sw',
+            'language' => 'sw',
+            'status' => 'APPROVED',
+            'header_type' => 'IMAGE',
+            'body_text' => 'Habari {{1}}, mwaliko wako ni {{2}}.',
+            'components' => [
+                ['type' => 'HEADER', 'format' => 'IMAGE'],
+                ['type' => 'BODY', 'text' => 'Habari {{1}}, mwaliko wako ni {{2}}.'],
+                ['type' => 'BUTTONS', 'buttons' => [
+                    ['type' => 'QUICK_REPLY', 'text' => 'Nitafika'],
+                    ['type' => 'QUICK_REPLY', 'text' => 'Sitafika'],
+                    ['type' => 'URL', 'text' => 'View', 'url' => 'https://example.test/invitation/{{1}}'],
+                ]],
+            ],
+        ]);
+
+        [, $guest, $invitation] = $this->makeInvitation();
+
+        $this->assertTrue(app(WhatsAppService::class)->sendInvitation($invitation, 'nassoro_wedding_sw'));
+
+        Http::assertSent(function ($request) use ($guest, $invitation) {
+            $components = collect($request->data()['template']['components']);
+            $body = $components->firstWhere('type', 'body');
+            $button = $components->firstWhere('type', 'button');
+
+            return count($body['parameters']) === 2
+                && $body['parameters'][0]['text'] === $guest->full_name
+                && $body['parameters'][1]['text'] === $invitation->qr_code_data
+                && $button['index'] === '2';
         });
     }
 

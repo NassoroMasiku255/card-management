@@ -142,52 +142,52 @@ class WhatsAppService
     /**
      * Send the invitation to a guest as a WhatsApp template message.
      *
-     * The invitation template expects five body parameters:
-     *   1. guest name
-     *   2. event name
-     *   3. event date (e.g. 19-Dec-2026)
-     *   4. hall and location
-     *   5. event time
-     *
-     * It also uses a URL button whose parameter is the guest invitation code.
+     * The payload follows the selected template's actual body placeholders and
+     * URL button position so different approved invitation templates can be used.
      */
     public function sendInvitation(Invitation $invitation, ?string $templateName = null, ?string $templateLanguage = null): bool
     {
         $guest = $invitation->guest;
         $event = $invitation->event;
 
-        $imageUrl = $invitation->card_image_url
-            ?: ($event->cover_image
-                ? asset('storage/'.$event->cover_image)
-                : $this->defaultImageUrl);
+        $template = $templateName ?: $this->templateName;
+        $dbTemplate = $templateName
+            ? $this->resolveInvitationTemplate($template, $templateLanguage)
+            : $this->defaultInvitationTemplate();
 
-        $template = $templateName ?? $this->templateName;
-        $language = $templateLanguage;
-
-        if (! $language && $template) {
-            $dbTemplate = WhatsAppTemplate::where('name', $template)->first();
-            if ($dbTemplate) {
-                $language = $dbTemplate->language;
-            }
+        if ($dbTemplate) {
+            $template = $dbTemplate->name;
         }
 
-        $language = $language ?: $this->templateLanguage;
+        $language = $templateLanguage
+            ?: $dbTemplate?->language
+            ?: $this->templateLanguage;
 
-        $bodyParameters = [
-            ['type' => 'text', 'text' => $guest->full_name],
-            ['type' => 'text', 'text' => $event->name],
-            ['type' => 'text', 'text' => $event->event_date->format('d-M-Y')],
-            ['type' => 'text', 'text' => $this->invitationVenue($event)],
-            ['type' => 'text', 'text' => (string) ($event->event_time ?? '')],
-        ];
+        $imageUrl = (! $dbTemplate || strtoupper((string) $dbTemplate->header_type) === 'IMAGE')
+            ? ($invitation->card_image_url
+                ?: ($event->cover_image
+                    ? asset('storage/'.$event->cover_image)
+                    : $this->defaultImageUrl))
+            : null;
 
-        $buttonParameters = [
-            'sub_type' => 'url',
-            'index' => $this->invitationButtonIndex,
-            'parameters' => [
-                ['type' => 'text', 'text' => (string) $invitation->qr_code_data],
-            ],
-        ];
+        $values = $this->invitationParameterValues($invitation);
+        $bodyParameters = array_map(
+            fn (string $key) => ['type' => 'text', 'text' => (string) $values[$key]],
+            $this->invitationParameterKeys($dbTemplate?->body_text)
+        );
+
+        $buttonParameters = [];
+        $buttonIndex = $this->templateUrlButtonIndex($dbTemplate);
+
+        if ($buttonIndex !== null) {
+            $buttonParameters = [
+                'sub_type' => 'url',
+                'index' => (string) $buttonIndex,
+                'parameters' => [
+                    ['type' => 'text', 'text' => (string) $invitation->qr_code_data],
+                ],
+            ];
+        }
 
         return $this->sendTemplateMessage(
             phone: $guest->formatted_phone,
@@ -199,6 +199,100 @@ class WhatsAppService
             messageType: 'invitation',
             buttonParameters: $buttonParameters,
         );
+    }
+
+    public function defaultInvitationTemplate(): ?WhatsAppTemplate
+    {
+        $configured = WhatsAppTemplate::where('name', $this->templateName)->first();
+
+        if ($configured) {
+            return $configured;
+        }
+
+        $templates = WhatsAppTemplate::approved()->get();
+
+        return $templates->first(fn (WhatsAppTemplate $template) => $this->templateBodyParameterCount($template->body_text) === 5
+                && $this->templateUrlButtonIndex($template) !== null)
+            ?? $templates->first(fn (WhatsAppTemplate $template) => $this->templateUrlButtonIndex($template) !== null)
+            ?? $templates->first();
+    }
+
+    private function resolveInvitationTemplate(string $template, ?string $language): ?WhatsAppTemplate
+    {
+        $query = WhatsAppTemplate::where('name', $template);
+
+        if ($language) {
+            $match = (clone $query)->where('language', $language)->first();
+
+            if ($match) {
+                return $match;
+            }
+        }
+
+        return $query->first();
+    }
+
+    private function invitationParameterValues(Invitation $invitation): array
+    {
+        $guest = $invitation->guest;
+        $event = $invitation->event;
+
+        return [
+            'name' => $guest->full_name,
+            'event' => $event->name,
+            'date' => $event->event_date->format('d-M-Y'),
+            'venue' => $this->invitationVenue($event),
+            'time' => (string) ($event->event_time ?? ''),
+            'code' => (string) $invitation->qr_code_data,
+            'link' => route('invitation.public', $invitation->qr_code_data),
+        ];
+    }
+
+    private function invitationParameterKeys(?string $bodyText): array
+    {
+        return match ($this->templateBodyParameterCount($bodyText)) {
+            1 => ['name'],
+            2 => ['name', 'code'],
+            3 => ['name', 'event', 'date'],
+            4 => ['name', 'code', 'date', 'link'],
+            0, 5 => ['name', 'event', 'date', 'venue', 'time'],
+            default => array_slice(['name', 'event', 'date', 'venue', 'time', 'code', 'link'], 0, $this->templateBodyParameterCount($bodyText)),
+        };
+    }
+
+    private function templateBodyParameterCount(?string $bodyText): int
+    {
+        if (! $bodyText) {
+            return 0;
+        }
+
+        preg_match_all('/\{\{\s*(\d+)\s*\}\}/', $bodyText, $matches);
+
+        return empty($matches[1]) ? 0 : max(array_map('intval', $matches[1]));
+    }
+
+    private function templateUrlButtonIndex(?WhatsAppTemplate $template): ?int
+    {
+        if (! $template) {
+            return (int) $this->invitationButtonIndex;
+        }
+
+        $buttons = [];
+
+        foreach ($template->components ?? [] as $component) {
+            if (strtoupper((string) ($component['type'] ?? '')) === 'BUTTONS') {
+                $buttons = $component['buttons'] ?? [];
+                break;
+            }
+        }
+
+        foreach ($buttons as $index => $button) {
+            if (strtoupper((string) ($button['type'] ?? '')) === 'URL') {
+                return (int) $index;
+            }
+        }
+
+        return null;
     }
 
     private function invitationVenue(Event $event): string
