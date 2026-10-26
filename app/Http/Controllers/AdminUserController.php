@@ -26,7 +26,7 @@ class AdminUserController extends Controller
     {
         $this->authorizeAdmin();
 
-        $events = Event::with('user')->orderBy('name')->get();
+        $events = Event::with(['user', 'users'])->orderBy('name')->get();
 
         return view('admin.users.create', compact('events'));
     }
@@ -63,7 +63,7 @@ class AdminUserController extends Controller
         $this->authorizeAdmin();
 
         $user->load('events');
-        $events = Event::with('user')->orderBy('name')->get();
+        $events = Event::with(['user', 'users'])->orderBy('name')->get();
 
         return view('admin.users.edit', compact('user', 'events'));
     }
@@ -104,13 +104,9 @@ class AdminUserController extends Controller
     {
         $selectedEventIds = Event::whereIn('id', $eventIds)->pluck('id')->all();
 
-        Event::whereIn('id', $selectedEventIds)->update(['user_id' => $user->id]);
+        $ownedEventIds = Event::where('user_id', $user->id)->pluck('id')->all();
 
-        if (Auth::id() !== $user->id) {
-            Event::where('user_id', $user->id)
-                ->whereNotIn('id', $selectedEventIds)
-                ->update(['user_id' => Auth::id()]);
-        }
+        $user->events()->sync(array_values(array_unique(array_merge($selectedEventIds, $ownedEventIds))));
     }
 
     private function authorizeAdmin(): void

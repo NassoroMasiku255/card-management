@@ -47,9 +47,9 @@
     <div class="border-t border-surface-100 pt-6">
         <div class="flex flex-wrap items-start justify-between gap-3 mb-3">
             <div>
-                <h3 class="font-display text-base font-bold text-surface-900">Assigned Events</h3>
+                <h3 class="font-display text-base font-bold text-surface-900">Event Access</h3>
                 <p class="text-xs text-surface-500 mt-0.5">
-                    Selecting an event moves it to this user. They will only see these events and their activities.
+                    Select the events this user can manage. Sharing an event does not change its owner or remove other managers.
                 </p>
             </div>
             <span class="badge bg-surface-100 text-surface-600">{{ count($selectedEventIds) }} selected</span>
@@ -57,11 +57,11 @@
 
         @if(isset($user) && $user->is_admin)
         <p class="mb-3 rounded-lg border border-purple-200 bg-purple-50 px-3 py-2 text-xs text-purple-800">
-            This user is an administrator and can already access every event. Assigning an event here only transfers its ownership.
+            This user is an administrator and can already access every event. These selections are for reference only.
         </p>
-        @elseif(isset($user) && Auth::id() !== $user->id)
-        <p class="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
-            Unchecking an event currently owned by this user returns it to your account.
+        @else
+        <p class="mb-3 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-blue-800">
+            Multiple people can manage the same event. Unchecking an event only removes this user&rsquo;s access; other managers are not affected. Events owned by this user always stay accessible.
         </p>
         @endif
 
@@ -72,18 +72,36 @@
         @else
         <div class="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-80 overflow-y-auto rounded-xl border border-surface-200 p-2">
             @foreach($events as $event)
+            @php
+                $isOwner = isset($user) && $event->user_id === $user->id;
+                $otherManagers = $event->users->where('id', '!=', $event->user_id);
+            @endphp
             <label class="flex items-start gap-3 rounded-lg border border-surface-100 px-3 py-2.5 cursor-pointer hover:bg-surface-50 transition">
                 <input type="checkbox" name="events[]" value="{{ $event->id }}"
-                    {{ in_array($event->id, $selectedEventIds, true) ? 'checked' : '' }}
+                    {{ $isOwner || in_array($event->id, $selectedEventIds, true) ? 'checked' : '' }}
+                    {{ $isOwner ? 'disabled' : '' }}
                     class="mt-0.5 h-4 w-4 rounded border-surface-300 text-primary-600 focus:ring-primary-500">
+                @if($isOwner)
+                <input type="hidden" name="events[]" value="{{ $event->id }}">
+                @endif
                 <span class="min-w-0 flex-1">
-                    <span class="block text-sm font-medium text-surface-800 truncate">{{ $event->name }}</span>
+                    <span class="flex flex-wrap items-center gap-1.5">
+                        <span class="block text-sm font-medium text-surface-800 truncate">{{ $event->name }}</span>
+                        @if($isOwner)
+                        <span class="badge bg-gold-100 text-gold-700">Owner</span>
+                        @endif
+                    </span>
                     <span class="block text-[11px] text-surface-400">
                         {{ $event->event_date->format('d M Y') }} &middot; {{ $event->location }}
                     </span>
                     <span class="block text-[10px] text-surface-400 mt-0.5">
                         Owner: {{ $event->user?->name ?? 'Unassigned' }}
                     </span>
+                    @if($otherManagers->isNotEmpty())
+                    <span class="mt-1 block truncate text-[10px] font-medium text-blue-600">
+                        Also managed by: {{ $otherManagers->pluck('name')->join(', ') }}
+                    </span>
+                    @endif
                 </span>
             </label>
             @endforeach

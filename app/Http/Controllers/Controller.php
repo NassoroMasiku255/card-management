@@ -14,7 +14,7 @@ abstract class Controller
     {
         $user = Auth::user();
 
-        if (! $user || (! $user->isAdmin() && $event->user_id !== $user->id)) {
+        if (! $user || ! $user->canManageEvent($event)) {
             abort(403, 'Unauthorized');
         }
     }

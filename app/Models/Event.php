@@ -5,6 +5,7 @@ namespace App\Models;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 
@@ -39,11 +40,28 @@ class Event extends Model
                 $event->slug = Str::slug($event->name).'-'.Str::random(6);
             }
         });
+
+        static::created(function ($event) {
+            if ($event->user_id) {
+                $event->users()->syncWithoutDetaching([$event->user_id]);
+            }
+        });
+
+        static::updated(function ($event) {
+            if ($event->wasChanged('user_id') && $event->user_id) {
+                $event->users()->syncWithoutDetaching([$event->user_id]);
+            }
+        });
     }
 
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function users(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class)->withTimestamps();
     }
 
     public function guests(): HasMany

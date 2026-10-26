@@ -56,7 +56,8 @@ class AdminUserAccessTest extends TestCase
 
         $this->assertFalse($planner->isAdmin());
         $this->assertTrue(Hash::check('password123', $planner->password));
-        $this->assertSame($planner->id, $event->fresh()->user_id);
+        $this->assertSame($admin->id, $event->fresh()->user_id);
+        $this->assertTrue($event->fresh()->users()->whereKey($planner->id)->exists());
 
         $this->actingAs($planner)
             ->get(route('admin.users.index'))
@@ -95,13 +96,15 @@ class AdminUserAccessTest extends TestCase
             ->assertOk();
     }
 
-    public function test_editing_a_user_transfers_selected_events_and_returns_unselected_events_to_the_admin(): void
+    public function test_editing_a_user_only_changes_that_users_shared_event_access(): void
     {
         $admin = $this->makeUser(isAdmin: true);
         $planner = $this->makeUser();
+        $otherManager = $this->makeUser();
 
-        $first = $this->makeEvent($planner, 'First Wedding');
-        $second = $this->makeEvent($admin, 'Second Wedding');
+        $plannerEvent = $this->makeEvent($planner, 'Planner Wedding');
+        $sharedEvent = $this->makeEvent($admin, 'Shared Wedding');
+        $sharedEvent->users()->attach($otherManager->id);
 
         $this->actingAs($admin)
             ->put(route('admin.users.update', $planner), [
@@ -109,13 +112,86 @@ class AdminUserAccessTest extends TestCase
                 'email' => $planner->email,
                 'password' => '',
                 'password_confirmation' => '',
-                'events' => [$second->id],
+                'events' => [$plannerEvent->id, $sharedEvent->id],
             ])
             ->assertRedirect(route('admin.users.index'))
             ->assertSessionHas('success');
 
-        $this->assertSame($admin->id, $first->fresh()->user_id);
-        $this->assertSame($planner->id, $second->fresh()->user_id);
+        $this->assertSame($planner->id, $plannerEvent->fresh()->user_id);
+        $this->assertSame($admin->id, $sharedEvent->fresh()->user_id);
+        $this->assertTrue($sharedEvent->users()->whereKey($planner->id)->exists());
+        $this->assertTrue($sharedEvent->users()->whereKey($otherManager->id)->exists());
+
+        $this->actingAs($admin)
+            ->put(route('admin.users.update', $planner), [
+                'name' => $planner->name,
+                'email' => $planner->email,
+                'password' => '',
+                'password_confirmation' => '',
+                'events' => [$plannerEvent->id],
+            ])
+            ->assertRedirect(route('admin.users.index'));
+
+        $this->assertFalse($sharedEvent->fresh()->users()->whereKey($planner->id)->exists());
+        $this->assertTrue($sharedEvent->fresh()->users()->whereKey($otherManager->id)->exists());
+        $this->assertSame($admin->id, $sharedEvent->fresh()->user_id);
+    }
+
+    public function test_assigning_a_new_manager_keeps_the_owner_and_existing_managers(): void
+    {
+        $admin = $this->makeUser(isAdmin: true);
+        $owner = $this->makeUser();
+        $existingManager = $this->makeUser();
+        $newManager = $this->makeUser();
+        $event = $this->makeEvent($owner, 'Shared Wedding');
+        $event->users()->attach($existingManager->id);
+
+        $this->actingAs($admin)
+            ->put(route('admin.users.update', $newManager), [
+                'name' => $newManager->name,
+                'email' => $newManager->email,
+                'password' => '',
+                'password_confirmation' => '',
+                'events' => [$event->id],
+            ])
+            ->assertRedirect(route('admin.users.index'));
+
+        $event->refresh();
+
+        $this->assertSame($owner->id, $event->user_id);
+        $this->assertTrue($event->users()->whereKey($owner->id)->exists());
+        $this->assertTrue($event->users()->whereKey($existingManager->id)->exists());
+        $this->assertTrue($event->users()->whereKey($newManager->id)->exists());
+
+        foreach ([$owner, $existingManager, $newManager] as $manager) {
+            $this->actingAs($manager)
+                ->get(route('events.guests.index', $event))
+                ->assertOk();
+        }
+    }
+
+    public function test_an_event_owner_keeps_access_even_when_unchecked_in_the_access_form(): void
+    {
+        $admin = $this->makeUser(isAdmin: true);
+        $owner = $this->makeUser();
+        $event = $this->makeEvent($owner, 'Owner Wedding');
+
+        $this->actingAs($admin)
+            ->put(route('admin.users.update', $owner), [
+                'name' => $owner->name,
+                'email' => $owner->email,
+                'password' => '',
+                'password_confirmation' => '',
+                'events' => [],
+            ])
+            ->assertRedirect(route('admin.users.index'));
+
+        $this->assertSame($owner->id, $event->fresh()->user_id);
+        $this->assertTrue($event->fresh()->users()->whereKey($owner->id)->exists());
+
+        $this->actingAs($owner)
+            ->get(route('events.guests.index', $event))
+            ->assertOk();
     }
 
     public function test_self_registered_users_start_with_no_assigned_events(): void

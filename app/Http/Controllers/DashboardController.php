@@ -29,7 +29,7 @@ class DashboardController extends Controller
             ])
             ->withSum('guests as total_pledged', 'amount_contributed')
             ->withSum('guests as total_paid', 'paid_amount')
-            ->latest()
+            ->latest('events.created_at')
             ->get();
 
         $totalEvents = $events->count();

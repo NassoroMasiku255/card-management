@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -34,9 +35,21 @@ class User extends Authenticatable
         ];
     }
 
-    public function events(): HasMany
+    public function events(): BelongsToMany
+    {
+        return $this->belongsToMany(Event::class)->withTimestamps();
+    }
+
+    public function ownedEvents(): HasMany
     {
         return $this->hasMany(Event::class);
+    }
+
+    public function canManageEvent(Event $event): bool
+    {
+        return $this->isAdmin()
+            || $event->user_id === $this->id
+            || $event->users()->whereKey($this->id)->exists();
     }
 
     public function isAdmin(): bool

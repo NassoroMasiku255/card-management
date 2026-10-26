@@ -6,7 +6,7 @@
 <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
     <div>
         <h1 class="font-display text-2xl font-bold text-surface-900">Users &amp; Event Access</h1>
-        <p class="text-surface-500 mt-1">Create team members and assign the events they are allowed to manage.</p>
+        <p class="text-surface-500 mt-1">Create team members and share event management. Multiple people can manage the same event.</p>
     </div>
     <div class="flex items-center gap-2">
         <a href="{{ route('admin.whatsapp-templates.index') }}" class="btn btn-outline">
@@ -24,8 +24,8 @@
         <div>
             <p class="text-sm font-semibold text-surface-800">Event access is enforced</p>
             <p class="text-xs text-surface-500 mt-0.5">
-                Regular users only see the events assigned to them, including guests, invitations, reports, and the scanner.
-                Administrators can see all events.
+                Regular users only see events they own or are assigned to manage, including guests, invitations, reports, and the scanner.
+                Assigning another manager never removes existing access, and administrators can see all events.
             </p>
         </div>
     </div>
@@ -46,7 +46,7 @@
     </div>
     <div class="card-surface p-4 text-center">
         <div class="text-2xl font-bold text-green-600">{{ $users->sum('events_count') }}</div>
-        <div class="text-xs text-surface-500">Assigned Events</div>
+        <div class="text-xs text-surface-500">Event Access</div>
     </div>
 </div>
 
@@ -103,7 +103,7 @@
                         <div class="flex flex-wrap items-center gap-1.5">
                             <span class="badge bg-purple-100 text-purple-700">All events</span>
                             @if($user->events->isNotEmpty())
-                            <span class="text-xs text-surface-400">{{ $user->events->count() }} owned</span>
+                            <span class="text-xs text-surface-400">{{ $user->events->count() }} assigned</span>
                             @endif
                         </div>
                         @elseif($user->events->isEmpty())
