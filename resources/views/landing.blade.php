@@ -698,7 +698,7 @@
                 @foreach([
                     ['Is NiaLike only for weddings?', 'No. NiaLike works for weddings, send-offs, graduations, birthdays, corporate events and any celebration where you need to invite and manage guests.'],
                     ['Do my guests need to download an app?', 'No. Guests receive their invitation link through WhatsApp and open it in any browser on any phone. They can RSVP, view the event details and download their card without installing anything.'],
-                    ['How are invitations delivered?', 'Invitations are sent as personalised WhatsApp messages containing the guest name, unique guest ID, event date and a private invitation link. Your team can send them individually or in bulk.'],
+                    ['How are invitations delivered?', 'Invitations are sent as personalised WhatsApp messages containing the guest name, event name, date, hall and location, time, an invitation card image and a private invitation button. Your team can send them individually or in bulk.'],
                     ['Can I import my existing guest list?', 'Yes. Download the template, add your guests in Excel or CSV, and import the file. NiaLike creates each guest record and prepares their invitation automatically.'],
                     ['What happens at the entrance?', 'Open the scanner on any phone with a camera. Scan the guest QR code and NiaLike instantly verifies the guest, shows their card type and records the check-in.'],
                     ['Can I track contributions and balances?', 'Yes. Record pledges and payments against each guest, see outstanding balances and open a complete contribution report for the event.'],

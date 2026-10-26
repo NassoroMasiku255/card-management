@@ -25,6 +25,8 @@ class WhatsAppService
 
     private string $templateLanguage;
 
+    private string $invitationButtonIndex;
+
     private string $defaultImageUrl;
 
     private string $reminderTemplateName;
@@ -49,6 +51,7 @@ class WhatsAppService
         $this->accessToken = (string) (config('services.whatsapp.access_token') ?? '');
         $this->templateName = (string) (config('services.whatsapp.template_name') ?? 'wedding_invitation');
         $this->templateLanguage = (string) (config('services.whatsapp.template_language') ?? 'en_US');
+        $this->invitationButtonIndex = (string) (config('services.whatsapp.invitation_button_index') ?? '2');
         $this->defaultImageUrl = (string) (config('services.whatsapp.default_image_url') ?? '');
         $this->reminderTemplateName = (string) (config('services.whatsapp.reminder_template_name') ?? 'reminder_sw');
         $this->reminderTemplateLanguage = (string) (config('services.whatsapp.reminder_template_language') ?? 'sw');
@@ -137,23 +140,16 @@ class WhatsAppService
     }
 
     /**
-     * Send the invitation to a guest as a WhatsApp template message
-     * (header image + body text parameters), e.g.:
+     * Send the invitation to a guest as a WhatsApp template message.
      *
-     * POST {apiUrl}/{phoneNumberId}/messages
-     * {
-     *   "messaging_product": "whatsapp",
-     *   "to": "<guest phone>",
-     *   "type": "template",
-     *   "template": {
-     *     "name": "<template name>",
-     *     "language": { "code": "<language code>" },
-     *     "components": [
-     *       { "type": "header", "parameters": [{ "type": "image", "image": { "link": "<image url>" } }] },
-     *       { "type": "body", "parameters": [ ... text parameters ... ] }
-     *     ]
-     *   }
-     * }
+     * The invitation template expects five body parameters:
+     *   1. guest name
+     *   2. event name
+     *   3. event date (e.g. 19-Dec-2026)
+     *   4. hall and location
+     *   5. event time
+     *
+     * It also uses a URL button whose parameter is the guest invitation code.
      */
     public function sendInvitation(Invitation $invitation, ?string $templateName = null, ?string $templateLanguage = null): bool
     {
@@ -179,9 +175,18 @@ class WhatsAppService
 
         $bodyParameters = [
             ['type' => 'text', 'text' => $guest->full_name],
-            ['type' => 'text', 'text' => $guest->unique_id],
-            ['type' => 'text', 'text' => $event->event_date->format('M d, Y')],
-            ['type' => 'text', 'text' => route('invitation.public', $invitation->qr_code_data)],
+            ['type' => 'text', 'text' => $event->name],
+            ['type' => 'text', 'text' => $event->event_date->format('d-M-Y')],
+            ['type' => 'text', 'text' => $this->invitationVenue($event)],
+            ['type' => 'text', 'text' => (string) ($event->event_time ?? '')],
+        ];
+
+        $buttonParameters = [
+            'sub_type' => 'url',
+            'index' => $this->invitationButtonIndex,
+            'parameters' => [
+                ['type' => 'text', 'text' => (string) $invitation->qr_code_data],
+            ],
         ];
 
         return $this->sendTemplateMessage(
@@ -192,7 +197,16 @@ class WhatsAppService
             bodyParameters: $bodyParameters,
             invitation: $invitation,
             messageType: 'invitation',
+            buttonParameters: $buttonParameters,
         );
+    }
+
+    private function invitationVenue(Event $event): string
+    {
+        return trim(implode(' ', array_filter([
+            $event->hall,
+            $event->location,
+        ])));
     }
 
     /**
@@ -307,6 +321,7 @@ class WhatsAppService
         string $languagePolicy = 'deterministic',
         ?Guest $guest = null,
         ?Event $event = null,
+        array $buttonParameters = [],
     ): bool {
         $components = [];
 
@@ -326,6 +341,15 @@ class WhatsAppService
             $components[] = [
                 'type' => 'body',
                 'parameters' => $this->sanitizeBodyParameters($bodyParameters),
+            ];
+        }
+
+        if (! empty($buttonParameters)) {
+            $components[] = [
+                'type' => 'button',
+                'sub_type' => $buttonParameters['sub_type'] ?? 'url',
+                'index' => (string) ($buttonParameters['index'] ?? '0'),
+                'parameters' => $this->sanitizeBodyParameters($buttonParameters['parameters'] ?? []),
             ];
         }
 

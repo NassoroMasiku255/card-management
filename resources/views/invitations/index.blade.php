@@ -444,7 +444,7 @@
                         <input type="hidden" name="template_language" id="invitationTemplateLanguage" value="{{ config('services.whatsapp.template_language') }}">
                         @endif
                         <p class="text-[10px] text-surface-400 mt-1">
-                            Your approved template must contain 4 body parameters: guest name, guest ID, event date, and public invitation link.
+                            Your approved template needs 5 body parameters: guest name, event name, event date, hall &amp; location, and time, plus a URL button using the guest invitation code.
                         </p>
                     </div>
                     <div>
@@ -519,7 +519,14 @@
                         <div class="ml-auto max-w-[96%] rounded-lg p-2 shadow-sm" style="background-color: #dcf8c6;">
                             <img id="invitationMessageImage" src="" alt="" class="hidden mb-2 max-h-64 w-full rounded object-cover">
                             <p id="invitationMessageText" class="whitespace-pre-line text-sm text-surface-800"></p>
-                            <div class="mt-1 text-right text-[10px] text-surface-500">WhatsApp preview</div>
+                            <div id="invitationMessageButtonWrap" class="mt-2 hidden border-t border-black/10 pt-2">
+                                <a id="invitationMessageButton" href="#" target="_blank" rel="noopener"
+                                    class="flex w-full items-center justify-center gap-1.5 rounded-md bg-white/80 px-3 py-2 text-center text-xs font-semibold text-[#00a884] shadow-xs hover:bg-white">
+                                    <i class="fas fa-arrow-up-right-from-square text-[10px]"></i>
+                                    <span id="invitationMessageButtonLabel">Open invitation</span>
+                                </a>
+                            </div>
+                            <div class="mt-1 text-right text-[10px] text-slate-500">WhatsApp preview</div>
                         </div>
                     </div>
                     <p class="text-[10px] text-surface-400 mt-1">
@@ -570,15 +577,26 @@ loadScriptWithFallback([
 const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
 const invitationPreviewData = {
     eventName: {!! json_encode($event->name) !!},
-    eventDate: {!! json_encode($event->event_date->format('l, d M Y')) !!},
+    eventDate: {!! json_encode($event->event_date->format('d-M-Y')) !!},
     eventTime: {!! json_encode($event->event_time) !!},
     location: {!! json_encode($event->location) !!},
     hall: {!! json_encode($event->hall) !!},
+    eventVenue: {!! json_encode(trim(implode(' ', array_filter([$event->hall, $event->location])))) !!},
+    invitationButtonIndex: {{ (int) config('services.whatsapp.invitation_button_index', 2) }},
     coverImageUrl: {!! json_encode($event->cover_image ? asset('storage/'.$event->cover_image) : config('services.whatsapp.default_image_url')) !!},
     templateName: {!! json_encode(config('services.whatsapp.template_name')) !!},
     pendingUrl: {!! json_encode(route('events.invitations.pending', $event)) !!},
     publicUrl: null,
 };
+
+const invitationTemplates = {!! json_encode($whatsappTemplates->mapWithKeys(function ($template) {
+    return [$template->name.'|'.$template->language => [
+        'name' => $template->name,
+        'language' => $template->language,
+        'body_text' => $template->body_text,
+        'components' => $template->components ?? [],
+    ]];
+})) !!};
 
 let activeInvitation = null;
 let invitationPreviewObjectUrl = null;
@@ -715,25 +733,89 @@ function updateInvitationRow(invitationId, data) {
     }
 }
 
-function invitationPreviewText(guestName, guestUniqueId) {
+function invitationTemplateRecord() {
+    const input = document.getElementById('invitationTemplateInput');
+    if (!input) return null;
+
+    const name = (input.value || invitationPreviewData.templateName || '').trim();
+    const language = document.getElementById('invitationTemplateLanguage')?.value || '';
+    const key = name + '|' + language;
+
+    if (invitationTemplates[key]) return invitationTemplates[key];
+
+    return Object.values(invitationTemplates).find(template => template.name === name) || null;
+}
+
+function invitationMessageValues(guestName) {
+    return [
+        guestName,
+        invitationPreviewData.eventName,
+        invitationPreviewData.eventDate,
+        invitationPreviewData.eventVenue,
+        invitationPreviewData.eventTime || '',
+    ];
+}
+
+function fillTemplatePlaceholders(text, values) {
+    return String(text || '').replace(/\{\{\s*(\d+)\s*\}\}/g, function (match, index) {
+        const value = values[Number(index) - 1];
+        return value !== undefined && value !== null ? String(value) : match;
+    });
+}
+
+function invitationFallbackText(values) {
     const lines = [
-        'Hello ' + guestName + ',',
-        'You are invited to ' + invitationPreviewData.eventName + '.',
-        'Date: ' + invitationPreviewData.eventDate,
+        values[0] + ',',
+        'Unakaribishwa kwenye ' + values[1] + '.',
+        'Tarehe: ' + values[2],
+        'Mahali: ' + values[3],
     ];
 
-    if (invitationPreviewData.eventTime) {
-        lines.push('Time: ' + invitationPreviewData.eventTime);
+    if (values[4]) {
+        lines.push('Muda: ' + values[4]);
     }
 
-    lines.push('Venue: ' + invitationPreviewData.location + (invitationPreviewData.hall ? ' - ' + invitationPreviewData.hall : ''));
-    lines.push('Guest ID: ' + guestUniqueId);
-    lines.push('');
-    lines.push('Your invitation: ' + invitationPreviewData.publicUrl);
-    lines.push('');
-    lines.push('Please present your QR code at the entrance.');
-
     return lines.join('\n');
+}
+
+function invitationUrlButton(template) {
+    const buttonsComponent = (template?.components || []).find(component =>
+        String(component.type || '').toUpperCase() === 'BUTTONS'
+    );
+    const buttons = buttonsComponent?.buttons || [];
+    const configuredIndex = invitationPreviewData.invitationButtonIndex;
+
+    return buttons[configuredIndex]
+        || buttons.find(button => String(button.type || '').toUpperCase() === 'URL')
+        || null;
+}
+
+function updateInvitationMessagePreview() {
+    if (!activeInvitation) return;
+
+    const template = invitationTemplateRecord();
+    const values = invitationMessageValues(activeInvitation.guestName);
+    const text = template?.body_text
+        ? fillTemplatePlaceholders(template.body_text, values)
+        : invitationFallbackText(values);
+
+    document.getElementById('invitationMessageText').textContent = text;
+
+    const button = invitationUrlButton(template);
+    const buttonWrap = document.getElementById('invitationMessageButtonWrap');
+    const buttonLink = document.getElementById('invitationMessageButton');
+    const buttonLabel = document.getElementById('invitationMessageButtonLabel');
+    const fallbackUrl = activeInvitation.publicUrl || '#';
+
+    if (button || activeInvitation.publicUrl) {
+        buttonLabel.textContent = button?.text || 'Open invitation';
+        buttonLink.href = activeInvitation.publicUrl
+            || (button?.url ? button.url.replace(/\{\{\s*1\s*\}\}/g, encodeURIComponent(activeInvitation.guestUniqueId)) : fallbackUrl);
+        buttonWrap.classList.remove('hidden');
+    } else {
+        buttonWrap.classList.add('hidden');
+        buttonLink.href = '#';
+    }
 }
 
 function setInvitationImage(url, label) {
@@ -813,8 +895,7 @@ function openInvitationModal(button) {
     document.getElementById('invitationGuestName').textContent = activeInvitation.guestName;
     document.getElementById('invitationGuestPhone').textContent = activeInvitation.phone || 'No phone';
     document.getElementById('invitationGuestId').textContent = activeInvitation.guestUniqueId;
-    document.getElementById('invitationMessageText').textContent =
-        invitationPreviewText(activeInvitation.guestName, activeInvitation.guestUniqueId);
+    updateInvitationMessagePreview();
 
     const currentLink = document.getElementById('invitationCurrentCardLink');
     const notUploadedNotice = document.getElementById('invitationCardNotUploadedNotice');
@@ -989,12 +1070,16 @@ document.getElementById('invitationTemplateInput')?.addEventListener('change', f
     } else {
         document.getElementById('invitationTemplateName').textContent = 'Template: ' + (this.value.trim() || invitationPreviewData.templateName);
     }
+
+    updateInvitationMessagePreview();
 });
 
 document.getElementById('invitationTemplateInput')?.addEventListener('input', function () {
     if (this.tagName !== 'SELECT') {
         document.getElementById('invitationTemplateName').textContent = 'Template: ' + (this.value.trim() || invitationPreviewData.templateName);
     }
+
+    updateInvitationMessagePreview();
 });
 
 document.getElementById('invitationCardInput')?.addEventListener('change', function (event) {

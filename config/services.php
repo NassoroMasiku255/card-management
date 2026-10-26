@@ -48,6 +48,7 @@ return [
             env('WHATSAPP_TEMPLATE_NAME', 'wedding_invitation')
         ))))),
         'template_language' => env('WHATSAPP_TEMPLATE_LANGUAGE', 'en_US'),
+        'invitation_button_index' => env('WHATSAPP_INVITATION_BUTTON_INDEX', '2'),
         'default_image_url' => env('WHATSAPP_DEFAULT_IMAGE_URL'),
 
         // Reminder template: body params are guest name, contribution, event name,

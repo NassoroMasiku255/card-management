@@ -79,7 +79,7 @@ class PublicInvitationTest extends TestCase
         ])->assertSessionHasErrors('rsvp_status');
     }
 
-    public function test_whatsapp_invitation_body_includes_the_public_invitation_link(): void
+    public function test_whatsapp_invitation_body_and_url_button_include_guest_and_event_details(): void
     {
         Http::fake([
             'graph.facebook.com/*' => Http::response([
@@ -88,15 +88,25 @@ class PublicInvitationTest extends TestCase
             ]),
         ]);
 
-        [, , $invitation] = $this->makeInvitation();
+        [$event, $guest, $invitation] = $this->makeInvitation();
 
         $this->assertTrue(app(WhatsAppService::class)->sendInvitation($invitation));
 
-        Http::assertSent(function ($request) use ($invitation) {
-            $parameters = $request->data()['template']['components'][0]['parameters'];
+        Http::assertSent(function ($request) use ($event, $guest, $invitation) {
+            $components = collect($request->data()['template']['components']);
+            $body = $components->firstWhere('type', 'body');
+            $button = $components->firstWhere('type', 'button');
+            $parameters = $body['parameters'] ?? [];
 
-            return count($parameters) === 4
-                && $parameters[3]['text'] === route('invitation.public', $invitation->qr_code_data);
+            return count($parameters) === 5
+                && $parameters[0]['text'] === $guest->full_name
+                && $parameters[1]['text'] === $event->name
+                && $parameters[2]['text'] === $event->event_date->format('d-M-Y')
+                && $parameters[3]['text'] === 'Main Hall Dar es Salaam'
+                && $parameters[4]['text'] === '16:00'
+                && $button['sub_type'] === 'url'
+                && $button['index'] === '2'
+                && $button['parameters'][0]['text'] === $invitation->qr_code_data;
         });
     }
 
@@ -119,8 +129,12 @@ class PublicInvitationTest extends TestCase
             ->assertJsonPath('success', true);
 
         Http::assertSent(function ($request) {
+            $components = collect($request->data()['template']['components']);
+            $body = $components->firstWhere('type', 'body');
+
             return $request->data()['template']['name'] === 'wedding_invitation_premium'
-                && count($request->data()['template']['components'][0]['parameters']) === 4;
+                && count($body['parameters'] ?? []) === 5
+                && $components->firstWhere('type', 'button')['sub_type'] === 'url';
         });
     }
 

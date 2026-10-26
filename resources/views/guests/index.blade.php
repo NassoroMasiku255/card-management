@@ -416,7 +416,7 @@
                     <input type="hidden" name="template_language" id="templateLanguage" value="{{ config('services.whatsapp.template_language') }}">
                     @endif
                     <p class="text-[10px] text-surface-400 mt-1" id="templateHint">
-                        Invitation templates need 4 body parameters: guest name, guest ID, event date and public invitation link.
+                        Invitation templates need 5 body parameters: guest name, event name, event date, hall & location and time, plus a URL button using the guest invitation code.
                     </p>
                     <p id="reminderHint" class="text-[10px] text-surface-400 mt-1 hidden">
                         Reminder body: guest name, contribution amount, event name and the payment details configured in
