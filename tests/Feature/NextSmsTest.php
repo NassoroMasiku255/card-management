@@ -73,6 +73,7 @@ class NextSmsTest extends TestCase
             ->post(route('events.payment-methods.store', $event), [
                 'payment_name' => 'M-Pesa',
                 'payment_number' => '0755000111',
+                'account_holder' => 'Jane Doe',
             ])
             ->assertRedirect(route('events.show', $event));
 
@@ -80,6 +81,7 @@ class NextSmsTest extends TestCase
             ->post(route('events.payment-methods.store', $event), [
                 'payment_name' => 'CRDB',
                 'payment_number' => '0155000222',
+                'account_holder' => 'John Doe',
             ])
             ->assertRedirect(route('events.show', $event));
 
@@ -88,6 +90,7 @@ class NextSmsTest extends TestCase
             ->assertOk()
             ->assertSee('M-Pesa')
             ->assertSee('0755000111')
+            ->assertSee('Jane Doe')
             ->assertSee('CRDB')
             ->assertSee('0155000222');
 
@@ -99,7 +102,13 @@ class NextSmsTest extends TestCase
             ->assertOk();
 
         $message = SmsMessage::where('message_type', 'reminder')->latest('id')->firstOrFail();
-        $this->assertStringContainsString("M-Pesa: 0755000111\nCRDB: 0155000222", $message->text);
+        $this->assertSame(
+            "Habari Jane Doe, tunakushukuru kwa ahadi yako ya TZS 200,000 kwa ajili ya Wedding.\n"
+                ."Tunakukumbusha kwa upole kutuma mchango wako kabla ya tarehe 10/12/2026.\n\n"
+                .'Namba za malipo:' ."\n\nM-Pesa: 0755000111. Jane Doe\nCRDB: 0155000222. John Doe\n\n"
+                .'Mungu akubariki sana. 🙏',
+            $message->text
+        );
         $this->assertStringNotContainsString('Legacy Global Account', $message->text);
         $this->assertStringNotContainsString('00000000', $message->text);
     }
@@ -110,6 +119,7 @@ class NextSmsTest extends TestCase
         $paymentMethod = $event->paymentMethods()->create([
             'payment_name' => 'M-Pesa',
             'payment_number' => '0755000111',
+            'account_holder' => 'Nassoro Masiku',
         ]);
         $otherEvent = Event::create([
             'user_id' => $user->id,

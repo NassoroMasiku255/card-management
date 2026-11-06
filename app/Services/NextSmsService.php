@@ -89,7 +89,8 @@ class NextSmsService
             $paymentDetails = $event->paymentMethods()
                 ->orderBy('id')
                 ->get()
-                ->map(fn ($method) => "{$method->payment_name}: {$method->payment_number}")
+                ->map(fn ($method) => "{$method->payment_name}: {$method->payment_number}"
+                    .($method->account_holder ? ". {$method->account_holder}" : ''))
                 ->implode("\n");
 
             if ($paymentDetails === '') {
@@ -98,9 +99,9 @@ class NextSmsService
                 $paymentDetails = trim($paymentName.': '.$paymentNumber, ': ');
             }
 
-            $paymentSentence = $paymentDetails !== '' ? " Namba za malipo: {$paymentDetails}." : '';
+            $paymentSection = $paymentDetails !== '' ? "\n\nNamba za malipo:\n\n{$paymentDetails}\n\n" : "\n\n";
 
-            return "Habari {$guest->full_name}, tunakushukuru kwa ahadi yako ya TZS {$amount} kwa ajili ya {$event->name}. Tunakukumbusha kwa upole kutuma mchango wako kabla ya tarehe {$date}.{$paymentSentence} Mungu akubariki sana. 🙏";
+            return "Habari {$guest->full_name}, tunakushukuru kwa ahadi yako ya TZS {$amount} kwa ajili ya {$event->name}.\nTunakukumbusha kwa upole kutuma mchango wako kabla ya tarehe {$date}.{$paymentSection}Mungu akubariki sana. 🙏";
         }
 
         $date = $event->event_date?->format('d/m/Y') ?? '';

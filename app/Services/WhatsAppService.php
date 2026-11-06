@@ -590,7 +590,8 @@ class WhatsAppService
         $eventPaymentDetails = $event?->paymentMethods()
             ->orderBy('id')
             ->get()
-            ->map(fn ($method) => "{$method->payment_name}: {$method->payment_number}")
+            ->map(fn ($method) => "{$method->payment_name}: {$method->payment_number}"
+                .($method->account_holder ? ". {$method->account_holder}" : ''))
             ->implode('; ');
 
         if ($eventPaymentDetails !== null && $eventPaymentDetails !== '') {

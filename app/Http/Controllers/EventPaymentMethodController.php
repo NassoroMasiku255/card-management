@@ -15,6 +15,7 @@ class EventPaymentMethodController extends Controller
         $validated = $request->validate([
             'payment_name' => 'required|string|max:255',
             'payment_number' => 'required|string|max:100',
+            'account_holder' => 'nullable|string|max:255',
         ]);
 
         $event->paymentMethods()->create($validated);

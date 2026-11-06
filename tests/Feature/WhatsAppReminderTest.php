@@ -88,14 +88,14 @@ class WhatsAppReminderTest extends TestCase
 
         [$guest, $invitation] = $this->makeGuestAndInvitation();
         $guest->event->paymentMethods()->createMany([
-            ['payment_name' => 'M-Pesa', 'payment_number' => '0755000111'],
-            ['payment_name' => 'CRDB', 'payment_number' => '0155000222'],
+            ['payment_name' => 'M-Pesa', 'payment_number' => '0755000111', 'account_holder' => 'Nassoro Masiku'],
+            ['payment_name' => 'CRDB', 'payment_number' => '0155000222', 'account_holder' => 'Nassoro Masiku'],
         ]);
 
         $this->assertTrue(app(WhatsAppService::class)->sendReminder($guest, $invitation));
 
         Http::assertSent(fn ($request) => $request->data()['template']['components'][0]['parameters'][3]['text']
-            === 'M-Pesa: 0755000111; CRDB: 0155000222');
+            === 'M-Pesa: 0755000111. Nassoro Masiku; CRDB: 0155000222. Nassoro Masiku');
     }
 
     public function test_guest_list_message_send_returns_json_status_for_ajax(): void

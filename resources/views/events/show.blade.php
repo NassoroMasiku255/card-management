@@ -240,7 +240,7 @@
         <div class="flex flex-wrap items-center justify-between gap-3 px-5 py-3.5">
             <div class="min-w-0">
                 <p class="text-sm font-semibold text-surface-800">{{ $paymentMethod->payment_name }}</p>
-                <p class="mt-0.5 font-mono text-xs text-surface-500">{{ $paymentMethod->payment_number }}</p>
+                <p class="mt-0.5 text-xs text-surface-500">{{ $paymentMethod->payment_number }}@if($paymentMethod->account_holder). {{ $paymentMethod->account_holder }}@endif</p>
             </div>
             <form method="POST" action="{{ route('events.payment-methods.destroy', [$event, $paymentMethod]) }}"
                 onsubmit="return confirm('Remove this payment account?')">
@@ -258,7 +258,7 @@
     @endif
 
     <form method="POST" action="{{ route('events.payment-methods.store', $event) }}"
-        class="grid grid-cols-1 gap-3 border-t border-surface-100 bg-surface-50/60 p-4 sm:grid-cols-[1fr_1fr_auto] sm:items-end"
+        class="grid grid-cols-1 gap-3 border-t border-surface-100 bg-surface-50/60 p-4 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_1fr_auto] lg:items-end"
         data-loading-text="Adding payment account..." data-loading-hint="Saving this account for the event.">
         @csrf
         <div>
@@ -268,6 +268,10 @@
         <div>
             <label for="payment_number" class="label-field">Payment number</label>
             <input id="payment_number" name="payment_number" type="text" maxlength="100" required class="input-field" placeholder="e.g. 0712 345 678">
+        </div>
+        <div>
+            <label for="account_holder" class="label-field">Account holder</label>
+            <input id="account_holder" name="account_holder" type="text" maxlength="255" class="input-field" placeholder="e.g. Nassoro Masiku">
         </div>
         <button type="submit" class="btn btn-primary">
             <i class="fas fa-plus"></i> Add account

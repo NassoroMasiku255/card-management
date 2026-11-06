@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class EventPaymentMethod extends Model
 {
-    protected $fillable = ['event_id', 'payment_name', 'payment_number'];
+    protected $fillable = ['event_id', 'payment_name', 'payment_number', 'account_holder'];
 
     public function event(): BelongsTo
     {

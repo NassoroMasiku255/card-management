@@ -221,7 +221,6 @@ class GuestController extends Controller
     {
         $this->authorizeEvent($event);
         $this->ensureGuestBelongsToEvent($event, $guest);
-        $guest->delete();
 
         return redirect()->route('events.guests.index', $event)->with('success', 'Guest removed successfully!');
     }
