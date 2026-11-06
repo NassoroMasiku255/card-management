@@ -58,3 +58,16 @@ If you discover a security vulnerability within Laravel, please send an e-mail t
 
 The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
 # card-management
+
+## NextSMS Configuration
+Set these in `.env` to send invitation and reminder SMS through NextSMS:
+```
+NEXTSMS_API_URL=https://messaging-service.co.tz/api/sms/v2/text/single
+NEXTSMS_API_TOKEN=your_nextsms_api_token
+NEXTSMS_FROM=your_approved_sender_id
+```
+Add payment account names and numbers on the event overview. Every account for that
+event is included in reminder SMS. The legacy `NEXTSMS_REMINDER_PAYMENT_NUMBER`
+and `NEXTSMS_REMINDER_PAYMENT_NAME` values are used only when an event has no
+saved payment accounts. SMS requests and provider responses are saved in
+`sms_messages` with `sent` or `failed` status.

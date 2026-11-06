@@ -49,6 +49,11 @@ class Invitation extends Model
         );
     }
 
+    public function latestSmsMessage(): HasOne
+    {
+        return $this->hasOne(SmsMessage::class)->latestOfMany('id');
+    }
+
     public function getCardImageUrlAttribute(): ?string
     {
         return $this->card_image_path ? asset('storage/'.$this->card_image_path) : null;

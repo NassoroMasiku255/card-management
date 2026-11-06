@@ -6,6 +6,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EventBudgetController;
 use App\Http\Controllers\EventController;
+use App\Http\Controllers\EventPaymentMethodController;
 use App\Http\Controllers\EventMessageReportController;
 use App\Http\Controllers\EventReportController;
 use App\Http\Controllers\GuestController;
@@ -67,6 +68,9 @@ Route::middleware('auth')->group(function () {
 
     // Guests (nested under events)
     Route::prefix('events/{event}')->name('events.')->group(function () {
+        Route::post('/payment-methods', [EventPaymentMethodController::class, 'store'])->name('payment-methods.store');
+        Route::delete('/payment-methods/{paymentMethod}', [EventPaymentMethodController::class, 'destroy'])->name('payment-methods.destroy');
+
         Route::get('/report', [EventReportController::class, 'show'])->name('report');
         Route::get('/messages-report', [EventMessageReportController::class, 'show'])->name('messages.report');
         Route::get('/countdown-card', [EventController::class, 'countdownCard'])->name('countdown-card');
@@ -98,6 +102,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/invitations/{guest}/card', [InvitationController::class, 'card'])->name('invitations.card');
         Route::post('/invitations/{invitation}/upload-card', [InvitationController::class, 'uploadCard'])->name('invitations.upload-card');
         Route::post('/invitations/{invitation}/send', [InvitationController::class, 'send'])->name('invitations.send');
+        Route::post('/invitations/{invitation}/send-sms', [InvitationController::class, 'sendSms'])->name('invitations.send-sms');
         Route::post('/invitations/send-all', [InvitationController::class, 'sendAll'])->name('invitations.sendAll');
         Route::post('/invitations/{invitation}/resend', [InvitationController::class, 'resend'])->name('invitations.resend');
         Route::post('/guests/{guest}/send-message', [InvitationController::class, 'sendMessage'])->name('guests.send-message');

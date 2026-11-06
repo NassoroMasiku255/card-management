@@ -77,6 +77,27 @@ class WhatsAppReminderTest extends TestCase
         $this->assertNull($invitation->sent_at);
     }
 
+    public function test_reminder_uses_all_event_payment_accounts_in_the_template_parameter(): void
+    {
+        Http::fake([
+            'graph.facebook.com/*' => Http::response([
+                'messaging_product' => 'whatsapp',
+                'messages' => [['id' => 'wamid.event-payment-details']],
+            ]),
+        ]);
+
+        [$guest, $invitation] = $this->makeGuestAndInvitation();
+        $guest->event->paymentMethods()->createMany([
+            ['payment_name' => 'M-Pesa', 'payment_number' => '0755000111'],
+            ['payment_name' => 'CRDB', 'payment_number' => '0155000222'],
+        ]);
+
+        $this->assertTrue(app(WhatsAppService::class)->sendReminder($guest, $invitation));
+
+        Http::assertSent(fn ($request) => $request->data()['template']['components'][0]['parameters'][3]['text']
+            === 'M-Pesa: 0755000111; CRDB: 0155000222');
+    }
+
     public function test_guest_list_message_send_returns_json_status_for_ajax(): void
     {
         Http::fake([

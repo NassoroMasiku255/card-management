@@ -62,6 +62,16 @@ class Guest extends Model
         return $this->hasOne(WhatsAppMessage::class)->latestOfMany('id');
     }
 
+    public function smsMessages(): HasMany
+    {
+        return $this->hasMany(SmsMessage::class);
+    }
+
+    public function latestSmsMessage(): HasOne
+    {
+        return $this->hasOne(SmsMessage::class)->latestOfMany('id');
+    }
+
     public function payments(): HasMany
     {
         return $this->hasMany(GuestPayment::class);

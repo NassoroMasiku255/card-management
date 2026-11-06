@@ -299,6 +299,7 @@
                     <td class="px-5 py-3.5" id="message-cell-{{ $guest->id }}" data-label="Message">
                         <div class="min-w-0">
                             @php($latestMessage = $guest->latestWhatsAppMessage)
+                            <div id="whatsapp-status-cell-{{ $guest->id }}">
                             @if($latestMessage)
                             <span class="badge {{ $latestMessage->status_badge_class }}">{{ $latestMessage->status_label }}</span>
                             <div class="mt-1 text-[10px] text-surface-400">
@@ -312,9 +313,28 @@
                                 {{ $latestMessage->error_message }}
                             </div>
                             @endif
-                            @else
+                            @elseif(!$guest->latestSmsMessage)
                             <span class="text-xs text-surface-300">Not sent</span>
                             @endif
+                            </div>
+                            <div id="sms-status-cell-{{ $guest->id }}">
+                            @if($guest->latestSmsMessage)
+                            <div class="mt-1">
+                                <span class="badge {{ $guest->latestSmsMessage->status_badge_class }}">SMS {{ $guest->latestSmsMessage->status_label }}</span>
+                                <div class="mt-1 text-[10px] text-surface-400">
+                                    {{ ucfirst($guest->latestSmsMessage->message_type) }}
+                                    @if($guest->latestSmsMessage->status_updated_at)
+                                    &middot; {{ $guest->latestSmsMessage->status_updated_at->diffForHumans() }}
+                                    @endif
+                                </div>
+                                @if($guest->latestSmsMessage->status === 'failed' && $guest->latestSmsMessage->error_message)
+                                <div class="mt-1 max-w-[190px] truncate text-[10px] text-red-500" title="{{ $guest->latestSmsMessage->error_message }}">
+                                    {{ $guest->latestSmsMessage->error_message }}
+                                </div>
+                                @endif
+                            </div>
+                            @endif
+                            </div>
                         </div>
                     </td>
                     <td class="px-5 py-3.5 mobile-actions" data-label="">
@@ -336,6 +356,11 @@
                                 data-guest-name="{{ $guest->full_name }}"
                                 class="icon-action text-green-600 hover:bg-green-50 hover:text-green-700" title="Send WhatsApp">
                                 <i class="fab fa-whatsapp text-lg"></i>
+                            </button>
+                            <button type="button"
+                                onclick="openSmsModal('{{ $guest->id }}', @js($guest->full_name))"
+                                class="icon-action text-blue-600 hover:bg-blue-50 hover:text-blue-700" title="Send normal SMS">
+                                <i class="fas fa-inbox"></i>
                             </button>
                             @endif
                             <a href="{{ route('events.guests.edit', [$event, $guest]) }}" class="icon-action text-blue-600 hover:bg-blue-50 hover:text-blue-700" title="Edit">
@@ -444,6 +469,42 @@
 </div>
 @endif
 
+@if($canSendWhatsApp)
+<div id="smsModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="bg-white rounded-t-2xl sm:rounded-xl shadow-xl w-full max-w-md overflow-hidden animate-fade-in">
+        <div class="px-6 py-4 border-b border-surface-100 flex items-center justify-between">
+            <h3 class="font-display font-bold text-lg text-surface-900">Send Normal SMS</h3>
+            <button type="button" onclick="closeSmsModal()" class="text-surface-400 hover:text-surface-600" title="Close">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <form id="smsForm" data-no-loading>
+            @csrf
+            <input type="hidden" id="smsGuestId">
+            <div class="p-5 sm:p-6 space-y-4">
+                <p class="text-sm text-surface-600">Sending SMS to: <span id="smsGuestName" class="font-bold"></span></p>
+                <div>
+                    <label for="smsMessageType" class="block text-sm font-medium text-surface-700 mb-1">Message Type</label>
+                    <select id="smsMessageType" name="message_type" required class="input-field">
+                        <option value="reminder">Reminder</option>
+                        <option value="invitation">Invitation</option>
+                    </select>
+                </div>
+                <div id="smsSendProgress" class="hidden text-sm text-surface-500">
+                    <i class="fas fa-spinner fa-spin mr-1"></i> Sending SMS...
+                </div>
+            </div>
+            <div class="px-5 sm:px-6 py-4 bg-surface-50 border-t border-surface-100 flex justify-end gap-3">
+                <button type="button" onclick="closeSmsModal()" class="btn btn-outline">Cancel</button>
+                <button type="submit" id="smsSubmitBtn" class="btn btn-primary">
+                    <i class="fas fa-inbox mr-2"></i> Send SMS
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+@endif
+
 <!-- Payment Modal -->
 <div id="paymentModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
     <div class="bg-white rounded-t-2xl sm:rounded-xl shadow-xl w-full max-w-md max-h-[92dvh] flex flex-col overflow-hidden animate-fade-in">
@@ -533,6 +594,12 @@
         other: ''
     };
 
+    const templateLanguageDefaults = {
+        invitation: @json(config('services.whatsapp.template_language')),
+        reminder: @json(config('services.whatsapp.reminder_template_language')),
+        other: @json(config('services.whatsapp.template_language'))
+    };
+
     function syncTemplateLanguage() {
         const select = document.getElementById('templateName');
         const langInput = document.getElementById('templateLanguage');
@@ -574,6 +641,7 @@
             if (type !== 'other') {
                 input.value = templateDefaults[type] || '';
             }
+            document.getElementById('templateLanguage').value = templateLanguageDefaults[type] || templateLanguageDefaults.invitation;
         }
 
         reminderHint.classList.toggle('hidden', type !== 'reminder');
@@ -598,8 +666,11 @@
         }
 
         const details = [status.message_type, status.updated_at].filter(Boolean).map(escapeHtml).join(' &middot; ');
+        const label = status.message_type && status.message_type.endsWith(' SMS')
+            ? 'SMS ' + (status.label || 'Unknown')
+            : (status.label || 'Unknown');
         let html = '<span class="badge ' + escapeHtml(status.badge_class || 'bg-surface-100 text-surface-600') + '">' +
-            escapeHtml(status.label || 'Unknown') + '</span>';
+            escapeHtml(label) + '</span>';
 
         if (details) {
             html += '<div class="text-xs text-surface-400 mt-1">' + details + '</div>';
@@ -639,11 +710,26 @@
         pendingGuestIds = [String(guestId)];
         document.getElementById('whatsappModalTitle').textContent = 'Send WhatsApp Message';
         nameSpan.textContent = guestName;
+        document.getElementById('messageType').value = 'invitation';
         resetWhatsAppProgress();
         syncTemplateName();
 
         modal.classList.remove('hidden');
         document.body.style.overflow = 'hidden';
+    }
+
+    function openSmsModal(guestId, guestName) {
+        document.getElementById('smsGuestId').value = guestId;
+        document.getElementById('smsGuestName').textContent = guestName;
+        document.getElementById('smsMessageType').value = 'reminder';
+        document.getElementById('smsSendProgress').classList.add('hidden');
+        document.getElementById('smsModal').classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeSmsModal() {
+        document.getElementById('smsModal').classList.add('hidden');
+        document.body.style.overflow = 'auto';
     }
 
     function openBulkWhatsAppModal() {
@@ -653,6 +739,7 @@
         pendingGuestIds = ids;
         document.getElementById('whatsappModalTitle').textContent = 'Send WhatsApp to ' + ids.length + ' guests';
         document.getElementById('modalGuestName').textContent = ids.length + ' selected guests';
+        document.getElementById('messageType').value = 'invitation';
         resetWhatsAppProgress();
         syncTemplateName();
 
@@ -773,7 +860,7 @@
             if (stopMessageSend) break;
 
             const guestId = ids[index];
-            const statusCell = document.getElementById('message-cell-' + guestId);
+            const statusCell = document.getElementById('whatsapp-status-cell-' + guestId);
 
             if (statusCell) {
                 statusCell.innerHTML = '<span class="text-xs text-surface-400"><i class="fas fa-spinner fa-spin mr-1"></i>Sending...</span>';
@@ -839,15 +926,73 @@
         showGuestToast(summary, failed ? 'warning' : 'success');
     });
 
+    document.getElementById('smsForm')?.addEventListener('submit', async function (event) {
+        event.preventDefault();
+
+        const guestId = document.getElementById('smsGuestId').value;
+        const messageType = document.getElementById('smsMessageType').value;
+        const submitButton = document.getElementById('smsSubmitBtn');
+        const progress = document.getElementById('smsSendProgress');
+        const statusCell = document.getElementById('sms-status-cell-' + guestId);
+        const originalButtonHtml = submitButton.innerHTML;
+
+        submitButton.disabled = true;
+        submitButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Sending...';
+        progress.classList.remove('hidden');
+        if (statusCell) {
+            statusCell.innerHTML = '<span class="text-xs text-surface-400"><i class="fas fa-spinner fa-spin mr-1"></i>Sending SMS...</span>';
+        }
+
+        try {
+            const response = await fetch(sendMessageUrlBase + '/' + encodeURIComponent(guestId) + '/send-message', {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ channel: 'sms', message_type: messageType }),
+            });
+
+            let data = {};
+            try {
+                data = await response.json();
+            } catch (error) {
+                data = {};
+            }
+
+            if (statusCell) {
+                statusCell.innerHTML = renderMessageStatus(data.status);
+            }
+
+            showGuestToast(data.message || (data.success ? 'SMS sent.' : 'Failed to send SMS.'), data.success ? 'success' : 'warning');
+        } catch (error) {
+            if (statusCell) {
+                statusCell.innerHTML = '<span class="badge bg-red-100 text-red-700">SMS Failed</span>';
+            }
+            showGuestToast('Failed to send SMS.', 'warning');
+        }
+
+        submitButton.disabled = false;
+        submitButton.innerHTML = originalButtonHtml;
+        progress.classList.add('hidden');
+        closeSmsModal();
+    });
+
     syncGuestSelection();
 
     // Close on click outside
     window.onclick = function(event) {
         const whatsappModal = document.getElementById('whatsappModal');
+        const smsModal = document.getElementById('smsModal');
         const paymentModal = document.getElementById('paymentModal');
 
         if (event.target == whatsappModal) {
             cancelWhatsAppModal();
+        }
+
+        if (event.target == smsModal) {
+            closeSmsModal();
         }
 
         if (event.target == paymentModal) {

@@ -587,6 +587,16 @@ class WhatsAppService
 
     private function paymentDetails(?Event $event): string
     {
+        $eventPaymentDetails = $event?->paymentMethods()
+            ->orderBy('id')
+            ->get()
+            ->map(fn ($method) => "{$method->payment_name}: {$method->payment_number}")
+            ->implode('; ');
+
+        if ($eventPaymentDetails !== null && $eventPaymentDetails !== '') {
+            return $eventPaymentDetails;
+        }
+
         if ($this->reminderPaymentDetails !== '') {
             return $this->reminderPaymentDetails;
         }

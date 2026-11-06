@@ -74,6 +74,11 @@ class Event extends Model
         return $this->hasMany(Invitation::class);
     }
 
+    public function paymentMethods(): HasMany
+    {
+        return $this->hasMany(EventPaymentMethod::class);
+    }
+
     public function activityLogs(): HasMany
     {
         return $this->hasMany(ActivityLog::class);

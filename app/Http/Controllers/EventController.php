@@ -90,7 +90,7 @@ class EventController extends Controller
     {
         $this->authorizeEvent($event);
 
-        $event->load(['guests.invitation', 'invitations.guest']);
+        $event->load(['guests.invitation', 'invitations.guest', 'paymentMethods']);
 
         $totalPledged = $event->guests->sum('amount_contributed');
         $totalPaid = $event->guests->sum('paid_amount');

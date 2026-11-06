@@ -224,6 +224,57 @@
     </a>
 </div>
 
+<!-- Reminder payment accounts -->
+<section class="card-surface mb-6 overflow-hidden">
+    <div class="flex flex-wrap items-center justify-between gap-3 border-b border-surface-100 px-5 py-4">
+        <div>
+            <h2 class="text-sm font-bold text-surface-900">Reminder payment accounts</h2>
+            <p class="mt-1 text-xs text-surface-500">All accounts listed here are included in reminder SMS messages.</p>
+        </div>
+        <span class="badge bg-surface-100 text-surface-600">{{ $event->paymentMethods->count() }} saved</span>
+    </div>
+
+    @if($event->paymentMethods->isNotEmpty())
+    <div class="divide-y divide-surface-100">
+        @foreach($event->paymentMethods as $paymentMethod)
+        <div class="flex flex-wrap items-center justify-between gap-3 px-5 py-3.5">
+            <div class="min-w-0">
+                <p class="text-sm font-semibold text-surface-800">{{ $paymentMethod->payment_name }}</p>
+                <p class="mt-0.5 font-mono text-xs text-surface-500">{{ $paymentMethod->payment_number }}</p>
+            </div>
+            <form method="POST" action="{{ route('events.payment-methods.destroy', [$event, $paymentMethod]) }}"
+                onsubmit="return confirm('Remove this payment account?')">
+                @csrf
+                @method('DELETE')
+                <button type="submit" class="icon-action text-red-500 hover:bg-red-50 hover:text-red-700" title="Remove payment account">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </form>
+        </div>
+        @endforeach
+    </div>
+    @else
+    <p class="px-5 py-4 text-sm text-surface-500">No event payment accounts have been added.</p>
+    @endif
+
+    <form method="POST" action="{{ route('events.payment-methods.store', $event) }}"
+        class="grid grid-cols-1 gap-3 border-t border-surface-100 bg-surface-50/60 p-4 sm:grid-cols-[1fr_1fr_auto] sm:items-end"
+        data-loading-text="Adding payment account..." data-loading-hint="Saving this account for the event.">
+        @csrf
+        <div>
+            <label for="payment_name" class="label-field">Account name</label>
+            <input id="payment_name" name="payment_name" type="text" maxlength="255" required class="input-field" placeholder="e.g. M-Pesa">
+        </div>
+        <div>
+            <label for="payment_number" class="label-field">Payment number</label>
+            <input id="payment_number" name="payment_number" type="text" maxlength="100" required class="input-field" placeholder="e.g. 0712 345 678">
+        </div>
+        <button type="submit" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Add account
+        </button>
+    </form>
+</section>
+
 <!-- Main content -->
 <div class="grid grid-cols-1 items-start gap-6 xl:grid-cols-3">
     <!-- Left column -->

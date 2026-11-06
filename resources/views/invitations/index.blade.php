@@ -258,6 +258,11 @@
                                 <span class="badge {{ $invitation->latestInvitationMessage->status_badge_class }}">{{ $invitation->latestInvitationMessage->status_label }}</span>
                             </div>
                             @endif
+                            @if($invitation->latestSmsMessage)
+                            <div class="mt-1">
+                                <span class="badge {{ $invitation->latestSmsMessage->status_badge_class }}">SMS {{ $invitation->latestSmsMessage->status_label }}</span>
+                            </div>
+                            @endif
                         </div>
                     </td>
                     <td class="px-5 py-3.5" data-label="RSVP">
@@ -302,7 +307,7 @@
                                 data-card-image-url="{{ $invitation->card_image_url }}"
                                 data-public-url="{{ route('invitation.public', $invitation->qr_code_data) }}"
                                 title="Send WhatsApp invitation">
-                                <i class="fas fa-paper-plane"></i> <span class="hidden sm:inline">Send</span>
+                                <i class="fab fa-whatsapp text-lg"></i>
                             </button>
                             @elseif($canSendWhatsApp && $invitation->send_status === 'failed')
                             <button type="button" class="prepare-invitation-btn icon-action text-amber-600 hover:bg-amber-50 hover:text-amber-700 font-medium"
@@ -314,10 +319,18 @@
                                 data-card-image-url="{{ $invitation->card_image_url }}"
                                 data-public-url="{{ route('invitation.public', $invitation->qr_code_data) }}"
                                 title="Retry WhatsApp invitation">
-                                <i class="fas fa-rotate-right"></i> <span class="hidden sm:inline">Retry</span>
+                                <i class="fab fa-whatsapp text-lg"></i>
                             </button>
                             @elseif($canSendWhatsApp)
                             <span class="icon-action text-green-500" title="Invitation already sent"><i class="fas fa-check"></i></span>
+                            @endif
+                            @if($canSendWhatsApp)
+                            <form method="POST" action="{{ route('events.invitations.send-sms', [$event, $invitation]) }}" class="inline-flex">
+                                @csrf
+                                <button type="submit" class="icon-action text-sky-600 hover:bg-sky-50 hover:text-sky-700" title="Send invitation SMS">
+                                    <i class="fas fa-inbox"></i>
+                                </button>
+                            </form>
                             @endif
                         </div>
                     </td>

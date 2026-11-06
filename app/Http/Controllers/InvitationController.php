@@ -8,6 +8,7 @@ use App\Models\Guest;
 use App\Models\Invitation;
 use App\Models\WhatsAppMessage;
 use App\Models\WhatsAppTemplate;
+use App\Services\NextSmsService;
 use App\Services\WhatsAppService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -16,7 +17,10 @@ use Illuminate\Support\Facades\Storage;
 
 class InvitationController extends Controller
 {
-    public function __construct(private readonly WhatsAppService $whatsapp) {}
+    public function __construct(
+        private readonly WhatsAppService $whatsapp,
+        private readonly NextSmsService $sms,
+    ) {}
 
     public function index(Request $request, Event $event)
     {
@@ -254,10 +258,17 @@ class InvitationController extends Controller
 
         $this->authorizeWhatsAppSending();
 
+        abort_unless($guest->event_id === $event->id, 404);
+
+        $channel = $request->input('channel', 'whatsapp');
+
         $request->validate([
-            'template_name' => 'required|string',
+            'channel' => 'nullable|string|in:whatsapp,sms',
+            'template_name' => $channel === 'sms' ? 'nullable|string' : 'required|string',
             'template_language' => 'nullable|string|max:32',
-            'message_type' => 'required|string|in:reminder,invitation,other',
+            'message_type' => $channel === 'sms'
+                ? 'required|string|in:reminder,invitation'
+                : 'required|string|in:reminder,invitation,other',
         ]);
 
         if ($request->message_type === 'invitation' && ! $this->qualifiesForInvitation($guest, $event)) {
@@ -272,6 +283,44 @@ class InvitationController extends Controller
                 'guest_id' => $guest->id,
                 'qr_code_data' => $guest->unique_id,
             ]);
+        }
+
+        if ($channel === 'sms') {
+            $smsMessage = $this->sms->send($guest, $event, $request->message_type, $invitation);
+            $success = $smsMessage->status === 'sent';
+            $message = $success
+                ? ucfirst($request->message_type)." SMS sent to {$guest->full_name}. Status: {$smsMessage->status_label}."
+                : 'Failed to send '.$request->message_type." SMS to {$guest->full_name}."
+                    .($smsMessage->error_message ? " ({$smsMessage->error_message})" : '');
+
+            if ($success) {
+                ActivityLog::create([
+                    'event_id' => $event->id,
+                    'user_id' => Auth::id(),
+                    'action' => 'sms_message_sent',
+                    'description' => ucfirst($request->message_type)." SMS sent to {$guest->full_name}.",
+                ]);
+            }
+
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'success' => $success,
+                    'message' => $message,
+                    'guest_id' => $guest->id,
+                    'status' => [
+                        'state' => $smsMessage->status,
+                        'label' => $smsMessage->status_label,
+                        'badge_class' => $smsMessage->status_badge_class,
+                        'message_type' => ucfirst($smsMessage->message_type).' SMS',
+                        'updated_at' => optional($smsMessage->status_updated_at)->diffForHumans(),
+                        'error_message' => $smsMessage->error_message,
+                    ],
+                ], $success ? 200 : 422);
+            }
+
+            return $success
+                ? back()->with('success', $message)
+                : back()->with('error', $message);
         }
 
         if ($request->hasFile('card_image')) {
@@ -337,6 +386,51 @@ class InvitationController extends Controller
         return $success
             ? back()->with('success', $message)
             : back()->with('error', $message);
+    }
+
+    public function sendSms(Request $request, Event $event, Invitation $invitation)
+    {
+        $this->authorizeEvent($event);
+        $this->authorizeWhatsAppSending();
+        abort_unless($invitation->event_id === $event->id, 404);
+
+        if (! $this->qualifiesForInvitation($invitation->guest, $event)) {
+            return $this->ineligibleInvitationResponse($request, $invitation->guest);
+        }
+
+        $smsMessage = $this->sms->send($invitation->guest, $event, 'invitation', $invitation);
+        $success = $smsMessage->status === 'sent';
+        $message = $success
+            ? "Invitation SMS sent to {$invitation->guest->full_name}."
+            : "Failed to send invitation SMS to {$invitation->guest->full_name}.";
+
+        if ($success) {
+            ActivityLog::create([
+                'event_id' => $event->id,
+                'user_id' => Auth::id(),
+                'action' => 'sms_message_sent',
+                'description' => "Invitation SMS sent to {$invitation->guest->full_name}.",
+            ]);
+        }
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success' => $success,
+                'message' => $message,
+                'status' => [
+                    'state' => $smsMessage->status,
+                    'label' => $smsMessage->status_label,
+                    'badge_class' => $smsMessage->status_badge_class,
+                    'message_type' => 'Invitation SMS',
+                    'updated_at' => optional($smsMessage->status_updated_at)->diffForHumans(),
+                    'error_message' => $smsMessage->error_message,
+                ],
+            ], $success ? 200 : 422);
+        }
+
+        return $success
+            ? back()->with('success', $message)
+            : back()->with('error', $message.($smsMessage->error_message ? " ({$smsMessage->error_message})" : ''));
     }
 
     private function invitationJsonResponse(Event $event, Invitation $invitation, bool $success, string $message)
@@ -409,7 +503,7 @@ class InvitationController extends Controller
     private function filteredInvitationsQuery(Request $request, Event $event)
     {
         $query = $event->invitations()
-            ->with(['guest', 'latestInvitationMessage'])
+            ->with(['guest', 'latestInvitationMessage', 'latestSmsMessage'])
             ->whereHas('guest', fn ($query) => $this->applyInvitationEligibility($query, $event));
 
         if ($search = trim((string) $request->input('search'))) {
