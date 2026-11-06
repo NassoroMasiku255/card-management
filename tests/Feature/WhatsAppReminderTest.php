@@ -291,7 +291,7 @@ class WhatsAppReminderTest extends TestCase
         $this->actingAs($invitation->event->user)
             ->get(route('events.invitations.index', $invitation->event))
             ->assertOk()
-            ->assertSee('Accepted')
+            ->assertSee('Sent')
             ->assertViewHas('invitations', function ($invitations) {
                 return $invitations->first()->latestInvitationMessage?->status === WhatsAppMessage::STATUS_ACCEPTED;
             });

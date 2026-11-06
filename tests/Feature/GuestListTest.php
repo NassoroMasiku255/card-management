@@ -40,7 +40,10 @@ class GuestListTest extends TestCase
             })
             ->assertSee('Send WhatsApp to selected')
             ->assertSee('guest-checkbox', false)
-            ->assertSee('message-cell-', false);
+            ->assertSee('whatsapp-status-cell-', false)
+            ->assertSee('sms-status-cell-', false)
+            ->assertSee('WhatsApp Message')
+            ->assertSee('SMS Message');
     }
 
     private function event(): array

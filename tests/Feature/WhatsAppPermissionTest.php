@@ -118,7 +118,9 @@ class WhatsAppPermissionTest extends TestCase
             ->assertOk()
             ->assertDontSee('WhatsApp sending is')
             ->assertDontSee('view-only')
-            ->assertSee('Not sent')
+            ->assertSee('Pending')
+            ->assertSee('WhatsApp Message')
+            ->assertSee('SMS Message')
             ->assertDontSee('Send WhatsApp to selected')
             ->assertDontSee('Send normal SMS')
             ->assertDontSee('Send Message');

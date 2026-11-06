@@ -124,8 +124,8 @@
                     class="input-field !py-2" autocomplete="off">
             </div>
             <select name="send_status" class="input-field !py-2 !w-auto">
-                <option value="">All Send Status</option>
-                @foreach(['pending' => 'Pending', 'sent' => 'Sent', 'failed' => 'Failed', 'delivered' => 'Delivered', 'read' => 'Read'] as $value => $label)
+                <option value="">All WhatsApp Status</option>
+                @foreach(['pending' => 'Pending', 'sent' => 'Sent', 'delivered' => 'Delivered', 'read' => 'Read'] as $value => $label)
                 <option value="{{ $value }}" {{ request('send_status') === $value ? 'selected' : '' }}>{{ $label }}</option>
                 @endforeach
             </select>
@@ -191,7 +191,8 @@
                     <th class="px-5 py-3.5 text-left text-[10px] font-bold uppercase tracking-[0.12em] text-surface-400">Guest</th>
                     <th class="px-5 py-3.5 text-left text-[10px] font-bold uppercase tracking-[0.12em] text-surface-400">Phone</th>
                     <th class="px-5 py-3.5 text-left text-[10px] font-bold uppercase tracking-[0.12em] text-surface-400">Card</th>
-                    <th class="px-5 py-3.5 text-left text-[10px] font-bold uppercase tracking-[0.12em] text-surface-400">Delivery</th>
+                    <th class="px-5 py-3.5 text-left text-[10px] font-bold uppercase tracking-[0.12em] text-surface-400">WhatsApp Message</th>
+                    <th class="px-5 py-3.5 text-left text-[10px] font-bold uppercase tracking-[0.12em] text-surface-400">SMS Message</th>
                     <th class="px-5 py-3.5 text-left text-[10px] font-bold uppercase tracking-[0.12em] text-surface-400">RSVP</th>
                     <th class="px-5 py-3.5 text-left text-[10px] font-bold uppercase tracking-[0.12em] text-surface-400">QR</th>
                     <th class="px-5 py-3.5 text-left text-[10px] font-bold uppercase tracking-[0.12em] text-surface-400">Actions</th>
@@ -202,7 +203,18 @@
                 @php
                     $initials = collect(preg_split('/\s+/', trim($invitation->guest->full_name)))->filter()->take(2)->map(fn ($part) => mb_strtoupper(mb_substr($part, 0, 1)))->implode('');
                     $paidCardType = $event->cardTypeForAmount((float) $invitation->guest->paid_amount);
-                    $statusDot = in_array($invitation->send_status, ['sent', 'delivered', 'read'], true) ? 'bg-green-500' : ($invitation->send_status === 'failed' ? 'bg-red-500' : 'bg-amber-500');
+                    $whatsappStatus = $invitation->latestInvitationMessage?->simple_status_label ?? match ($invitation->send_status) {
+                        'sent' => 'Sent',
+                        'delivered' => 'Delivered',
+                        'read' => 'Read',
+                        default => 'Pending',
+                    };
+                    $whatsappStatusClass = match ($whatsappStatus) {
+                        'Sent' => 'bg-green-100 text-green-700',
+                        'Delivered' => 'bg-emerald-100 text-emerald-700',
+                        'Read' => 'bg-teal-100 text-teal-700',
+                        default => 'bg-amber-100 text-amber-700',
+                    };
                 @endphp
                 <tr class="group transition hover:bg-green-50/20" id="row-{{ $invitation->id }}">
                     <td class="px-5 py-3.5" data-label="Guest">
@@ -240,30 +252,15 @@
                             </div>
                         </div>
                     </td>
-                    <td class="px-5 py-3.5" id="status-cell-{{ $invitation->id }}" data-label="Send status">
-                        <div class="min-w-0">
-                            <span class="badge gap-1.5
-                                {{ $invitation->send_status === 'sent' ? 'bg-green-100 text-green-700' : '' }}
-                                {{ $invitation->send_status === 'pending' ? 'bg-amber-100 text-amber-700' : '' }}
-                                {{ $invitation->send_status === 'failed' ? 'bg-red-100 text-red-700' : '' }}
-                                {{ $invitation->send_status === 'delivered' ? 'bg-blue-100 text-blue-700' : '' }}
-                                {{ $invitation->send_status === 'read' ? 'bg-teal-100 text-teal-700' : '' }}">
-                                <span class="h-1.5 w-1.5 rounded-full {{ $statusDot }}"></span>{{ ucfirst($invitation->send_status) }}
-                            </span>
-                            @if($invitation->sent_at)
-                            <div class="mt-1 text-[10px] text-surface-400">{{ $invitation->sent_at->format('d M · H:i') }}</div>
-                            @endif
-                            @if($invitation->latestInvitationMessage)
-                            <div class="mt-1">
-                                <span class="badge {{ $invitation->latestInvitationMessage->status_badge_class }}">{{ $invitation->latestInvitationMessage->status_label }}</span>
-                            </div>
-                            @endif
-                            @if($invitation->latestSmsMessage)
-                            <div class="mt-1">
-                                <span class="badge {{ $invitation->latestSmsMessage->status_badge_class }}">SMS {{ $invitation->latestSmsMessage->status_label }}</span>
-                            </div>
-                            @endif
-                        </div>
+                    <td class="px-5 py-3.5" id="status-cell-{{ $invitation->id }}" data-label="WhatsApp Message">
+                        <span class="badge {{ $whatsappStatusClass }}">{{ $whatsappStatus }}</span>
+                    </td>
+                    <td class="px-5 py-3.5" id="sms-status-cell-{{ $invitation->id }}" data-label="SMS Message">
+                        @if($invitation->latestSmsMessage)
+                        <span class="badge {{ $invitation->latestSmsMessage->simple_status_badge_class }}">{{ $invitation->latestSmsMessage->simple_status_label }}</span>
+                        @else
+                        <span class="badge bg-amber-100 text-amber-700">Pending</span>
+                        @endif
                     </td>
                     <td class="px-5 py-3.5" data-label="RSVP">
                         <span class="badge gap-1.5
@@ -709,12 +706,21 @@ function updateInvitationThumbnail(invitationId, url) {
     }
 }
 
-function invitationStatusBadge(data) {
-    const whatsappStatus = data.invitation?.whatsapp_status;
-    if (!whatsappStatus) return '';
+function invitationStatusBadge(status) {
+    const label = ({
+        sent: 'Sent',
+        accepted: 'Sent',
+        delivered: 'Delivered',
+        read: 'Read',
+    })[status] || 'Pending';
+    const badgeClass = ({
+        Sent: 'bg-green-100 text-green-700',
+        Delivered: 'bg-emerald-100 text-emerald-700',
+        Read: 'bg-teal-100 text-teal-700',
+        Pending: 'bg-amber-100 text-amber-700',
+    })[label];
 
-    return '<div class="mt-1"><span class="badge ' + escapeHtml(whatsappStatus.badge_class) + '">' +
-        escapeHtml(whatsappStatus.label) + '</span></div>';
+    return '<span class="badge ' + badgeClass + '">' + label + '</span>';
 }
 
 function updateInvitationRow(invitationId, data) {
@@ -723,23 +729,16 @@ function updateInvitationRow(invitationId, data) {
     if (!statusCell || !actionCell) return;
 
     const existingLinks = Array.from(actionCell.querySelectorAll('a')).map(link => link.outerHTML).join('');
-    const sentAt = data.invitation?.sent_at
-        ? '<div class="text-xs text-surface-400 mt-1">' + escapeHtml(data.invitation.sent_at) + '</div>'
-        : '';
+    const sendStatus = data.invitation?.send_status || (data.success ? 'sent' : 'pending');
+    statusCell.innerHTML = invitationStatusBadge(sendStatus);
 
     if (data.success) {
-        statusCell.innerHTML = '<span class="badge bg-green-100 text-green-700">Sent</span>' +
-            sentAt + invitationStatusBadge(data);
-
         const imageLink = data.invitation?.card_image_url
             ? '<a href="' + escapeHtml(data.invitation.card_image_url) + '" target="_blank" class="text-purple-600 hover:text-purple-700 text-sm" title="View sent card image"><i class="fas fa-image"></i></a>'
             : '';
 
         actionCell.innerHTML = '<div class="flex flex-wrap items-center gap-3">' + existingLinks + imageLink +
             '<span class="text-surface-400 text-sm" title="Invitation sent"><i class="fas fa-check"></i></span></div>';
-    } else {
-        statusCell.innerHTML = '<span class="badge bg-red-100 text-red-700">Failed</span>' +
-            sentAt + invitationStatusBadge(data);
     }
 
     if (data.invitation?.card_image_url) {

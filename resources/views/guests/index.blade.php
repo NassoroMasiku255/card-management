@@ -143,8 +143,8 @@
             <option value="pending" {{ request('rsvp') === 'pending' ? 'selected' : '' }}>Pending</option>
         </select>
         <select name="message_status" class="input-field !py-2 !w-auto">
-            <option value="">All Message Status</option>
-            @foreach(['queued' => 'Queued', 'accepted' => 'Accepted', 'sent' => 'Sent', 'delivered' => 'Delivered', 'read' => 'Read', 'failed' => 'Failed'] as $value => $label)
+            <option value="">All WhatsApp Status</option>
+            @foreach(['pending' => 'Pending', 'sent' => 'Sent', 'delivered' => 'Delivered', 'read' => 'Read'] as $value => $label)
             <option value="{{ $value }}" {{ request('message_status') === $value ? 'selected' : '' }}>{{ $label }}</option>
             @endforeach
         </select>
@@ -214,7 +214,8 @@
                     <th class="px-5 py-3.5 text-left text-[10px] font-bold uppercase tracking-[0.12em] text-surface-400">Card</th>
                     <th class="px-5 py-3.5 text-left text-[10px] font-bold uppercase tracking-[0.12em] text-surface-400">Payment</th>
                     <th class="px-5 py-3.5 text-left text-[10px] font-bold uppercase tracking-[0.12em] text-surface-400">RSVP</th>
-                    <th class="px-5 py-3.5 text-left text-[10px] font-bold uppercase tracking-[0.12em] text-surface-400">Message</th>
+                    <th class="px-5 py-3.5 text-left text-[10px] font-bold uppercase tracking-[0.12em] text-surface-400">WhatsApp Message</th>
+                    <th class="px-5 py-3.5 text-left text-[10px] font-bold uppercase tracking-[0.12em] text-surface-400">SMS Message</th>
                     <th class="px-5 py-3.5 text-left text-[10px] font-bold uppercase tracking-[0.12em] text-surface-400">Actions</th>
                 </tr>
             </thead>
@@ -296,46 +297,19 @@
                         <span class="text-xs text-surface-300">No invitation</span>
                         @endif
                     </td>
-                    <td class="px-5 py-3.5" id="message-cell-{{ $guest->id }}" data-label="Message">
-                        <div class="min-w-0">
-                            @php($latestMessage = $guest->latestWhatsAppMessage)
-                            <div id="whatsapp-status-cell-{{ $guest->id }}">
-                            @if($latestMessage)
-                            <span class="badge {{ $latestMessage->status_badge_class }}">{{ $latestMessage->status_label }}</span>
-                            <div class="mt-1 text-[10px] text-surface-400">
-                                {{ ucfirst($latestMessage->message_type) }}
-                                @if($latestMessage->status_updated_at)
-                                &middot; {{ $latestMessage->status_updated_at->diffForHumans() }}
-                                @endif
-                            </div>
-                            @if($latestMessage->status === 'failed' && $latestMessage->error_message)
-                            <div class="mt-1 max-w-[190px] truncate text-[10px] text-red-500" title="{{ $latestMessage->error_message }}">
-                                {{ $latestMessage->error_message }}
-                            </div>
-                            @endif
-                            @elseif(!$guest->latestSmsMessage)
-                            <span class="text-xs text-surface-300">Not sent</span>
-                            @endif
-                            </div>
-                            <div id="sms-status-cell-{{ $guest->id }}">
-                            @if($guest->latestSmsMessage)
-                            <div class="mt-1">
-                                <span class="badge {{ $guest->latestSmsMessage->status_badge_class }}">SMS {{ $guest->latestSmsMessage->status_label }}</span>
-                                <div class="mt-1 text-[10px] text-surface-400">
-                                    {{ ucfirst($guest->latestSmsMessage->message_type) }}
-                                    @if($guest->latestSmsMessage->status_updated_at)
-                                    &middot; {{ $guest->latestSmsMessage->status_updated_at->diffForHumans() }}
-                                    @endif
-                                </div>
-                                @if($guest->latestSmsMessage->status === 'failed' && $guest->latestSmsMessage->error_message)
-                                <div class="mt-1 max-w-[190px] truncate text-[10px] text-red-500" title="{{ $guest->latestSmsMessage->error_message }}">
-                                    {{ $guest->latestSmsMessage->error_message }}
-                                </div>
-                                @endif
-                            </div>
-                            @endif
-                            </div>
-                        </div>
+                    <td class="px-5 py-3.5" id="whatsapp-status-cell-{{ $guest->id }}" data-label="WhatsApp Message">
+                        @if($guest->latestWhatsAppMessage)
+                        <span class="badge {{ $guest->latestWhatsAppMessage->simple_status_badge_class }}">{{ $guest->latestWhatsAppMessage->simple_status_label }}</span>
+                        @else
+                        <span class="badge bg-amber-100 text-amber-700">Pending</span>
+                        @endif
+                    </td>
+                    <td class="px-5 py-3.5" id="sms-status-cell-{{ $guest->id }}" data-label="SMS Message">
+                        @if($guest->latestSmsMessage)
+                        <span class="badge {{ $guest->latestSmsMessage->simple_status_badge_class }}">{{ $guest->latestSmsMessage->simple_status_label }}</span>
+                        @else
+                        <span class="badge bg-amber-100 text-amber-700">Pending</span>
+                        @endif
                     </td>
                     <td class="px-5 py-3.5 mobile-actions" data-label="">
                         <div class="flex items-center gap-1 rounded-xl border border-surface-100 bg-surface-50/60 p-1">
@@ -661,27 +635,22 @@
     }
 
     function renderMessageStatus(status) {
-        if (!status) {
-            return '<span class="text-xs text-surface-400">Not sent</span>';
-        }
+        const label = ({
+            queued: 'Pending',
+            accepted: 'Sent',
+            sent: 'Sent',
+            delivered: 'Delivered',
+            read: 'Read',
+            failed: 'Pending',
+        })[status?.state] || 'Pending';
+        const badgeClass = ({
+            Pending: 'bg-amber-100 text-amber-700',
+            Sent: 'bg-green-100 text-green-700',
+            Delivered: 'bg-emerald-100 text-emerald-700',
+            Read: 'bg-teal-100 text-teal-700',
+        })[label];
 
-        const details = [status.message_type, status.updated_at].filter(Boolean).map(escapeHtml).join(' &middot; ');
-        const label = status.message_type && status.message_type.endsWith(' SMS')
-            ? 'SMS ' + (status.label || 'Unknown')
-            : (status.label || 'Unknown');
-        let html = '<span class="badge ' + escapeHtml(status.badge_class || 'bg-surface-100 text-surface-600') + '">' +
-            escapeHtml(label) + '</span>';
-
-        if (details) {
-            html += '<div class="text-xs text-surface-400 mt-1">' + details + '</div>';
-        }
-
-        if (status.state === 'failed' && status.error_message) {
-            const error = escapeHtml(status.error_message);
-            html += '<div class="text-xs text-red-500 mt-1 max-w-[190px] truncate" title="' + error + '">' + error + '</div>';
-        }
-
-        return html;
+        return '<span class="badge ' + badgeClass + '">' + label + '</span>';
     }
 
     function showGuestToast(message, type) {

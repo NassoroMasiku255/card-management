@@ -90,7 +90,7 @@ class NextSmsService
                 ->orderBy('id')
                 ->get()
                 ->map(fn ($method) => "{$method->payment_name}: {$method->payment_number}")
-                ->implode('; ');
+                ->implode("\n");
 
             if ($paymentDetails === '') {
                 $paymentNumber = (string) config('services.nextsms.reminder_payment_number');

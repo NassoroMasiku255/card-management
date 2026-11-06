@@ -516,8 +516,17 @@ class InvitationController extends Controller
             });
         }
 
-        if (in_array($sendStatus = $request->input('send_status'), ['pending', 'sent', 'failed', 'delivered', 'read'], true)) {
-            $query->where('send_status', $sendStatus);
+        $sendStatuses = match ($request->input('send_status')) {
+            'pending' => ['pending', 'failed'],
+            'failed' => ['failed'],
+            'sent' => ['sent'],
+            'delivered' => ['delivered'],
+            'read' => ['read'],
+            default => [],
+        };
+
+        if ($sendStatuses !== []) {
+            $query->whereIn('send_status', $sendStatuses);
         }
 
         if (in_array($rsvp = $request->input('rsvp'), ['pending', 'attending', 'not_attending'], true)) {

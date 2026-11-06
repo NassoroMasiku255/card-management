@@ -99,7 +99,7 @@ class NextSmsTest extends TestCase
             ->assertOk();
 
         $message = SmsMessage::where('message_type', 'reminder')->latest('id')->firstOrFail();
-        $this->assertStringContainsString('M-Pesa: 0755000111; CRDB: 0155000222', $message->text);
+        $this->assertStringContainsString("M-Pesa: 0755000111\nCRDB: 0155000222", $message->text);
         $this->assertStringNotContainsString('Legacy Global Account', $message->text);
         $this->assertStringNotContainsString('00000000', $message->text);
     }
@@ -211,12 +211,14 @@ class NextSmsTest extends TestCase
         $this->actingAs($user)
             ->get(route('events.guests.index', $event))
             ->assertOk()
-            ->assertSee('SMS Sent');
+            ->assertSee('SMS Message')
+            ->assertSee('Sent');
 
         $this->actingAs($user)
             ->get(route('events.invitations.index', $event))
             ->assertOk()
-            ->assertSee('SMS Sent')
+            ->assertSee('SMS Message')
+            ->assertSee('Sent')
             ->assertSee('Send invitation SMS');
     }
 

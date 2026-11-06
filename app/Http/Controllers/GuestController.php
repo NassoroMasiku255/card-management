@@ -46,9 +46,18 @@ class GuestController extends Controller
         }
 
         if ($messageStatus = $request->input('message_status')) {
-            $query->whereHas('latestWhatsAppMessage', function ($q) use ($messageStatus) {
-                $q->where('status', $messageStatus);
-            });
+            $statuses = match ($messageStatus) {
+                'pending' => ['queued', 'failed'],
+                'failed' => ['failed'],
+                'sent' => ['accepted', 'sent'],
+                'delivered' => ['delivered'],
+                'read' => ['read'],
+                default => [],
+            };
+
+            if ($statuses !== []) {
+                $query->whereHas('latestWhatsAppMessage', fn ($q) => $q->whereIn('status', $statuses));
+            }
         }
 
         if ($paymentStatus = $request->input('payment_status')) {
