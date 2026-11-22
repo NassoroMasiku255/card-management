@@ -8,6 +8,7 @@ use App\Models\GuestPayment;
 use App\Models\Invitation;
 use App\Models\WhatsAppMessage;
 use App\Models\WhatsAppTemplate;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -462,6 +463,21 @@ class WhatsAppService
             ],
         ];
 
+        // Every message is paid for from the event's WhatsApp balance. The
+        // credit is reserved up front and given back if Meta rejects the send.
+        $billedEvent = $event ?? $invitation?->event ?? $guest?->event;
+
+        if ($billedEvent && ! $billedEvent->reserveMessageCredit(Event::CHANNEL_WHATSAPP)) {
+            Log::channel('whatsapp')->warning('WhatsApp message blocked: event has no WhatsApp balance', [
+                'event_id' => $billedEvent->id,
+                'to' => $phone,
+                'template' => $templateName,
+                'message_type' => $messageType,
+            ]);
+
+            return false;
+        }
+
         $message = WhatsAppMessage::create([
             'event_id' => $invitation?->event_id ?? $event?->id ?? $guest?->event_id,
             'guest_id' => $invitation?->guest_id ?? $guest?->id,
@@ -475,12 +491,18 @@ class WhatsAppService
             'payload' => $payload,
         ]);
 
+        $creditSpent = false;
+
         try {
             $response = Http::withToken($this->accessToken)
                 ->post("{$this->apiUrl}/{$this->phoneNumberId}/messages", $payload);
 
             if ($response->successful()) {
                 $messageId = $response->json('messages.0.id');
+
+                // Meta accepted the message, so the reserved credit is now spent.
+                $billedEvent?->recordMessageUsage(Event::CHANNEL_WHATSAPP, $messageType, Auth::id());
+                $creditSpent = true;
 
                 $message->update([
                     'whatsapp_message_id' => $messageId,
@@ -503,6 +525,8 @@ class WhatsAppService
 
                 return true;
             }
+
+            $billedEvent?->releaseMessageCredit(Event::CHANNEL_WHATSAPP);
 
             $error = $response->json('error', []);
 
@@ -533,6 +557,10 @@ class WhatsAppService
             return false;
 
         } catch (\Throwable $e) {
+            if (! $creditSpent) {
+                $billedEvent?->releaseMessageCredit(Event::CHANNEL_WHATSAPP);
+            }
+
             $message->update([
                 'status' => WhatsAppMessage::STATUS_FAILED,
                 'error' => ['message' => $e->getMessage()],

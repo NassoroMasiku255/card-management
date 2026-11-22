@@ -145,6 +145,7 @@
                 </div>
             </div>
 
+            @if(auth()->user()->isAdmin())
             <div class="rounded-xl border border-green-200 bg-green-50/60 p-4">
                 <label class="flex cursor-pointer items-start gap-3">
                     <input type="checkbox" name="payment_thank_you_enabled" value="1"
@@ -160,6 +161,23 @@
                     </span>
                 </label>
             </div>
+            @else
+            <div class="rounded-xl border border-surface-200 bg-surface-50 p-4">
+                <div class="flex items-start justify-between gap-3">
+                    <div>
+                        <p class="text-sm font-semibold text-surface-800">
+                            <i class="fab fa-whatsapp mr-1 text-surface-400"></i> Payment thank-you messages
+                        </p>
+                        <p class="mt-1 text-xs leading-relaxed text-surface-500">
+                            Only an administrator can turn this on or off for an event.
+                        </p>
+                    </div>
+                    <span class="badge shrink-0 {{ $event->payment_thank_you_enabled ? 'bg-green-100 text-green-700' : 'bg-surface-100 text-surface-500' }}">
+                        {{ $event->payment_thank_you_enabled ? 'Enabled' : 'Disabled' }}
+                    </span>
+                </div>
+            </div>
+            @endif
 
             <div class="flex items-center justify-between pt-4">
                 <button type="button" onclick="document.getElementById('delete-event-form').requestSubmit()" class="text-red-600 hover:text-red-700 font-medium text-sm">

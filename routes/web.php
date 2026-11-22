@@ -7,6 +7,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EventBudgetController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\EventPaymentMethodController;
+use App\Http\Controllers\EventMessageBalanceController;
 use App\Http\Controllers\EventMessageReportController;
 use App\Http\Controllers\EventReportController;
 use App\Http\Controllers\GuestController;
@@ -73,6 +74,9 @@ Route::middleware('auth')->group(function () {
 
         Route::get('/report', [EventReportController::class, 'show'])->name('report');
         Route::get('/messages-report', [EventMessageReportController::class, 'show'])->name('messages.report');
+        Route::get('/messages/buy', [EventMessageBalanceController::class, 'buy'])->name('messages.buy');
+        Route::post('/messages/buy', [EventMessageBalanceController::class, 'submitPurchase'])->name('messages.buy.submit');
+        Route::post('/messages/balance', [EventMessageBalanceController::class, 'store'])->name('messages.balance.store');
         Route::get('/countdown-card', [EventController::class, 'countdownCard'])->name('countdown-card');
 
         // Event budget & vendor management

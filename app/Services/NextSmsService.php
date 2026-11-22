@@ -7,6 +7,7 @@ use App\Models\Guest;
 use App\Models\Invitation;
 use App\Models\SmsMessage;
 use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 
@@ -34,6 +35,12 @@ class NextSmsService
             return $this->markFailed($message, 'NextSMS credentials or guest phone number are missing.');
         }
 
+        // Every SMS is paid for from the event's SMS balance. The credit is
+        // reserved up front and given back if NextSMS does not accept it.
+        if (! $event->reserveMessageCredit(Event::CHANNEL_SMS)) {
+            return $this->markFailed($message, 'This event has no SMS balance left. Add SMS balance to send messages.');
+        }
+
         try {
             $response = Http::withToken($token)
                 ->acceptJson()
@@ -50,6 +57,8 @@ class NextSmsService
             $body = $response->json();
 
             if (! $response->successful()) {
+                $event->releaseMessageCredit(Event::CHANNEL_SMS);
+
                 $error = data_get($body, 'message')
                     ?? data_get($body, 'error')
                     ?? $response->body()
@@ -74,7 +83,11 @@ class NextSmsService
                 'status_updated_at' => now(),
                 'sent_at' => now(),
             ]);
+
+            $event->recordMessageUsage(Event::CHANNEL_SMS, $messageType, Auth::id());
         } catch (ConnectionException $exception) {
+            $event->releaseMessageCredit(Event::CHANNEL_SMS);
+
             return $this->markFailed($message, $exception->getMessage());
         }
 

@@ -8,110 +8,85 @@
     $accent = $event->card_accent_color ?: '#e11d48';
 @endphp
 
-<!-- Event header -->
-<div class="relative mb-5 overflow-hidden rounded-2xl border border-surface-200 bg-white p-5 shadow-soft sm:p-6">
-    <div class="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full opacity-[0.12] blur-3xl" style="background: {{ $accent }};"></div>
-    <div class="pointer-events-none absolute -bottom-24 right-1/3 h-40 w-40 rounded-full bg-gold-300/20 blur-3xl"></div>
-
-    <div class="relative">
-        <a href="{{ route('events.show', $event) }}" class="inline-flex items-center gap-1.5 text-xs font-medium text-surface-400 transition hover:text-surface-700">
-            <i class="fas fa-arrow-left text-[10px]"></i> Back to {{ $event->name }}
-        </a>
-
-        <div class="mt-3 flex flex-wrap items-start justify-between gap-4">
-            <div class="flex min-w-0 items-start gap-3.5">
-                <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl shadow-soft" style="background: {{ $accent }}14; color: {{ $accent }};">
-                    <i class="fas fa-users text-lg"></i>
-                </div>
-                <div class="min-w-0">
-                    <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-primary-600">Guest directory</p>
-                    <h1 class="mt-1 font-display text-2xl font-bold text-surface-900 sm:text-3xl">Guests</h1>
-                    <div class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-surface-500">
-                        <span><i class="fas fa-calendar-days mr-1.5 text-surface-400"></i>{{ $event->event_date->format('d M Y') }}</span>
-                        <span><i class="fas fa-location-dot mr-1.5 text-surface-400"></i>{{ $event->location }}</span>
-                        <span class="inline-flex items-center gap-1.5 rounded-full bg-surface-50 px-2.5 py-1 font-semibold text-surface-600">
-                            <i class="fas fa-arrow-down-a-z text-[9px] text-surface-400"></i>Sorted A–Z
-                        </span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:items-center sm:gap-2.5">
-                <a href="{{ route('events.guests.create', $event) }}" class="btn btn-primary btn-sm col-span-2 sm:col-span-1">
-                    <i class="fas fa-plus"></i> Add Guest
-                </a>
-                <a href="{{ route('events.guests.export', $event) }}" class="btn btn-outline btn-sm"
-                    data-loading-text="Preparing guest export..." data-loading-hint="Your file will download automatically."
-                    data-loading-timeout="3000">
-                    <i class="fas fa-download"></i> Export
-                </a>
-                <a href="{{ route('events.guests.import', $event) }}" class="btn btn-success btn-sm">
-                    <i class="fas fa-file-import"></i> Import
-                </a>
-            </div>
-        </div>
+<!-- Breadcrumb -->
+<div class="mb-4 flex flex-wrap items-center justify-between gap-2">
+    <a href="{{ route('events.show', $event) }}" class="text-sm font-medium text-surface-500 transition hover:text-surface-800">
+        <i class="fas fa-arrow-left mr-1.5"></i> Back to {{ $event->name }}
+    </a>
+    <div class="flex items-center gap-2 text-xs text-surface-400">
+        <span class="max-w-[160px] truncate">{{ $event->name }}</span>
+        <i class="fas fa-chevron-right text-[8px]"></i>
+        <span class="font-medium text-surface-600">Guests</span>
     </div>
 </div>
 
+<!-- Header -->
+<div class="card-surface mb-6 overflow-hidden border-l-4 border-primary-500">
+
+    <div class="flex flex-col gap-5 p-5 sm:p-6 lg:flex-row lg:items-start lg:justify-between">
+        <div class="min-w-0">
+            <h1 class="font-display text-2xl font-bold leading-tight text-surface-900 sm:text-3xl">Guests</h1>
+            <div class="mt-2.5 flex flex-wrap items-center gap-x-5 gap-y-1.5 text-sm text-surface-600">
+                <span><i class="fas fa-calendar mr-1.5 text-surface-400"></i>{{ $event->event_date->format('d M Y') }}</span>
+                <span><i class="fas fa-location-dot mr-1.5 text-surface-400"></i>{{ $event->location }}</span>
+                <span><i class="fas fa-arrow-down-a-z mr-1.5 text-surface-400"></i>Sorted A–Z</span>
+            </div>
+        </div>
+
+        <div class="grid w-full shrink-0 grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:items-center">
+            <a href="{{ route('events.guests.create', $event) }}" class="btn btn-primary col-span-2 sm:col-span-1">
+                <i class="fas fa-plus"></i> Add Guest
+            </a>
+            <a href="{{ route('events.guests.export', $event) }}" class="btn btn-outline"
+                data-loading-text="Preparing guest export..." data-loading-hint="Your file will download automatically."
+                data-loading-timeout="3000">
+                <i class="fas fa-download"></i> Export
+            </a>
+            <a href="{{ route('events.guests.import', $event) }}" class="btn btn-outline">
+                <i class="fas fa-file-import"></i> Import
+            </a>
+        </div>
+    </div>
+
+    @include('events.partials.section-nav', ['active' => 'guests'])
+</div>
+
 <!-- Guest summary -->
-<div class="mb-5 grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
-    <div class="card-surface card-surface-hover p-4 sm:p-5">
-        <div class="flex items-start justify-between gap-3">
-            <div>
-                <p class="text-[10px] font-bold uppercase tracking-[0.14em] text-surface-400">Total guests</p>
-                <p class="mt-2 text-2xl font-bold text-surface-900 sm:text-3xl">{{ number_format($summary['total']) }}</p>
-                <p class="mt-1 text-[11px] text-surface-400">On the guest list</p>
-            </div>
-            <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-50 text-primary-600"><i class="fas fa-users"></i></span>
-        </div>
+<div class="mb-6 grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-surface-200 bg-surface-200 shadow-soft lg:grid-cols-4">
+    <div class="bg-white p-4 sm:p-5">
+        <p class="text-xs font-medium text-surface-500">Total guests</p>
+        <p class="mt-1.5 text-2xl font-semibold tracking-tight text-surface-900">{{ number_format($summary['total']) }}</p>
+        <p class="mt-1 text-xs text-surface-400">On the guest list</p>
     </div>
-    <div class="card-surface card-surface-hover p-4 sm:p-5">
-        <div class="flex items-start justify-between gap-3">
-            <div>
-                <p class="text-[10px] font-bold uppercase tracking-[0.14em] text-green-600/70">Invited</p>
-                <p class="mt-2 text-2xl font-bold text-green-600 sm:text-3xl">{{ number_format($summary['invited']) }}</p>
-                <p class="mt-1 text-[11px] text-surface-400">Invitations delivered</p>
-            </div>
-            <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-green-50 text-green-600"><i class="fas fa-paper-plane"></i></span>
-        </div>
+    <div class="bg-white p-4 sm:p-5">
+        <p class="text-xs font-medium text-surface-500">Invited</p>
+        <p class="mt-1.5 text-2xl font-semibold tracking-tight text-surface-900">{{ number_format($summary['invited']) }}</p>
+        <p class="mt-1 text-xs text-surface-400">Invitations delivered</p>
     </div>
-    <div class="card-surface card-surface-hover p-4 sm:p-5">
-        <div class="flex items-start justify-between gap-3">
-            <div>
-                <p class="text-[10px] font-bold uppercase tracking-[0.14em] text-blue-600/70">Attending</p>
-                <p class="mt-2 text-2xl font-bold text-blue-600 sm:text-3xl">{{ number_format($summary['attending']) }}</p>
-                <p class="mt-1 text-[11px] text-surface-400">Confirmed via RSVP</p>
-            </div>
-            <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600"><i class="fas fa-envelope-circle-check"></i></span>
-        </div>
+    <div class="bg-white p-4 sm:p-5">
+        <p class="text-xs font-medium text-surface-500">Attending</p>
+        <p class="mt-1.5 text-2xl font-semibold tracking-tight text-surface-900">{{ number_format($summary['attending']) }}</p>
+        <p class="mt-1 text-xs text-surface-400">Confirmed via RSVP</p>
     </div>
-    <div class="card-surface card-surface-hover p-4 sm:p-5">
-        <div class="flex items-start justify-between gap-3">
-            <div>
-                <p class="text-[10px] font-bold uppercase tracking-[0.14em] text-gold-600/80">Checked in</p>
-                <p class="mt-2 text-2xl font-bold text-gold-600 sm:text-3xl">{{ number_format($summary['checked_in']) }}</p>
-                <p class="mt-1 text-[11px] text-surface-400">Arrived at the event</p>
-            </div>
-            <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-gold-50 text-gold-600"><i class="fas fa-qrcode"></i></span>
-        </div>
+    <div class="bg-white p-4 sm:p-5">
+        <p class="text-xs font-medium text-surface-500">Checked in</p>
+        <p class="mt-1.5 text-2xl font-semibold tracking-tight text-surface-900">{{ number_format($summary['checked_in']) }}</p>
+        <p class="mt-1 text-xs text-surface-400">Arrived at the event</p>
     </div>
 </div>
 
 <!-- Search & Filter -->
-<div class="card-surface mb-4 overflow-hidden">
-    <div class="flex flex-wrap items-center justify-between gap-2 border-b border-surface-100 px-4 py-3 sm:px-5">
-        <div class="flex items-center gap-2.5">
-            <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-surface-100 text-surface-500"><i class="fas fa-sliders text-xs"></i></div>
-            <div>
-                <h2 class="text-xs font-semibold text-surface-800">Find a guest</h2>
-                <p class="text-[10px] text-surface-400">Search and narrow down the guest list</p>
-            </div>
+<div class="card-surface mb-5 overflow-hidden">
+    <div class="flex flex-wrap items-center justify-between gap-2 px-4 pt-4 sm:px-5">
+        <div>
+            <h2 class="text-sm font-semibold text-surface-900">Find a guest</h2>
+            <p class="mt-0.5 text-xs text-surface-500">Search and narrow down the guest list</p>
         </div>
         @if(request()->hasAny(['search', 'per_page', 'card_type', 'payment_status', 'rsvp', 'message_status']))
-        <span class="rounded-full bg-primary-50 px-2.5 py-1 text-[10px] font-semibold text-primary-600">Filters active</span>
+        <span class="badge bg-primary-50 text-primary-700">Filters active</span>
         @endif
     </div>
-    <div class="p-4">
+    <div class="p-4 sm:px-5">
     <form method="GET" action="{{ route('events.guests.index', $event) }}" class="filter-bar"
         data-live-filter data-loading-text="Filtering guests...">
         <div class="filter-search">
@@ -159,7 +134,7 @@
 </div>
 
 @if($canSendWhatsApp)
-<div id="guestBulkBar" class="hidden card-surface mb-4 border-l-4 border-green-500 px-4 py-3">
+<div id="guestBulkBar" class="hidden card-surface mb-5 px-4 py-3 sm:px-5">
     <div class="flex flex-wrap items-center justify-between gap-3">
         <p class="flex items-center gap-2 text-sm text-surface-700">
             <span class="flex h-7 w-7 items-center justify-center rounded-full bg-green-100 text-xs font-bold text-green-700"><span id="guestSelectedCount">0</span></span>
@@ -175,25 +150,21 @@
 </div>
 @endif
 
-<div class="mb-3 flex flex-wrap items-end justify-between gap-3">
-    <div>
-        <h2 class="font-display text-lg font-bold text-surface-900">Guest list</h2>
-        <p class="mt-0.5 text-xs text-surface-400">Payments, RSVP replies and message delivery at a glance</p>
-    </div>
-    <span class="rounded-full bg-surface-100 px-3 py-1 text-[11px] font-semibold text-surface-500">
-        {{ $guests instanceof \Illuminate\Contracts\Pagination\LengthAwarePaginator ? number_format($guests->total()) : number_format($guests->count()) }} guests
-    </span>
-</div>
-
 <div class="card-surface overflow-hidden">
-    @if($guests->isEmpty())
-    <div class="px-6 py-16 text-center">
-        <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-primary-50 to-gold-50 text-primary-400">
-            <i class="fas fa-user-plus text-xl"></i>
+    <div class="flex flex-wrap items-center justify-between gap-3 border-b border-surface-100 px-5 py-4 sm:px-6">
+        <div>
+            <h2 class="text-sm font-semibold text-surface-900">Guest list</h2>
+            <p class="mt-0.5 text-xs text-surface-500">Payments, RSVP replies and message delivery at a glance</p>
         </div>
-        <h3 class="mt-4 font-display text-lg font-bold text-surface-800">No guests found</h3>
-        <p class="mt-1 text-sm text-surface-400">Add guests manually or import them from Excel to get started.</p>
-        <div class="mt-5 flex flex-wrap justify-center gap-2">
+        <span class="badge bg-surface-100 text-surface-600">
+            {{ $guests instanceof \Illuminate\Contracts\Pagination\LengthAwarePaginator ? number_format($guests->total()) : number_format($guests->count()) }} guests
+        </span>
+    </div>
+    @if($guests->isEmpty())
+    <div class="px-6 py-12 text-center">
+        <p class="text-sm font-medium text-surface-700">No guests found</p>
+        <p class="mt-1 text-xs text-surface-500">Add guests manually or import them from Excel to get started.</p>
+        <div class="mt-4 flex flex-wrap justify-center gap-2">
             <a href="{{ route('events.guests.create', $event) }}" class="btn btn-primary btn-sm"><i class="fas fa-plus"></i> Add guest</a>
             <a href="{{ route('events.guests.import', $event) }}" class="btn btn-outline btn-sm"><i class="fas fa-file-import"></i> Import list</a>
         </div>
@@ -201,22 +172,21 @@
     @else
     <div class="overflow-x-auto responsive-table-wrap">
         <table class="w-full responsive-table">
-            <thead class="bg-surface-50/80">
-                <tr>
+            <thead>
+                <tr class="border-b border-surface-100">
                     @if($canSendWhatsApp)
-                    <th class="px-4 py-3.5 text-left">
+                    <th class="py-2.5 pl-5 pr-2 text-left sm:pl-6">
                         <input type="checkbox" id="selectAllGuests" class="h-4 w-4 rounded border-surface-300 text-green-600 focus:ring-green-500" title="Select all guests shown">
                     </th>
                     @endif
-                    <th class="px-5 py-3.5 text-left text-[10px] font-bold uppercase tracking-[0.12em] text-surface-400">Guest ID</th>
-                    <th class="px-5 py-3.5 text-left text-[10px] font-bold uppercase tracking-[0.12em] text-surface-400">Guest</th>
-                    <th class="px-5 py-3.5 text-left text-[10px] font-bold uppercase tracking-[0.12em] text-surface-400">Phone</th>
-                    <th class="px-5 py-3.5 text-left text-[10px] font-bold uppercase tracking-[0.12em] text-surface-400">Card</th>
-                    <th class="px-5 py-3.5 text-left text-[10px] font-bold uppercase tracking-[0.12em] text-surface-400">Payment</th>
-                    <th class="px-5 py-3.5 text-left text-[10px] font-bold uppercase tracking-[0.12em] text-surface-400">RSVP</th>
-                    <th class="px-5 py-3.5 text-left text-[10px] font-bold uppercase tracking-[0.12em] text-surface-400">WhatsApp Message</th>
-                    <th class="px-5 py-3.5 text-left text-[10px] font-bold uppercase tracking-[0.12em] text-surface-400">SMS Message</th>
-                    <th class="px-5 py-3.5 text-left text-[10px] font-bold uppercase tracking-[0.12em] text-surface-400">Actions</th>
+                    <th class="whitespace-nowrap px-3 py-2.5 text-left text-xs font-medium text-surface-500">Guest</th>
+                    <th class="whitespace-nowrap px-3 py-2.5 text-left text-xs font-medium text-surface-500">Phone</th>
+                    <th class="whitespace-nowrap px-3 py-2.5 text-left text-xs font-medium text-surface-500">Card</th>
+                    <th class="whitespace-nowrap px-3 py-2.5 text-left text-xs font-medium text-surface-500">Payment</th>
+                    <th class="whitespace-nowrap px-3 py-2.5 text-left text-xs font-medium text-surface-500">RSVP</th>
+                    <th class="whitespace-nowrap px-3 py-2.5 text-left text-xs font-medium text-surface-500">WhatsApp</th>
+                    <th class="whitespace-nowrap px-3 py-2.5 text-left text-xs font-medium text-surface-500">SMS</th>
+                    <th class="whitespace-nowrap px-3 py-2.5 text-left text-xs font-medium text-surface-500">Actions</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-surface-100">
@@ -229,49 +199,47 @@
                     $progressTone = $guest->balance > 0 ? 'bg-amber-500' : 'bg-green-500';
                     $pledgedCardType = $event->cardTypeForAmount($pledgedAmount);
                 @endphp
-                <tr class="group transition hover:bg-primary-50/30" id="guest-row-{{ $guest->id }}">
+                <tr class="transition hover:bg-surface-50" id="guest-row-{{ $guest->id }}">
                     @if($canSendWhatsApp)
-                    <td class="px-4 py-3.5 mobile-select" data-label="">
+                    <td class="py-3 pl-5 pr-2 sm:pl-6 mobile-select" data-label="">
                         <input type="checkbox" class="guest-checkbox h-4 w-4 rounded border-surface-300 text-green-600 focus:ring-green-500"
                             value="{{ $guest->id }}" aria-label="Select {{ $guest->full_name }}">
                     </td>
                     @endif
-                    <td class="px-5 py-3.5" data-label="Guest ID">
-                        <span class="inline-flex rounded-md border border-surface-100 bg-surface-50 px-2 py-1 font-mono text-[10px] text-surface-500">{{ $guest->unique_id }}</span>
-                    </td>
-                    <td class="px-5 py-3.5" data-label="Guest">
+                    <td class="px-3 py-3" data-label="Guest">
                         <div class="flex items-center gap-3">
-                            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary-100 to-gold-100 text-[11px] font-bold text-primary-700">{{ $initials }}</div>
+                            <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-surface-100 text-[11px] font-semibold text-surface-600">{{ $initials }}</div>
                             <div class="min-w-0">
-                                <div class="font-semibold text-surface-900">{{ $guest->full_name }}</div>
+                                <div class="text-sm font-medium text-surface-900 lg:whitespace-nowrap">{{ $guest->full_name }}</div>
                                 <div class="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-surface-400">
+                                    <span class="font-mono">{{ $guest->unique_id }}</span>
                                     @if($guest->category)<span><i class="fas fa-tag mr-1 text-[9px]"></i>{{ $guest->category }}</span>@endif
                                     @if($guest->table_number)<span><i class="fas fa-chair mr-1 text-[9px]"></i>Table {{ $guest->table_number }}</span>@endif
                                 </div>
                             </div>
                         </div>
                     </td>
-                    <td class="px-5 py-3.5 text-sm text-surface-600" data-label="Phone">
+                    <td class="px-3 py-3 text-sm text-surface-600" data-label="Phone">
                         @if($guest->phone_number)
-                        <a href="tel:{{ $guest->phone_number }}" class="inline-flex items-center gap-1.5 transition hover:text-primary-600">
-                            <i class="fas fa-phone text-[10px] text-surface-300"></i>{{ $guest->phone_number }}
+                        <a href="tel:{{ $guest->phone_number }}" class="whitespace-nowrap transition hover:text-primary-600">
+                            {{ $guest->phone_number }}
                         </a>
                         @else
                         <span class="text-surface-300">—</span>
                         @endif
                     </td>
-                    <td class="px-5 py-3.5" data-label="Card">
-                        <span class="badge gap-1.5 {{ $pledgedCardType === 'double' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700' }}">
-                            <i class="fas {{ $pledgedCardType === 'double' ? 'fa-user-group' : 'fa-user' }} text-[9px]"></i>{{ ucfirst($pledgedCardType) }}
+                    <td class="px-3 py-3" data-label="Card">
+                        <span class="badge {{ $pledgedCardType === 'double' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700' }}">
+                            {{ ucfirst($pledgedCardType) }}
                         </span>
                     </td>
-                    <td class="px-5 py-3.5" data-label="Payment">
-                        <div class="min-w-[150px]">
+                    <td class="px-3 py-3" data-label="Payment">
+                        <div class="min-w-[140px]">
                             <div class="flex items-center justify-between gap-2 text-xs">
                                 <span class="font-semibold text-surface-900">{{ number_format($paidAmount) }}</span>
                                 <span class="text-surface-400">/ {{ number_format($pledgedAmount) }} TZS</span>
                             </div>
-                            <div class="mt-1.5 h-1.5 overflow-hidden rounded-full bg-surface-100">
+                            <div class="mt-1.5 h-1 overflow-hidden rounded-full bg-surface-100">
                                 <div class="h-full rounded-full {{ $progressTone }}" style="width: {{ $paymentRate }}%;"></div>
                             </div>
                             <div class="mt-1.5 flex flex-wrap items-center gap-1.5">
@@ -284,7 +252,7 @@
                             </div>
                         </div>
                     </td>
-                    <td class="px-5 py-3.5" data-label="RSVP">
+                    <td class="px-3 py-3" data-label="RSVP">
                         @if($guest->invitation)
                         <span class="badge gap-1.5
                             {{ $guest->invitation->rsvp_status === 'attending' ? 'bg-green-100 text-green-700' : '' }}
@@ -297,22 +265,22 @@
                         <span class="text-xs text-surface-300">No invitation</span>
                         @endif
                     </td>
-                    <td class="px-5 py-3.5" id="whatsapp-status-cell-{{ $guest->id }}" data-label="WhatsApp Message">
+                    <td class="px-3 py-3" id="whatsapp-status-cell-{{ $guest->id }}" data-label="WhatsApp Message">
                         @if($guest->latestWhatsAppMessage)
                         <span class="badge {{ $guest->latestWhatsAppMessage->simple_status_badge_class }}">{{ $guest->latestWhatsAppMessage->simple_status_label }}</span>
                         @else
                         <span class="badge bg-amber-100 text-amber-700">Pending</span>
                         @endif
                     </td>
-                    <td class="px-5 py-3.5" id="sms-status-cell-{{ $guest->id }}" data-label="SMS Message">
+                    <td class="px-3 py-3" id="sms-status-cell-{{ $guest->id }}" data-label="SMS Message">
                         @if($guest->latestSmsMessage)
                         <span class="badge {{ $guest->latestSmsMessage->simple_status_badge_class }}">{{ $guest->latestSmsMessage->simple_status_label }}</span>
                         @else
                         <span class="badge bg-amber-100 text-amber-700">Pending</span>
                         @endif
                     </td>
-                    <td class="px-5 py-3.5 mobile-actions" data-label="">
-                        <div class="flex items-center gap-1 rounded-xl border border-surface-100 bg-surface-50/60 p-1">
+                    <td class="px-3 py-3 mobile-actions" data-label="">
+                        <div class="flex items-center gap-0.5">
                             <button type="button"
                                 onclick="openPaymentModal(this)"
                                 data-url="{{ route('events.guests.payments.store', [$event, $guest]) }}"
@@ -356,7 +324,7 @@
         </table>
     </div>
 
-    <div class="border-t border-surface-100 px-5 py-4">
+    <div class="border-t border-surface-100 px-5 py-3.5 sm:px-6">
         @if($guests instanceof \Illuminate\Contracts\Pagination\LengthAwarePaginator)
         <div class="flex flex-wrap items-center justify-between gap-3">
             <p class="text-xs text-surface-400">
@@ -825,11 +793,14 @@
         progressBar.style.width = '0%';
         progressText.textContent = '0 of ' + ids.length + ' processed';
 
+        let balanceMessage = null;
+
         for (let index = 0; index < ids.length; index++) {
             if (stopMessageSend) break;
 
             const guestId = ids[index];
             const statusCell = document.getElementById('whatsapp-status-cell-' + guestId);
+            const previousStatusHtml = statusCell ? statusCell.innerHTML : '';
 
             if (statusCell) {
                 statusCell.innerHTML = '<span class="text-xs text-surface-400"><i class="fas fa-spinner fa-spin mr-1"></i>Sending...</span>';
@@ -853,6 +824,12 @@
                     data = await response.json();
                 } catch (error) {
                     data = {};
+                }
+
+                if (data.reason === 'insufficient_balance') {
+                    if (statusCell) statusCell.innerHTML = previousStatusHtml;
+                    balanceMessage = data.message;
+                    break;
                 }
 
                 if (statusCell) {
@@ -892,7 +869,10 @@
         let summary = sent + ' message' + (sent === 1 ? '' : 's') + ' accepted' +
             (failed ? ', ' + failed + ' failed' : '');
         summary = (stopped ? 'Stopped. ' : '') + summary + '. Refresh later for delivery and RSVP updates.';
-        showGuestToast(summary, failed ? 'warning' : 'success');
+        if (balanceMessage) {
+            summary = balanceMessage + (sent ? ' ' + sent + ' message' + (sent === 1 ? ' was' : 's were') + ' accepted before it ran out.' : '');
+        }
+        showGuestToast(summary, failed || balanceMessage ? 'warning' : 'success');
     });
 
     document.getElementById('smsForm')?.addEventListener('submit', async function (event) {
@@ -930,7 +910,7 @@
                 data = {};
             }
 
-            if (statusCell) {
+            if (statusCell && data.reason !== 'insufficient_balance') {
                 statusCell.innerHTML = renderMessageStatus(data.status);
             }
 

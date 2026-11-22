@@ -146,6 +146,10 @@ class InvitationController extends Controller
             'template_language' => 'nullable|string|max:32',
         ]);
 
+        if (! $event->hasMessageBalance(Event::CHANNEL_WHATSAPP)) {
+            return $this->insufficientBalanceResponse($request, Event::CHANNEL_WHATSAPP);
+        }
+
         $this->validateCardImage($request);
         $this->storeCardImage($request, $event, $invitation);
 
@@ -192,10 +196,20 @@ class InvitationController extends Controller
             return back()->with('info', 'No pending invitations to send.');
         }
 
+        if (! $event->hasMessageBalance(Event::CHANNEL_WHATSAPP)) {
+            return back()->with('error', $this->insufficientBalanceMessage(Event::CHANNEL_WHATSAPP));
+        }
+
         $sent = 0;
         $failed = 0;
+        $skipped = 0;
 
         foreach ($pendingInvitations as $invitation) {
+            if (! $event->hasMessageBalance(Event::CHANNEL_WHATSAPP)) {
+                $skipped = $pendingInvitations->count() - $sent - $failed;
+                break;
+            }
+
             if ($this->whatsapp->sendInvitation($invitation)) {
                 $sent++;
             } else {
@@ -210,6 +224,11 @@ class InvitationController extends Controller
             'action' => 'bulk_invitations_sent',
             'description' => "Bulk send: {$sent} sent, {$failed} failed.",
         ]);
+
+        if ($skipped > 0) {
+            return back()->with('error', "Sent {$sent} invitations. {$failed} failed. {$skipped} not sent: "
+                .$this->insufficientBalanceMessage(Event::CHANNEL_WHATSAPP));
+        }
 
         return back()->with('success', "Sent {$sent} invitations. {$failed} failed.");
     }
@@ -228,6 +247,10 @@ class InvitationController extends Controller
             'template_name' => 'nullable|string|max:255',
             'template_language' => 'nullable|string|max:32',
         ]);
+
+        if (! $event->hasMessageBalance(Event::CHANNEL_WHATSAPP)) {
+            return $this->insufficientBalanceResponse($request, Event::CHANNEL_WHATSAPP);
+        }
 
         $this->validateCardImage($request);
         $this->storeCardImage($request, $event, $invitation);
@@ -273,6 +296,12 @@ class InvitationController extends Controller
 
         if ($request->message_type === 'invitation' && ! $this->qualifiesForInvitation($guest, $event)) {
             return $this->ineligibleInvitationResponse($request, $guest);
+        }
+
+        $balanceChannel = $channel === 'sms' ? Event::CHANNEL_SMS : Event::CHANNEL_WHATSAPP;
+
+        if (! $event->hasMessageBalance($balanceChannel)) {
+            return $this->insufficientBalanceResponse($request, $balanceChannel);
         }
 
         $invitation = $guest->invitation;
@@ -396,6 +425,10 @@ class InvitationController extends Controller
 
         if (! $this->qualifiesForInvitation($invitation->guest, $event)) {
             return $this->ineligibleInvitationResponse($request, $invitation->guest);
+        }
+
+        if (! $event->hasMessageBalance(Event::CHANNEL_SMS)) {
+            return $this->insufficientBalanceResponse($request, Event::CHANNEL_SMS);
         }
 
         $smsMessage = $this->sms->send($invitation->guest, $event, 'invitation', $invitation);
@@ -557,6 +590,28 @@ class InvitationController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => $message,
+            ], 422);
+        }
+
+        return back()->with('error', $message);
+    }
+
+    private function insufficientBalanceMessage(string $channel): string
+    {
+        $label = Event::MESSAGE_CHANNELS[$channel];
+
+        return "This event has no {$label} message balance left. Add {$label} balance on the Messages page to continue sending.";
+    }
+
+    private function insufficientBalanceResponse(Request $request, string $channel)
+    {
+        $message = $this->insufficientBalanceMessage($channel);
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success' => false,
+                'message' => $message,
+                'reason' => 'insufficient_balance',
             ], 422);
         }
 

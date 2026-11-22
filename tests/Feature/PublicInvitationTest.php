@@ -199,6 +199,7 @@ class PublicInvitationTest extends TestCase
             'location' => 'Dar es Salaam',
             'hall' => 'Main Hall',
         ], $eventAttributes));
+        $this->fundEvent($event);
 
         $guest = Guest::create([
             'event_id' => $event->id,

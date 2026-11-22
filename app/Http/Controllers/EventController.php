@@ -68,7 +68,8 @@ class EventController extends Controller
         $validated['event_time'] = $this->normalizeEventTime($validated['event_time'] ?? null);
         $validated['user_id'] = Auth::id();
         $validated['status'] = 'active';
-        $validated['payment_thank_you_enabled'] = $request->boolean('payment_thank_you_enabled');
+        // Thank-you messages stay off until an administrator turns them on.
+        $validated['payment_thank_you_enabled'] = false;
 
         if ($request->hasFile('cover_image')) {
             $validated['cover_image'] = $request->file('cover_image')->store('events/covers', 'public');
@@ -182,7 +183,13 @@ class EventController extends Controller
         ]);
 
         $validated['event_time'] = $this->normalizeEventTime($validated['event_time'] ?? null);
-        $validated['payment_thank_you_enabled'] = $request->boolean('payment_thank_you_enabled');
+
+        // Only an administrator can turn payment thank-you messages on or off.
+        if (Auth::user()->isAdmin()) {
+            $validated['payment_thank_you_enabled'] = $request->boolean('payment_thank_you_enabled');
+        } else {
+            unset($validated['payment_thank_you_enabled']);
+        }
 
         if ($request->hasFile('cover_image')) {
             if ($event->cover_image) {

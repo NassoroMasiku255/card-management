@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class Event extends Model
@@ -14,6 +15,15 @@ class Event extends Model
     public const DEFAULT_SINGLE_CARD_MINIMUM = 70000;
 
     public const DEFAULT_DOUBLE_CARD_MINIMUM = 100000;
+
+    public const CHANNEL_WHATSAPP = 'whatsapp';
+
+    public const CHANNEL_SMS = 'sms';
+
+    public const MESSAGE_CHANNELS = [
+        self::CHANNEL_WHATSAPP => 'WhatsApp',
+        self::CHANNEL_SMS => 'SMS',
+    ];
 
     protected $fillable = [
         'user_id', 'name', 'slug', 'event_date', 'event_time', 'location',
@@ -29,6 +39,8 @@ class Event extends Model
         'double_card_min_amount' => 'decimal:2',
         'payment_thank_you_enabled' => 'boolean',
         'estimated_guests' => 'integer',
+        'whatsapp_balance' => 'integer',
+        'sms_balance' => 'integer',
     ];
 
     protected static function boot()
@@ -97,6 +109,103 @@ class Event extends Model
     public function budgetItems(): HasMany
     {
         return $this->hasMany(EventBudgetItem::class);
+    }
+
+    public function messageCredits(): HasMany
+    {
+        return $this->hasMany(EventMessageCredit::class);
+    }
+
+    public function messageBalance(string $channel): int
+    {
+        return (int) $this->getAttribute($this->messageBalanceColumn($channel));
+    }
+
+    public function hasMessageBalance(string $channel): bool
+    {
+        return $this->messageBalance($channel) > 0;
+    }
+
+    /**
+     * Take one message from the balance before sending. Returns false when
+     * the balance is already zero, so concurrent sends can never overspend.
+     */
+    public function reserveMessageCredit(string $channel): bool
+    {
+        $column = $this->messageBalanceColumn($channel);
+
+        $reserved = static::whereKey($this->getKey())
+            ->where($column, '>', 0)
+            ->decrement($column) > 0;
+
+        $this->refreshMessageBalance($column);
+
+        return $reserved;
+    }
+
+    /**
+     * Give a reserved message back when the provider did not accept it.
+     */
+    public function releaseMessageCredit(string $channel): void
+    {
+        $column = $this->messageBalanceColumn($channel);
+
+        static::whereKey($this->getKey())->increment($column);
+
+        $this->refreshMessageBalance($column);
+    }
+
+    public function recordMessageUsage(string $channel, string $messageType, ?int $userId = null): EventMessageCredit
+    {
+        return $this->messageCredits()->create([
+            'user_id' => $userId,
+            'channel' => $channel,
+            'type' => EventMessageCredit::TYPE_USAGE,
+            'amount' => -1,
+            'balance_after' => $this->messageBalance($channel),
+            'message_type' => $messageType,
+        ]);
+    }
+
+    /**
+     * Manual top-up (positive amount) or correction (negative amount).
+     * A correction never takes the balance below zero.
+     */
+    public function adjustMessageBalance(string $channel, int $amount, ?int $userId = null, ?string $note = null): EventMessageCredit
+    {
+        $column = $this->messageBalanceColumn($channel);
+
+        return DB::transaction(function () use ($channel, $column, $amount, $userId, $note) {
+            $current = (int) static::whereKey($this->getKey())->lockForUpdate()->value($column);
+            $newBalance = max(0, $current + $amount);
+
+            static::whereKey($this->getKey())->update([$column => $newBalance]);
+            $this->refreshMessageBalance($column);
+
+            return $this->messageCredits()->create([
+                'user_id' => $userId,
+                'channel' => $channel,
+                'type' => $amount >= 0 ? EventMessageCredit::TYPE_TOPUP : EventMessageCredit::TYPE_ADJUSTMENT,
+                'amount' => $newBalance - $current,
+                'balance_after' => $newBalance,
+                'note' => $note,
+            ]);
+        });
+    }
+
+    private function messageBalanceColumn(string $channel): string
+    {
+        return match ($channel) {
+            self::CHANNEL_WHATSAPP => 'whatsapp_balance',
+            self::CHANNEL_SMS => 'sms_balance',
+            default => throw new \InvalidArgumentException("Unknown message channel [{$channel}]."),
+        };
+    }
+
+    private function refreshMessageBalance(string $column): void
+    {
+        $this->setAttribute($column, (int) static::whereKey($this->getKey())->value($column));
+        $this->syncOriginalAttribute($column);
     }
 
     public function getEventTimeAttribute($value): ?string

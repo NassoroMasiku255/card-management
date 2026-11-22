@@ -243,6 +243,7 @@ class NextSmsTest extends TestCase
             'location' => 'Kariakoo',
             'hall' => 'City Hall',
         ]);
+        $this->fundEvent($event);
         $guest = Guest::create([
             'event_id' => $event->id,
             'unique_id' => 'G1-ABC12345',
