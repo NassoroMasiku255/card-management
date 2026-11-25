@@ -118,8 +118,11 @@ class WhatsAppPermissionTest extends TestCase
             ->assertOk()
             ->assertDontSee('WhatsApp sending is')
             ->assertDontSee('view-only')
-            ->assertSee('Not sent')
+            ->assertSee('Pending')
+            ->assertSee('WhatsApp Message')
+            ->assertSee('SMS Message')
             ->assertDontSee('Send WhatsApp to selected')
+            ->assertDontSee('Send normal SMS')
             ->assertDontSee('Send Message');
 
         $this->actingAs($user)
@@ -140,13 +143,22 @@ class WhatsAppPermissionTest extends TestCase
             ->get(route('events.guests.index', $event))
             ->assertOk()
             ->assertSee('Send WhatsApp to selected')
-            ->assertSee('Send Message');
+            ->assertSee('Send Message')
+            ->assertSee('Send WhatsApp')
+            ->assertSee('Send normal SMS')
+            ->assertSee('whatsappModal', false)
+            ->assertSee('smsModal', false)
+            ->assertSee('fa-inbox', false);
 
         $this->actingAs($user)
             ->get(route('events.invitations.index', $event))
             ->assertOk()
             ->assertSee('Send All Pending')
-            ->assertSee('Prepare Invitation');
+            ->assertSee('Prepare Invitation')
+            ->assertSee('fab fa-whatsapp', false)
+            ->assertSee('fa-inbox', false)
+            ->assertSee('Send invitation SMS')
+            ->assertDontSee('fa-comment-sms', false);
     }
 
     public function test_admin_can_grant_and_revoke_whatsapp_permission_from_user_management(): void
@@ -196,6 +208,7 @@ class WhatsAppPermissionTest extends TestCase
             'event_date' => now()->addMonth()->toDateString(),
             'location' => 'Dar es Salaam',
         ]);
+        $this->fundEvent($event);
 
         $guest = Guest::create([
             'event_id' => $event->id,

@@ -77,6 +77,27 @@ class WhatsAppReminderTest extends TestCase
         $this->assertNull($invitation->sent_at);
     }
 
+    public function test_reminder_uses_all_event_payment_accounts_in_the_template_parameter(): void
+    {
+        Http::fake([
+            'graph.facebook.com/*' => Http::response([
+                'messaging_product' => 'whatsapp',
+                'messages' => [['id' => 'wamid.event-payment-details']],
+            ]),
+        ]);
+
+        [$guest, $invitation] = $this->makeGuestAndInvitation();
+        $guest->event->paymentMethods()->createMany([
+            ['payment_name' => 'M-Pesa', 'payment_number' => '0755000111', 'account_holder' => 'Nassoro Masiku'],
+            ['payment_name' => 'CRDB', 'payment_number' => '0155000222', 'account_holder' => 'Nassoro Masiku'],
+        ]);
+
+        $this->assertTrue(app(WhatsAppService::class)->sendReminder($guest, $invitation));
+
+        Http::assertSent(fn ($request) => $request->data()['template']['components'][0]['parameters'][3]['text']
+            === 'M-Pesa: 0755000111. Nassoro Masiku; CRDB: 0155000222. Nassoro Masiku');
+    }
+
     public function test_guest_list_message_send_returns_json_status_for_ajax(): void
     {
         Http::fake([
@@ -270,7 +291,7 @@ class WhatsAppReminderTest extends TestCase
         $this->actingAs($invitation->event->user)
             ->get(route('events.invitations.index', $invitation->event))
             ->assertOk()
-            ->assertSee('Accepted')
+            ->assertSee('Sent')
             ->assertViewHas('invitations', function ($invitations) {
                 return $invitations->first()->latestInvitationMessage?->status === WhatsAppMessage::STATUS_ACCEPTED;
             });
@@ -356,6 +377,7 @@ class WhatsAppReminderTest extends TestCase
             'event_date' => now()->addMonth()->toDateString(),
             'location' => 'Dar es Salaam',
         ]);
+        $this->fundEvent($event);
 
         $guest = Guest::create([
             'event_id' => $event->id,

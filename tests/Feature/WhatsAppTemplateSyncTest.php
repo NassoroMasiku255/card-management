@@ -185,6 +185,7 @@ class WhatsAppTemplateSyncTest extends TestCase
             'location' => 'Dar es Salaam',
             'single_card_min_amount' => 50000,
         ]);
+        $this->fundEvent($event);
 
         $guest = Guest::create([
             'event_id' => $event->id,
@@ -240,6 +241,7 @@ class WhatsAppTemplateSyncTest extends TestCase
             'event_date' => now()->addMonth()->toDateString(),
             'location' => 'Paris',
         ]);
+        $this->fundEvent($event);
 
         $guest = Guest::create([
             'event_id' => $event->id,

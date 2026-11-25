@@ -228,6 +228,7 @@ class InvitationCardTest extends TestCase
             'event_date' => now()->addMonth()->toDateString(),
             'location' => 'Dar es Salaam',
         ]);
+        $this->fundEvent($event);
 
         $guest = Guest::create([
             'event_id' => $event->id,

@@ -93,6 +93,26 @@ class WhatsAppMessage extends Model
         };
     }
 
+    public function getSimpleStatusLabelAttribute(): string
+    {
+        return match ($this->status) {
+            'accepted', 'sent' => 'Sent',
+            'delivered' => 'Delivered',
+            'read' => 'Read',
+            default => 'Pending',
+        };
+    }
+
+    public function getSimpleStatusBadgeClassAttribute(): string
+    {
+        return match ($this->simple_status_label) {
+            'Sent' => 'bg-green-100 text-green-700',
+            'Delivered' => 'bg-emerald-100 text-emerald-700',
+            'Read' => 'bg-teal-100 text-teal-700',
+            default => 'bg-amber-100 text-amber-700',
+        };
+    }
+
     public function isFailed(): bool
     {
         return $this->status === self::STATUS_FAILED;

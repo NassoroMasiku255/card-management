@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Event;
+use App\Models\EventMessageCredit;
 use App\Models\WebhookLog;
 use App\Models\WhatsAppMessage;
 use Illuminate\Support\Str;
@@ -141,7 +142,29 @@ class EventMessageReportController extends Controller
         $recentMessages = $messages->take(20);
         $recentReplies = $replies->take(20);
 
+        $creditTotals = $event->messageCredits()
+            ->selectRaw('channel, type, SUM(amount) as total')
+            ->groupBy('channel', 'type')
+            ->get();
+
+        $balances = collect(Event::MESSAGE_CHANNELS)->map(fn ($label, $channel) => [
+            'channel' => $channel,
+            'label' => $label,
+            'balance' => $event->messageBalance($channel),
+            'used' => (int) abs($creditTotals->where('channel', $channel)->where('type', EventMessageCredit::TYPE_USAGE)->sum('total')),
+            'added' => (int) $creditTotals->where('channel', $channel)->where('type', '!=', EventMessageCredit::TYPE_USAGE)->sum('total'),
+        ]);
+
+        $balanceHistory = $event->messageCredits()
+            ->where('type', '!=', EventMessageCredit::TYPE_USAGE)
+            ->with('user')
+            ->latest('id')
+            ->take(10)
+            ->get();
+
         return view('events.messages-report', compact(
+            'balances',
+            'balanceHistory',
             'event',
             'messages',
             'stats',

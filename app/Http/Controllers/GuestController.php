@@ -17,7 +17,7 @@ class GuestController extends Controller
     {
         $this->authorizeEvent($event);
 
-        $query = $event->guests()->with(['invitation', 'latestWhatsAppMessage']);
+        $query = $event->guests()->with(['invitation', 'latestWhatsAppMessage', 'latestSmsMessage']);
 
         if ($search = $request->input('search')) {
             $query->where(function ($q) use ($search) {
@@ -46,9 +46,18 @@ class GuestController extends Controller
         }
 
         if ($messageStatus = $request->input('message_status')) {
-            $query->whereHas('latestWhatsAppMessage', function ($q) use ($messageStatus) {
-                $q->where('status', $messageStatus);
-            });
+            $statuses = match ($messageStatus) {
+                'pending' => ['queued', 'failed'],
+                'failed' => ['failed'],
+                'sent' => ['accepted', 'sent'],
+                'delivered' => ['delivered'],
+                'read' => ['read'],
+                default => [],
+            };
+
+            if ($statuses !== []) {
+                $query->whereHas('latestWhatsAppMessage', fn ($q) => $q->whereIn('status', $statuses));
+            }
         }
 
         if ($paymentStatus = $request->input('payment_status')) {
@@ -95,9 +104,9 @@ class GuestController extends Controller
     {
         $this->authorizeEvent($event);
 
-        $guests = $event->guests()->with(['invitation', 'latestWhatsAppMessage'])->orderBy('full_name')->get();
+        $guests = $event->guests()->with(['invitation', 'latestWhatsAppMessage', 'latestSmsMessage'])->orderBy('full_name')->get();
 
-        $headers = ['Unique ID', 'Full Name', 'Phone Number', 'Card Type', 'Pledged Amount', 'Amount Paid', 'Balance', 'Payment Status', 'Last Payment At', 'Category', 'Table', 'RSVP Status', 'Send Status', 'Last Message Type', 'Last Message Status', 'Last Message At', 'Attendance'];
+        $headers = ['Unique ID', 'Full Name', 'Phone Number', 'Card Type', 'Pledged Amount', 'Amount Paid', 'Balance', 'Payment Status', 'Last Payment At', 'Category', 'Table', 'RSVP Status', 'Send Status', 'Last Message Type', 'Last Message Status', 'Last Message At', 'Last SMS Type', 'Last SMS Status', 'Last SMS At', 'Attendance'];
 
         $rows = $guests->map(function ($guest) use ($event) {
             return [
@@ -117,6 +126,9 @@ class GuestController extends Controller
                 $guest->latestWhatsAppMessage?->message_type ?? 'N/A',
                 $guest->latestWhatsAppMessage?->status ?? 'N/A',
                 optional($guest->latestWhatsAppMessage?->status_updated_at)->format('Y-m-d H:i') ?? '',
+                $guest->latestSmsMessage?->message_type ?? 'N/A',
+                $guest->latestSmsMessage?->status ?? 'N/A',
+                optional($guest->latestSmsMessage?->status_updated_at)->format('Y-m-d H:i') ?? '',
                 $guest->invitation?->attendance_status ?? 'N/A',
             ];
         });
@@ -209,7 +221,6 @@ class GuestController extends Controller
     {
         $this->authorizeEvent($event);
         $this->ensureGuestBelongsToEvent($event, $guest);
-        $guest->delete();
 
         return redirect()->route('events.guests.index', $event)->with('success', 'Guest removed successfully!');
     }

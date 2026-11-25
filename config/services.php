@@ -65,4 +65,12 @@ return [
         'payment_template_language' => env('WHATSAPP_PAYMENT_TEMPLATE_LANGUAGE', 'en'),
     ],
 
+    'nextsms' => [
+        'api_url' => env('NEXTSMS_API_URL', 'https://messaging-service.co.tz/api/sms/v2/text/single'),
+        'token' => env('NEXTSMS_API_TOKEN'),
+        'from' => env('NEXTSMS_FROM'),
+        'reminder_payment_number' => env('NEXTSMS_REMINDER_PAYMENT_NUMBER', ''),
+        'reminder_payment_name' => env('NEXTSMS_REMINDER_PAYMENT_NAME', ''),
+    ],
+
 ];

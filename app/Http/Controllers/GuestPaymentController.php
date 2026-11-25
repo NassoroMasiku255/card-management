@@ -56,6 +56,12 @@ class GuestPaymentController extends Controller
             ],
         ]);
 
+        if ($event->payment_thank_you_enabled && ! $event->hasMessageBalance(Event::CHANNEL_WHATSAPP)) {
+            return back()
+                ->with('success', 'Payment recorded successfully!')
+                ->with('info', 'The thank-you message was not sent because this event has no WhatsApp message balance left.');
+        }
+
         if ($event->payment_thank_you_enabled) {
             try {
                 $guest->refresh();
