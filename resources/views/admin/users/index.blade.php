@@ -62,7 +62,7 @@
                 <tr>
                     <th class="px-6 py-3 text-left text-xs font-medium text-surface-500 uppercase tracking-wide">User</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-surface-500 uppercase tracking-wide">Role</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-surface-500 uppercase tracking-wide">WhatsApp</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-surface-500 uppercase tracking-wide">Sending</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-surface-500 uppercase tracking-wide">Assigned Events</th>
                     <th class="px-6 py-3 text-right text-xs font-medium text-surface-500 uppercase tracking-wide">Actions</th>
                 </tr>
@@ -91,11 +91,24 @@
                             {{ $user->is_admin ? 'Administrator' : 'Regular User' }}
                         </span>
                     </td>
-                    <td class="px-6 py-4" data-label="WhatsApp">
-                        @if($user->canSendWhatsApp())
-                        <span class="badge bg-green-100 text-green-700"><i class="fab fa-whatsapp mr-1"></i>Can send</span>
-                        @else
+                    <td class="px-6 py-4" data-label="Sending">
+                        @php
+                            $whatsappEventCount = $user->events->filter(fn ($assigned) => $assigned->pivot->can_send_whatsapp)->count();
+                            $smsEventCount = $user->events->filter(fn ($assigned) => $assigned->pivot->can_send_sms)->count();
+                        @endphp
+                        @if($user->is_admin)
+                        <span class="badge bg-green-100 text-green-700"><i class="fas fa-paper-plane mr-1"></i>All events</span>
+                        @elseif($whatsappEventCount === 0 && $smsEventCount === 0)
                         <span class="badge bg-surface-100 text-surface-500"><i class="fas fa-lock mr-1"></i>View only</span>
+                        @else
+                        <div class="flex flex-wrap gap-1.5">
+                            @if($whatsappEventCount > 0)
+                            <span class="badge bg-green-100 text-green-700"><i class="fab fa-whatsapp mr-1"></i>WhatsApp · {{ $whatsappEventCount }} {{ Str::plural('event', $whatsappEventCount) }}</span>
+                            @endif
+                            @if($smsEventCount > 0)
+                            <span class="badge bg-blue-100 text-blue-700"><i class="fas fa-comment-sms mr-1"></i>SMS · {{ $smsEventCount }} {{ Str::plural('event', $smsEventCount) }}</span>
+                            @endif
+                        </div>
                         @endif
                     </td>
                     <td class="px-6 py-4" data-label="Events">

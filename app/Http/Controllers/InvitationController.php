@@ -110,7 +110,7 @@ class InvitationController extends Controller
     {
         $this->authorizeEvent($event);
 
-        $this->authorizeWhatsAppSending();
+        $this->authorizeMessageSending($event, Event::CHANNEL_WHATSAPP);
 
         $invitations = $event->invitations()
             ->where('send_status', 'pending')
@@ -135,7 +135,7 @@ class InvitationController extends Controller
     {
         $this->authorizeEvent($event);
 
-        $this->authorizeWhatsAppSending();
+        $this->authorizeMessageSending($event, Event::CHANNEL_WHATSAPP);
 
         if (! $this->qualifiesForInvitation($invitation->guest, $event)) {
             return $this->ineligibleInvitationResponse($request, $invitation->guest);
@@ -184,7 +184,7 @@ class InvitationController extends Controller
     {
         $this->authorizeEvent($event);
 
-        $this->authorizeWhatsAppSending();
+        $this->authorizeMessageSending($event, Event::CHANNEL_WHATSAPP);
 
         $pendingInvitations = $event->invitations()
             ->where('send_status', 'pending')
@@ -237,7 +237,7 @@ class InvitationController extends Controller
     {
         $this->authorizeEvent($event);
 
-        $this->authorizeWhatsAppSending();
+        $this->authorizeMessageSending($event, Event::CHANNEL_WHATSAPP);
 
         if (! $this->qualifiesForInvitation($invitation->guest, $event)) {
             return $this->ineligibleInvitationResponse($request, $invitation->guest);
@@ -279,11 +279,11 @@ class InvitationController extends Controller
     {
         $this->authorizeEvent($event);
 
-        $this->authorizeWhatsAppSending();
+        $channel = $request->input('channel', 'whatsapp');
+
+        $this->authorizeMessageSending($event, $channel === 'sms' ? Event::CHANNEL_SMS : Event::CHANNEL_WHATSAPP);
 
         abort_unless($guest->event_id === $event->id, 404);
-
-        $channel = $request->input('channel', 'whatsapp');
 
         $request->validate([
             'channel' => 'nullable|string|in:whatsapp,sms',
@@ -420,7 +420,7 @@ class InvitationController extends Controller
     public function sendSms(Request $request, Event $event, Invitation $invitation)
     {
         $this->authorizeEvent($event);
-        $this->authorizeWhatsAppSending();
+        $this->authorizeMessageSending($event, Event::CHANNEL_SMS);
         abort_unless($invitation->event_id === $event->id, 404);
 
         if (! $this->qualifiesForInvitation($invitation->guest, $event)) {

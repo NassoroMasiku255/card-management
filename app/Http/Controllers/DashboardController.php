@@ -60,7 +60,11 @@ class DashboardController extends Controller
             ? [
                 'total' => User::count(),
                 'admins' => User::where('is_admin', true)->count(),
-                'whatsapp' => User::where('can_send_whatsapp', true)->count(),
+                'senders' => User::where('is_admin', true)
+                    ->orWhereHas('events', fn ($query) => $query
+                        ->where('event_user.can_send_whatsapp', true)
+                        ->orWhere('event_user.can_send_sms', true))
+                    ->count(),
                 'owners' => $events->pluck('user_id')->filter()->unique()->count(),
             ]
             : null;

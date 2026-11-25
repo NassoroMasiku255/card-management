@@ -37,7 +37,9 @@ class User extends Authenticatable
 
     public function events(): BelongsToMany
     {
-        return $this->belongsToMany(Event::class)->withTimestamps();
+        return $this->belongsToMany(Event::class)
+            ->withPivot(['can_send_whatsapp', 'can_send_sms'])
+            ->withTimestamps();
     }
 
     public function ownedEvents(): HasMany
@@ -57,8 +59,19 @@ class User extends Authenticatable
         return (bool) $this->is_admin;
     }
 
-    public function canSendWhatsApp(): bool
+    /**
+     * Sending is granted per event and per message type (WhatsApp or SMS).
+     * Administrators can always send.
+     */
+    public function canSendOnEvent(Event $event, string $channel): bool
     {
-        return $this->isAdmin() || (bool) $this->can_send_whatsapp;
+        if ($this->isAdmin()) {
+            return true;
+        }
+
+        return $this->events()
+            ->whereKey($event->getKey())
+            ->wherePivot(Event::SEND_PERMISSION_COLUMNS[$channel], true)
+            ->exists();
     }
 }

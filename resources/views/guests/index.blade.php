@@ -4,7 +4,8 @@
 
 @section('content')
 @php
-    $canSendWhatsApp = auth()->user()->canSendWhatsApp();
+    $canSendWhatsApp = auth()->user()->canSendOnEvent($event, \App\Models\Event::CHANNEL_WHATSAPP);
+    $canSendSms = auth()->user()->canSendOnEvent($event, \App\Models\Event::CHANNEL_SMS);
     $accent = $event->card_accent_color ?: '#e11d48';
 @endphp
 
@@ -299,6 +300,8 @@
                                 class="icon-action text-green-600 hover:bg-green-50 hover:text-green-700" title="Send WhatsApp">
                                 <i class="fab fa-whatsapp text-lg"></i>
                             </button>
+                            @endif
+                            @if($canSendSms)
                             <button type="button"
                                 onclick="openSmsModal('{{ $guest->id }}', @js($guest->full_name))"
                                 class="icon-action text-blue-600 hover:bg-blue-50 hover:text-blue-700" title="Send normal SMS">
@@ -411,7 +414,7 @@
 </div>
 @endif
 
-@if($canSendWhatsApp)
+@if($canSendSms)
 <div id="smsModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
     <div class="bg-white rounded-t-2xl sm:rounded-xl shadow-xl w-full max-w-md overflow-hidden animate-fade-in">
         <div class="px-6 py-4 border-b border-surface-100 flex items-center justify-between">

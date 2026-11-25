@@ -552,7 +552,7 @@
                 Managing <span class="font-semibold text-surface-600">{{ number_format($totalEvents) }}</span> events across
                 <span class="font-semibold text-surface-600">{{ number_format($teamStats['owners']) }}</span> event owners ·
                 <span class="font-semibold text-surface-600">{{ number_format($teamStats['total']) }}</span> team members ·
-                <span class="font-semibold text-surface-600">{{ number_format($teamStats['whatsapp']) }}</span> WhatsApp-enabled
+                <span class="font-semibold text-surface-600">{{ number_format($teamStats['senders']) }}</span> can send messages
             </p>
             <a href="{{ route('admin.users.index') }}" class="inline-flex items-center gap-1 text-xs font-semibold text-primary-600 hover:text-primary-700">
                 Manage team <i class="fas fa-arrow-right text-[10px]"></i>

@@ -20,15 +20,17 @@ abstract class Controller
     }
 
     /**
-     * Only administrators or users explicitly granted the permission may
-     * trigger outbound WhatsApp messages.
+     * Only administrators, or users granted this message type on this
+     * event, may trigger outbound WhatsApp or SMS messages.
      */
-    protected function authorizeWhatsAppSending(): void
+    protected function authorizeMessageSending(Event $event, string $channel): void
     {
+        $label = Event::MESSAGE_CHANNELS[$channel];
+
         abort_unless(
-            Auth::user()?->canSendWhatsApp(),
+            Auth::user()?->canSendOnEvent($event, $channel),
             403,
-            'You do not have permission to send WhatsApp messages.'
+            "You do not have permission to send {$label} messages for this event."
         );
     }
 }

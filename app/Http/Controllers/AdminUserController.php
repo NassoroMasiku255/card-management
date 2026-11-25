@@ -39,19 +39,21 @@ class AdminUserController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users,email',
             'password' => 'required|string|min:8|confirmed',
-            'can_send_whatsapp' => 'nullable|boolean',
             'events' => 'nullable|array',
             'events.*' => 'integer|exists:events,id',
+            'whatsapp_events' => 'nullable|array',
+            'whatsapp_events.*' => 'integer',
+            'sms_events' => 'nullable|array',
+            'sms_events.*' => 'integer',
         ]);
 
         $user = User::create([
             'name' => $validated['name'],
             'email' => $validated['email'],
             'password' => $validated['password'],
-            'can_send_whatsapp' => $request->boolean('can_send_whatsapp'),
         ]);
 
-        $this->syncEventAssignments($user, $validated['events'] ?? []);
+        $this->syncEventAssignments($user, $validated);
 
         return redirect()
             ->route('admin.users.index')
@@ -76,9 +78,12 @@ class AdminUserController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users,email,'.$user->id,
             'password' => 'nullable|string|min:8|confirmed',
-            'can_send_whatsapp' => 'nullable|boolean',
             'events' => 'nullable|array',
             'events.*' => 'integer|exists:events,id',
+            'whatsapp_events' => 'nullable|array',
+            'whatsapp_events.*' => 'integer',
+            'sms_events' => 'nullable|array',
+            'sms_events.*' => 'integer',
         ]);
 
         $updateData = [
@@ -87,26 +92,38 @@ class AdminUserController extends Controller
             ...(! empty($validated['password']) ? ['password' => $validated['password']] : []),
         ];
 
-        if ($request->has('can_send_whatsapp')) {
-            $updateData['can_send_whatsapp'] = $request->boolean('can_send_whatsapp');
-        }
-
         $user->update($updateData);
 
-        $this->syncEventAssignments($user, $validated['events'] ?? []);
+        $this->syncEventAssignments($user, $validated);
 
         return redirect()
             ->route('admin.users.index')
             ->with('success', "User {$user->name} updated.");
     }
 
-    private function syncEventAssignments(User $user, array $eventIds): void
+    /**
+     * Sync the events a user can manage, together with the message types
+     * (WhatsApp, SMS) they are allowed to send on each of those events.
+     */
+    private function syncEventAssignments(User $user, array $validated): void
     {
-        $selectedEventIds = Event::whereIn('id', $eventIds)->pluck('id')->all();
+        $selectedEventIds = Event::whereIn('id', $validated['events'] ?? [])->pluck('id')->all();
 
         $ownedEventIds = Event::where('user_id', $user->id)->pluck('id')->all();
 
-        $user->events()->sync(array_values(array_unique(array_merge($selectedEventIds, $ownedEventIds))));
+        $whatsappEventIds = array_map('intval', $validated['whatsapp_events'] ?? []);
+        $smsEventIds = array_map('intval', $validated['sms_events'] ?? []);
+
+        $assignments = [];
+
+        foreach (array_unique(array_merge($selectedEventIds, $ownedEventIds)) as $eventId) {
+            $assignments[$eventId] = [
+                'can_send_whatsapp' => in_array($eventId, $whatsappEventIds, true),
+                'can_send_sms' => in_array($eventId, $smsEventIds, true),
+            ];
+        }
+
+        $user->events()->sync($assignments);
     }
 
     private function authorizeAdmin(): void

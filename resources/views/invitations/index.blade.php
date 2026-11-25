@@ -4,7 +4,8 @@
 
 @section('content')
 @php
-    $canSendWhatsApp = auth()->user()->canSendWhatsApp();
+    $canSendWhatsApp = auth()->user()->canSendOnEvent($event, \App\Models\Event::CHANNEL_WHATSAPP);
+    $canSendSms = auth()->user()->canSendOnEvent($event, \App\Models\Event::CHANNEL_SMS);
     $accent = $event->card_accent_color ?: '#e11d48';
     $invitationTotal = max((int) $stats['total'], 1);
     $sentPct = (int) round(($stats['sent'] / $invitationTotal) * 100);
@@ -288,7 +289,7 @@
                             @elseif($canSendWhatsApp)
                             <span class="icon-action text-green-500" title="Invitation already sent"><i class="fas fa-check"></i></span>
                             @endif
-                            @if($canSendWhatsApp)
+                            @if($canSendSms)
                             <form method="POST" action="{{ route('events.invitations.send-sms', [$event, $invitation]) }}" class="inline-flex">
                                 @csrf
                                 <button type="submit" class="icon-action text-sky-600 hover:bg-sky-50 hover:text-sky-700" title="Send invitation SMS">

@@ -1,5 +1,10 @@
 @php
     $selectedEventIds = collect(old('events', $selectedEventIds ?? []))->map(fn ($id) => (int) $id)->all();
+    $assignedEvents = isset($user) ? $user->events : collect();
+    $whatsappEventIds = collect(old('whatsapp_events', $assignedEvents->filter(fn ($assigned) => $assigned->pivot->can_send_whatsapp)->pluck('id')->all()))
+        ->map(fn ($id) => (int) $id)->all();
+    $smsEventIds = collect(old('sms_events', $assignedEvents->filter(fn ($assigned) => $assigned->pivot->can_send_sms)->pluck('id')->all()))
+        ->map(fn ($id) => (int) $id)->all();
 @endphp
 
 <div class="card-surface p-6 md:p-8 space-y-6">
@@ -22,28 +27,6 @@
         </div>
     </div>
 
-    <div class="rounded-2xl border border-surface-200 bg-surface-50/70 p-4">
-        <label class="flex cursor-pointer items-start gap-3">
-            <input type="hidden" name="can_send_whatsapp" value="0">
-            <input type="checkbox" name="can_send_whatsapp" value="1"
-                {{ old('can_send_whatsapp', $user->can_send_whatsapp ?? false) ? 'checked' : '' }}
-                class="mt-0.5 h-4 w-4 rounded border-surface-300 text-green-600 focus:ring-green-500">
-            <span>
-                <span class="flex flex-wrap items-center gap-2 text-sm font-semibold text-surface-800">
-                    <i class="fab fa-whatsapp text-green-600"></i>
-                    Allow WhatsApp sending
-                    @if(isset($user) && $user->is_admin)
-                    <span class="badge bg-purple-100 text-purple-700">Administrators always allowed</span>
-                    @endif
-                </span>
-                <span class="mt-1 block text-xs leading-relaxed text-surface-500">
-                    Can send invitations and reminders from the guest and invitation pages.
-                    Users without this permission still see delivery statuses and can manage guests and payments.
-                </span>
-            </span>
-        </label>
-    </div>
-
     <div class="border-t border-surface-100 pt-6">
         <div class="flex flex-wrap items-start justify-between gap-3 mb-3">
             <div>
@@ -51,13 +34,17 @@
                 <p class="text-xs text-surface-500 mt-0.5">
                     Select the events this user can manage. Sharing an event does not change its owner or remove other managers.
                 </p>
+                <p class="text-xs text-surface-500 mt-1">
+                    For each event, tick <span class="font-medium text-surface-700">WhatsApp</span> and/or <span class="font-medium text-surface-700">SMS</span> to let this user send that type of message for that event only.
+                    Without a tick they can still see delivery statuses and manage guests and payments.
+                </p>
             </div>
             <span class="badge bg-surface-100 text-surface-600">{{ count($selectedEventIds) }} selected</span>
         </div>
 
         @if(isset($user) && $user->is_admin)
         <p class="mb-3 rounded-lg border border-purple-200 bg-purple-50 px-3 py-2 text-xs text-purple-800">
-            This user is an administrator and can already access every event. These selections are for reference only.
+            This user is an administrator and can already access every event and send WhatsApp and SMS messages for all of them. These selections are for reference only.
         </p>
         @else
         <p class="mb-3 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-blue-800">
@@ -76,8 +63,12 @@
                 $isOwner = isset($user) && $event->user_id === $user->id;
                 $otherManagers = $event->users->where('id', '!=', $event->user_id);
             @endphp
-            <label class="flex items-start gap-3 rounded-lg border border-surface-100 px-3 py-2.5 cursor-pointer hover:bg-surface-50 transition">
-                <input type="checkbox" name="events[]" value="{{ $event->id }}"
+            @php
+                $hasAccess = $isOwner || in_array($event->id, $selectedEventIds, true);
+            @endphp
+            <div class="event-access-row rounded-lg border border-surface-100 transition hover:bg-surface-50">
+            <label class="flex items-start gap-3 px-3 pt-2.5 pb-2 cursor-pointer">
+                <input type="checkbox" name="events[]" value="{{ $event->id }}" data-event-access
                     {{ $isOwner || in_array($event->id, $selectedEventIds, true) ? 'checked' : '' }}
                     {{ $isOwner ? 'disabled' : '' }}
                     class="mt-0.5 h-4 w-4 rounded border-surface-300 text-primary-600 focus:ring-primary-500">
@@ -104,6 +95,24 @@
                     @endif
                 </span>
             </label>
+            <div class="flex flex-wrap items-center gap-x-4 gap-y-1.5 border-t border-surface-100 px-3 py-2 pl-10">
+                <span class="text-[11px] font-medium text-surface-500">Can send:</span>
+                <label class="flex cursor-pointer items-center gap-1.5 text-xs text-surface-700">
+                    <input type="checkbox" name="whatsapp_events[]" value="{{ $event->id }}" data-event-send
+                        {{ $hasAccess && in_array($event->id, $whatsappEventIds, true) ? 'checked' : '' }}
+                        {{ $hasAccess ? '' : 'disabled' }}
+                        class="h-3.5 w-3.5 rounded border-surface-300 text-green-600 focus:ring-green-500 disabled:opacity-40">
+                    <i class="fab fa-whatsapp text-green-600"></i> WhatsApp
+                </label>
+                <label class="flex cursor-pointer items-center gap-1.5 text-xs text-surface-700">
+                    <input type="checkbox" name="sms_events[]" value="{{ $event->id }}" data-event-send
+                        {{ $hasAccess && in_array($event->id, $smsEventIds, true) ? 'checked' : '' }}
+                        {{ $hasAccess ? '' : 'disabled' }}
+                        class="h-3.5 w-3.5 rounded border-surface-300 text-blue-600 focus:ring-blue-500 disabled:opacity-40">
+                    <i class="fas fa-comment-sms text-blue-600"></i> SMS
+                </label>
+            </div>
+            </div>
             @endforeach
         </div>
         @endif
@@ -116,3 +125,21 @@
         </button>
     </div>
 </div>
+
+@push('scripts')
+<script>
+    // Send ticks only apply to events the user can access.
+    document.querySelectorAll('.event-access-row').forEach(row => {
+        const access = row.querySelector('[data-event-access]');
+        const sendTicks = row.querySelectorAll('[data-event-send]');
+        if (!access || access.disabled) return;
+
+        access.addEventListener('change', () => {
+            sendTicks.forEach(tick => {
+                tick.disabled = !access.checked;
+                if (!access.checked) tick.checked = false;
+            });
+        });
+    });
+</script>
+@endpush

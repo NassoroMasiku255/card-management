@@ -180,11 +180,11 @@ class NextSmsTest extends TestCase
         $this->assertSame('Invalid sender', $message->error_message);
     }
 
-    public function test_sms_sending_requires_the_existing_message_permission(): void
+    public function test_sms_sending_requires_the_sms_permission_on_the_event(): void
     {
         Http::fake();
         [$user, $event, $guest, $invitation] = $this->makeGuest();
-        $user->update(['can_send_whatsapp' => false]);
+        $user->events()->updateExistingPivot($event->id, ['can_send_sms' => false]);
 
         $this->actingAs($user)
             ->postJson(route('events.guests.send-message', [$event, $guest]), [

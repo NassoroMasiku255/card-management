@@ -25,6 +25,12 @@ class Event extends Model
         self::CHANNEL_SMS => 'SMS',
     ];
 
+    /** Columns on the event_user table that grant sending per message type. */
+    public const SEND_PERMISSION_COLUMNS = [
+        self::CHANNEL_WHATSAPP => 'can_send_whatsapp',
+        self::CHANNEL_SMS => 'can_send_sms',
+    ];
+
     protected $fillable = [
         'user_id', 'name', 'slug', 'event_date', 'event_time', 'location',
         'hall', 'description', 'card_template', 'card_background_color',
@@ -55,7 +61,11 @@ class Event extends Model
 
         static::created(function ($event) {
             if ($event->user_id) {
-                $event->users()->syncWithoutDetaching([$event->user_id]);
+                // The creator can send WhatsApp and SMS on their own event
+                // straight away; an administrator can change this later.
+                $event->users()->syncWithoutDetaching([
+                    $event->user_id => ['can_send_whatsapp' => true, 'can_send_sms' => true],
+                ]);
             }
         });
 
@@ -73,7 +83,9 @@ class Event extends Model
 
     public function users(): BelongsToMany
     {
-        return $this->belongsToMany(User::class)->withTimestamps();
+        return $this->belongsToMany(User::class)
+            ->withPivot(['can_send_whatsapp', 'can_send_sms'])
+            ->withTimestamps();
     }
 
     public function guests(): HasMany
