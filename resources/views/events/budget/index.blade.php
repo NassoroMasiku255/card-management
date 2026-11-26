@@ -82,6 +82,7 @@
 </div>
 @endif
 
+<div data-ajax-region="budget-summary">
 <!-- KPIs -->
 <div class="mb-6 grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-surface-200 bg-surface-200 shadow-soft sm:grid-cols-3 xl:grid-cols-6">
     <div class="bg-white p-4 sm:p-5">
@@ -181,7 +182,7 @@
     <div class="card-surface p-5 sm:p-6">
         <h3 class="text-sm font-semibold text-surface-900">Guest planning</h3>
         <p class="mt-0.5 text-xs text-surface-500">Approximate attendance</p>
-        <form method="POST" action="{{ route('events.budget.estimated-guests', $event) }}" class="mt-4">
+        <form method="POST" action="{{ route('events.budget.estimated-guests', $event) }}" class="mt-4" data-ajax>
             @csrf
             @method('PUT')
             <label class="label-field">Expected number of guests</label>
@@ -194,8 +195,10 @@
     </div>
 </div>
 
+</div>
+
 <!-- Budget table -->
-<div class="card-surface mb-6 overflow-hidden">
+<div class="card-surface mb-6 overflow-hidden" data-ajax-region="budget-table">
     <div class="flex flex-wrap items-center justify-between gap-3 border-b border-surface-100 px-5 py-4 sm:px-6">
         <div>
             <h2 class="text-sm font-semibold text-surface-900">Budget services &amp; vendors</h2>
@@ -307,7 +310,7 @@
                     <td class="{{ $td }} mobile-actions print:hidden" data-label="">
                         <div class="flex items-center justify-end gap-0.5">
                             <button type="button" onclick="openBudgetModal({{ $item->id }})" class="icon-action text-blue-600 hover:bg-blue-50" title="Edit service"><i class="fas fa-pen text-xs"></i></button>
-                            <form method="POST" action="{{ route('events.budget.destroy', [$event, $item]) }}" onsubmit="return confirm('Remove {{ addslashes($item->service_name) }} from the budget?')">
+                            <form method="POST" action="{{ route('events.budget.destroy', [$event, $item]) }}" data-ajax onsubmit="return confirm('Remove {{ addslashes($item->service_name) }} from the budget?')">
                                 @csrf
                                 @method('DELETE')
                                 <button type="submit" class="icon-action is-danger text-red-500 hover:bg-red-50" title="Remove service"><i class="fas fa-trash text-xs"></i></button>
@@ -336,7 +339,7 @@
             <button type="button" onclick="closeBudgetModal()" class="icon-action text-surface-400 hover:text-surface-700" aria-label="Close"><i class="fas fa-xmark"></i></button>
         </div>
 
-        <form id="budgetForm" method="POST" action="{{ route('events.budget.store', $event) }}" class="space-y-5 p-5 sm:p-6">
+        <form id="budgetForm" method="POST" action="{{ route('events.budget.store', $event) }}" data-ajax data-ajax-success="closeBudgetModal" class="space-y-5 p-5 sm:p-6">
             @csrf
             <input type="hidden" name="_method" id="budgetMethod" value="PUT" disabled>
 
@@ -395,7 +398,7 @@
     </div>
 </div>
 
-<script type="application/json" id="budgetItemsData">{!! $budgetItemsJson->toJson() !!}</script>
+<script type="application/json" id="budgetItemsData" data-ajax-region="budget-items">{!! $budgetItemsJson->toJson() !!}</script>
 
 <style>
     @media print {
@@ -416,7 +419,6 @@
         const title = document.getElementById('budgetModalTitle');
         const submit = document.getElementById('budgetSubmit');
         const storeUrl = @js(route('events.budget.store', $event));
-        const items = JSON.parse(document.getElementById('budgetItemsData').textContent || '{}');
 
         const fields = {
             category: document.getElementById('budgetCategory'),
@@ -437,6 +439,8 @@
             form.action = storeUrl;
             title.textContent = 'Add budget service';
             submit.innerHTML = '<i class="fas fa-plus"></i> Add service';
+
+            const items = JSON.parse(document.getElementById('budgetItemsData')?.textContent || '{}');
 
             if (itemId && items[itemId]) {
                 const item = items[itemId];
@@ -476,15 +480,15 @@
             if (event.key === 'Escape' && !modal.classList.contains('hidden')) closeBudgetModal();
         });
 
-        const search = document.getElementById('budgetSearch');
-        const categoryFilter = document.getElementById('budgetCategoryFilter');
-        const rows = Array.from(document.querySelectorAll('.budget-row'));
-        const noResults = document.getElementById('budgetNoResults');
-        const resultCount = document.getElementById('budgetResultCount');
+        let searchValue = '';
+        let categoryValue = 'all';
 
         function filterRows() {
-            const term = (search?.value || '').trim().toLowerCase();
-            const category = categoryFilter?.value || 'all';
+            const rows = document.querySelectorAll('.budget-row');
+            const noResults = document.getElementById('budgetNoResults');
+            const resultCount = document.getElementById('budgetResultCount');
+            const term = searchValue.trim().toLowerCase();
+            const category = categoryValue;
             let visible = 0;
 
             rows.forEach(function (row) {
@@ -499,8 +503,29 @@
             if (resultCount) resultCount.textContent = visible + (visible === 1 ? ' service' : ' services');
         }
 
-        search?.addEventListener('input', filterRows);
-        categoryFilter?.addEventListener('change', filterRows);
+        document.addEventListener('input', function (event) {
+            if (event.target.id !== 'budgetSearch') return;
+            searchValue = event.target.value;
+            filterRows();
+        });
+
+        document.addEventListener('change', function (event) {
+            if (event.target.id !== 'budgetCategoryFilter') return;
+            categoryValue = event.target.value;
+            filterRows();
+        });
+
+        // Keep the search and category filter after a background save refreshes the table.
+        document.addEventListener('ajax:updated', function () {
+            const search = document.getElementById('budgetSearch');
+            const categoryFilter = document.getElementById('budgetCategoryFilter');
+            if (search) search.value = searchValue;
+            if (categoryFilter) {
+                categoryFilter.value = categoryValue;
+                if (categoryFilter.value !== categoryValue) categoryValue = categoryFilter.value = 'all';
+            }
+            filterRows();
+        });
     })();
 </script>
 @endpush

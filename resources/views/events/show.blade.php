@@ -225,7 +225,7 @@
         </div>
 
         <!-- Reminder payment accounts -->
-        <section class="card-surface overflow-hidden">
+        <section class="card-surface overflow-hidden" data-ajax-region="payment-accounts">
             <div class="flex items-center justify-between gap-3 border-b border-surface-100 px-5 py-4 sm:px-6">
                 <div>
                     <h2 class="text-sm font-semibold text-surface-900">Reminder payment accounts</h2>
@@ -242,7 +242,7 @@
                         <p class="text-sm font-medium text-surface-900">{{ $paymentMethod->payment_name }}</p>
                         <p class="mt-0.5 text-xs text-surface-500">{{ $paymentMethod->payment_number }}@if($paymentMethod->account_holder). {{ $paymentMethod->account_holder }}@endif</p>
                     </div>
-                    <form method="POST" action="{{ route('events.payment-methods.destroy', [$event, $paymentMethod]) }}"
+                    <form method="POST" action="{{ route('events.payment-methods.destroy', [$event, $paymentMethod]) }}" data-ajax
                         onsubmit="return confirm('Remove this payment account?')">
                         @csrf
                         @method('DELETE')
@@ -257,7 +257,7 @@
             <p class="px-5 py-4 text-sm text-surface-500 sm:px-6">No event payment accounts have been added.</p>
             @endif
 
-            <form method="POST" action="{{ route('events.payment-methods.store', $event) }}"
+            <form method="POST" action="{{ route('events.payment-methods.store', $event) }}" data-ajax
                 class="grid grid-cols-1 gap-3 border-t border-surface-100 px-5 py-4 sm:grid-cols-3 sm:items-end sm:px-6"
                 data-loading-text="Adding payment account..." data-loading-hint="Saving this account for the event.">
                 @csrf

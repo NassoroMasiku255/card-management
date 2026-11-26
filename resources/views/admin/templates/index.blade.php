@@ -3,7 +3,7 @@
 @section('title', 'WhatsApp Templates - Admin')
 
 @section('content')
-<div class="space-y-6">
+<div class="space-y-6" data-ajax-region="whatsapp-templates">
     <!-- Header -->
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
@@ -20,7 +20,7 @@
             </p>
         </div>
         <div class="flex items-center gap-2 shrink-0">
-            <form method="POST" action="{{ route('admin.whatsapp-templates.sync') }}"
+            <form method="POST" action="{{ route('admin.whatsapp-templates.sync') }}" data-ajax
                 data-loading-text="Syncing from Meta WhatsApp..."
                 data-loading-hint="Fetching all templates from Meta WhatsApp Business API.">
                 @csrf
@@ -126,7 +126,7 @@
                 @endif
             </p>
             @unless(request()->hasAny(['search', 'status']))
-            <form method="POST" action="{{ route('admin.whatsapp-templates.sync') }}" class="mt-4"
+            <form method="POST" action="{{ route('admin.whatsapp-templates.sync') }}" class="mt-4" data-ajax
                 data-loading-text="Syncing from Meta WhatsApp...">
                 @csrf
                 <button type="submit" class="btn btn-primary inline-flex items-center gap-2">

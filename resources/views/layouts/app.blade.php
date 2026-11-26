@@ -116,9 +116,9 @@
                     'info' => ['fa-circle-info', 'border-blue-200 bg-blue-50 text-blue-700', 'text-blue-500 hover:text-blue-700'],
                 ] as $level => [$icon, $tone, $closeTone])
                     @if(session($level))
-                    <div class="flash-alert mb-6 flex items-start justify-between gap-3 rounded-xl border px-4 py-3 text-sm transition-opacity duration-500 {{ $tone }}" role="alert">
+                    <div class="flash-alert mb-6 flex items-start justify-between gap-3 rounded-xl border px-4 py-3 text-sm transition-opacity duration-500 {{ $tone }}" role="alert" data-flash-level="{{ $level }}">
                         <div class="flex items-start gap-2">
-                            <i class="fas {{ $icon }} mt-0.5"></i><span>{{ session($level) }}</span>
+                            <i class="fas {{ $icon }} mt-0.5"></i><span data-flash-text>{{ session($level) }}</span>
                         </div>
                         <button type="button" data-dismiss-alert aria-label="Dismiss notification" class="shrink-0 {{ $closeTone }}">
                             <i class="fas fa-xmark"></i>
@@ -128,14 +128,14 @@
                 @endforeach
 
                 @if($errors->any())
-                <div class="mb-6 flex items-start justify-between gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">
+                <div class="mb-6 flex items-start justify-between gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700" role="alert" data-flash-level="error">
                     <div class="flex items-start gap-2">
                         <i class="fas fa-circle-exclamation mt-0.5"></i>
                         <div>
                             <p class="font-semibold">Please fix the following {{ Str::plural('error', $errors->count()) }}:</p>
                             <ul class="mt-1 list-disc list-inside space-y-0.5">
                                 @foreach($errors->all() as $error)
-                                <li>{{ $error }}</li>
+                                <li data-flash-text>{{ $error }}</li>
                                 @endforeach
                             </ul>
                         </div>
@@ -367,6 +367,114 @@
             window.addEventListener('pageshow', function () {
                 window.hideActionLoader();
                 finishTopProgress();
+            });
+        })();
+    </script>
+
+    <div id="ajaxToast" class="hidden fixed bottom-24 right-4 z-[80] max-w-sm space-y-1 rounded-xl px-5 py-3 text-sm font-medium text-white shadow-2xl md:bottom-5 md:right-5" role="status" aria-live="polite"></div>
+    <script>
+        // Forms marked data-ajax are saved in the background: the server runs
+        // exactly as for a normal submit, then only the [data-ajax-region]
+        // blocks of the page are refreshed and the flash message is shown as a toast.
+        (function () {
+            const toast = document.getElementById('ajaxToast');
+            const tones = { success: 'bg-green-600', info: 'bg-blue-600', warning: 'bg-amber-600', error: 'bg-red-600' };
+            const severity = ['success', 'info', 'warning', 'error'];
+            let toastTimer;
+
+            window.showAjaxToast = function (messages, level) {
+                const tone = tones[level] || tones.success;
+                toast.className = toast.className.replace(/\bbg-(green|blue|amber|red)-600\b/g, '').trim() + ' ' + tone;
+                toast.replaceChildren(...[].concat(messages).map(function (text) {
+                    const line = document.createElement('p');
+                    line.textContent = text;
+                    return line;
+                }));
+                toast.classList.remove('hidden');
+                clearTimeout(toastTimer);
+                toastTimer = setTimeout(() => toast.classList.add('hidden'), level === 'error' ? 9000 : 6000);
+            };
+
+            function parse(html) {
+                return new DOMParser().parseFromString(html, 'text/html');
+            }
+
+            function withoutHash(url) {
+                return String(url).split('#')[0];
+            }
+
+            function flashes(doc) {
+                return Array.from(doc.querySelectorAll('main [data-flash-level]')).map((el) => ({
+                    level: el.dataset.flashLevel,
+                    messages: Array.from(el.querySelectorAll('[data-flash-text]')).map((n) => n.textContent.trim()).filter(Boolean),
+                }));
+            }
+
+            function swapRegions(doc) {
+                document.querySelectorAll('[data-ajax-region]').forEach((region) => {
+                    const fresh = doc.querySelector('[data-ajax-region="' + CSS.escape(region.dataset.ajaxRegion) + '"]');
+                    if (fresh) region.replaceWith(document.importNode(fresh, true));
+                });
+                document.dispatchEvent(new CustomEvent('ajax:updated'));
+            }
+
+            document.addEventListener('submit', async function (event) {
+                const form = event.target;
+                if (!(form instanceof HTMLFormElement) || !form.hasAttribute('data-ajax')) return;
+                if (event.defaultPrevented) return;
+                event.preventDefault();
+
+                if (form.dataset.ajaxBusy) return;
+                form.dataset.ajaxBusy = '1';
+
+                const body = new FormData(form);
+                if (event.submitter?.name) body.append(event.submitter.name, event.submitter.value);
+
+                try {
+                    // getAttribute: a field named "action" would shadow form.action.
+                    const actionUrl = new URL(form.getAttribute('action') || window.location.href, window.location.href);
+                    const response = await fetch(actionUrl, {
+                        method: (form.getAttribute('method') || 'POST').toUpperCase(),
+                        body: body,
+                        headers: { 'Accept': 'text/html' },
+                        credentials: 'same-origin',
+                    });
+
+                    if (response.status === 419 || new URL(response.url).pathname === '/login') {
+                        window.location.reload();
+                        return;
+                    }
+                    if (!response.ok) {
+                        throw new Error('Request failed with status ' + response.status);
+                    }
+
+                    let doc = parse(await response.text());
+                    const notices = flashes(doc);
+
+                    if (withoutHash(response.url) !== withoutHash(window.location.href)) {
+                        const current = await fetch(window.location.href, { headers: { 'Accept': 'text/html' }, credentials: 'same-origin' });
+                        doc = parse(await current.text());
+                    }
+
+                    swapRegions(doc);
+
+                    const failed = notices.some((notice) => notice.level === 'error');
+                    if (notices.length) {
+                        const level = notices.map((n) => n.level).sort((a, b) => severity.indexOf(b) - severity.indexOf(a))[0];
+                        window.showAjaxToast(notices.flatMap((n) => n.messages), level);
+                    }
+
+                    if (!failed) {
+                        if (form.hasAttribute('data-ajax-reset')) form.reset();
+                        const callback = form.dataset.ajaxSuccess;
+                        if (callback && typeof window[callback] === 'function') window[callback](form);
+                    }
+                } catch (error) {
+                    window.showAjaxToast('Something went wrong. Please try again.', 'error');
+                } finally {
+                    delete form.dataset.ajaxBusy;
+                    window.hideActionLoader?.();
+                }
             });
         })();
     </script>

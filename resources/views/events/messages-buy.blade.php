@@ -28,11 +28,12 @@
     @include('events.partials.section-nav', ['active' => 'messages'])
 </div>
 
+<div data-ajax-region="purchase-notice">
 @if(session('purchase_coming_soon'))
-<div class="mb-6 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-5 py-4" role="alert" id="purchaseComingSoon">
+<div class="mb-6 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-5 py-4" role="alert" id="purchaseComingSoon" data-flash-level="warning">
     <i class="fas fa-clock mt-0.5 text-amber-500"></i>
     <div>
-        <p class="text-sm font-semibold text-amber-900">This service is coming soon</p>
+        <p class="text-sm font-semibold text-amber-900" data-flash-text>This service is coming soon</p>
         <p class="mt-1 text-sm leading-relaxed text-amber-800">
             Buying messages with mobile money is not available yet. No payment was taken and no messages were added.
             For now, please ask an administrator to add message balance to this event.
@@ -40,10 +41,11 @@
     </div>
 </div>
 @endif
+</div>
 
 <div class="grid grid-cols-1 items-start gap-6 lg:grid-cols-3">
     <!-- Order form -->
-    <form method="POST" action="{{ route('events.messages.buy.submit', $event) }}" class="card-surface overflow-hidden lg:col-span-2"
+    <form method="POST" action="{{ route('events.messages.buy.submit', $event) }}" data-ajax class="card-surface overflow-hidden lg:col-span-2"
         data-loading-text="Checking your order...">
         @csrf
         <div class="border-b border-surface-100 px-5 py-4 sm:px-6">

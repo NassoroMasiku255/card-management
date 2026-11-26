@@ -290,7 +290,8 @@
                             <span class="icon-action text-green-500" title="Invitation already sent"><i class="fas fa-check"></i></span>
                             @endif
                             @if($canSendSms)
-                            <form method="POST" action="{{ route('events.invitations.send-sms', [$event, $invitation]) }}" class="inline-flex">
+                            <form method="POST" action="{{ route('events.invitations.send-sms', [$event, $invitation]) }}" class="inline-flex invitation-sms-form"
+                                data-no-loading data-invitation-id="{{ $invitation->id }}">
                                 @csrf
                                 <button type="submit" class="icon-action text-sky-600 hover:bg-sky-50 hover:text-sky-700" title="Send invitation SMS">
                                     <i class="fas fa-inbox"></i>
@@ -1366,6 +1367,66 @@ window.addEventListener('click', function (event) {
     if (event.target === document.getElementById('invitationModal')) {
         closeInvitationModal();
     }
+});
+
+function smsStatusBadge(state) {
+    const label = ({ sent: 'Sent', delivered: 'Delivered', read: 'Read' })[state] || 'Pending';
+    const badgeClass = ({
+        Sent: 'bg-green-100 text-green-700',
+        Delivered: 'bg-emerald-100 text-emerald-700',
+        Read: 'bg-teal-100 text-teal-700',
+    })[label] || 'bg-amber-100 text-amber-700';
+
+    return '<span class="badge ' + badgeClass + '">' + label + '</span>';
+}
+
+document.addEventListener('submit', async function (event) {
+    const form = event.target;
+    if (!(form instanceof HTMLFormElement) || !form.classList.contains('invitation-sms-form')) return;
+    event.preventDefault();
+
+    const button = form.querySelector('button[type="submit"]');
+    if (button.disabled) return;
+
+    const statusCell = document.getElementById('sms-status-cell-' + form.dataset.invitationId);
+    const originalButtonHtml = button.innerHTML;
+    const originalStatusHtml = statusCell?.innerHTML;
+
+    button.disabled = true;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    if (statusCell) {
+        statusCell.innerHTML = '<span class="text-xs text-surface-400"><i class="fas fa-spinner fa-spin mr-1"></i>Sending SMS...</span>';
+    }
+
+    try {
+        const response = await fetch(form.action, {
+            method: 'POST',
+            headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
+            body: new FormData(form),
+        });
+
+        let data = {};
+        try {
+            data = await response.json();
+        } catch (error) {
+            data = {};
+        }
+
+        if (statusCell) {
+            statusCell.innerHTML = data.status ? smsStatusBadge(data.status.state) : originalStatusHtml;
+        }
+
+        showInvitationToast(
+            data.message || (data.success ? 'SMS sent.' : 'Failed to send SMS.'),
+            data.success ? 'success' : 'warning'
+        );
+    } catch (error) {
+        if (statusCell) statusCell.innerHTML = originalStatusHtml;
+        showInvitationToast('Failed to send SMS.', 'warning');
+    }
+
+    button.disabled = false;
+    button.innerHTML = originalButtonHtml;
 });
 </script>
 @endpush

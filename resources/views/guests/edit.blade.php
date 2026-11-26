@@ -58,7 +58,7 @@
         </form>
     </div>
 
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mt-6">
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mt-6" data-ajax-region="guest-totals">
         <div class="card-surface p-4">
             <div class="text-xs text-surface-400 uppercase tracking-wide">Pledged</div>
             <div class="text-lg font-bold text-surface-900 mt-1">{{ number_format($guest->pledged_amount) }}</div>
@@ -77,7 +77,7 @@
         </div>
     </div>
 
-    <div class="card-surface p-6 md:p-8 mt-6">
+    <div class="card-surface p-6 md:p-8 mt-6" data-ajax-region="guest-payments">
         <div class="flex flex-wrap items-center justify-between gap-3 mb-5">
             <div>
                 <h2 class="font-display text-lg font-bold text-surface-900">Payments</h2>
@@ -87,7 +87,7 @@
         </div>
 
         <form method="POST" action="{{ route('events.guests.payments.store', [$event, $guest]) }}"
-            class="grid grid-cols-1 md:grid-cols-12 gap-4 items-end"
+            class="grid grid-cols-1 md:grid-cols-12 gap-4 items-end" data-ajax
             data-loading-text="Recording payment..." data-loading-hint="Updating the guest balance.">
             @csrf
             <div class="md:col-span-3">
@@ -151,7 +151,7 @@
                             </td>
                             <td class="py-3 pr-4 text-surface-500">{{ $payment->user?->name ?? 'System' }}</td>
                             <td class="py-3 text-right">
-                                <form method="POST" action="{{ route('events.guests.payments.destroy', [$event, $guest, $payment]) }}"
+                                <form method="POST" action="{{ route('events.guests.payments.destroy', [$event, $guest, $payment]) }}" data-ajax
                                     onsubmit="return confirm('Remove this payment? The guest balance will be recalculated.')">
                                     @csrf @method('DELETE')
                                     <button type="submit" class="text-red-500 hover:text-red-700" title="Remove payment">

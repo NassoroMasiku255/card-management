@@ -53,7 +53,7 @@
 </div>
 
 <!-- Guest summary -->
-<div class="mb-6 grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-surface-200 bg-surface-200 shadow-soft lg:grid-cols-4">
+<div class="mb-6 grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-surface-200 bg-surface-200 shadow-soft lg:grid-cols-4" data-ajax-region="guest-stats">
     <div class="bg-white p-4 sm:p-5">
         <p class="text-xs font-medium text-surface-500">Total guests</p>
         <p class="mt-1.5 text-2xl font-semibold tracking-tight text-surface-900">{{ number_format($summary['total']) }}</p>
@@ -151,7 +151,7 @@
 </div>
 @endif
 
-<div class="card-surface overflow-hidden">
+<div class="card-surface overflow-hidden" data-ajax-region="guest-list">
     <div class="flex flex-wrap items-center justify-between gap-3 border-b border-surface-100 px-5 py-4 sm:px-6">
         <div>
             <h2 class="text-sm font-semibold text-surface-900">Guest list</h2>
@@ -311,7 +311,7 @@
                             <a href="{{ route('events.guests.edit', [$event, $guest]) }}" class="icon-action text-blue-600 hover:bg-blue-50 hover:text-blue-700" title="Edit">
                                 <i class="fas fa-pen"></i>
                             </a>
-                            <form method="POST" action="{{ route('events.guests.destroy', [$event, $guest]) }}"
+                            <form method="POST" action="{{ route('events.guests.destroy', [$event, $guest]) }}" data-ajax
                                 data-loading-text="Removing guest..." data-loading-hint="Updating the guest list."
                                 onsubmit="return confirm('Remove this guest?')">
                                 @csrf @method('DELETE')
@@ -459,7 +459,7 @@
                 <i class="fas fa-times"></i>
             </button>
         </div>
-        <form id="paymentForm" method="POST" action="" class="flex min-h-0 flex-col"
+        <form id="paymentForm" method="POST" action="" class="flex min-h-0 flex-col" data-ajax data-ajax-reset data-ajax-success="closePaymentModal"
             data-loading-text="Recording payment..." data-loading-hint="Updating the guest balance.">
             @csrf
             <div class="p-5 sm:p-6 space-y-4 overflow-y-auto">
@@ -750,16 +750,18 @@
         document.body.style.overflow = 'auto';
     }
 
-    document.getElementById('selectAllGuests')?.addEventListener('change', function (event) {
-        document.querySelectorAll('.guest-checkbox').forEach(checkbox => {
-            checkbox.checked = event.target.checked;
-        });
-        syncGuestSelection();
+    document.addEventListener('change', function (event) {
+        if (event.target.id === 'selectAllGuests') {
+            document.querySelectorAll('.guest-checkbox').forEach(checkbox => {
+                checkbox.checked = event.target.checked;
+            });
+            syncGuestSelection();
+        } else if (event.target.classList?.contains('guest-checkbox')) {
+            syncGuestSelection();
+        }
     });
 
-    document.querySelectorAll('.guest-checkbox').forEach(checkbox => {
-        checkbox.addEventListener('change', syncGuestSelection);
-    });
+    document.addEventListener('ajax:updated', syncGuestSelection);
 
     document.getElementById('bulkWhatsAppBtn')?.addEventListener('click', openBulkWhatsAppModal);
     document.getElementById('clearGuestSelection')?.addEventListener('click', clearGuestSelection);

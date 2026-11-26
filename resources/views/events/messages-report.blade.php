@@ -74,7 +74,7 @@
 </div>
 
 <!-- Message balance -->
-<div class="card-surface mb-6 overflow-hidden print:hidden">
+<div class="card-surface mb-6 overflow-hidden print:hidden" data-ajax-region="message-balance">
     <div class="flex flex-wrap items-center justify-between gap-3 border-b border-surface-100 px-5 py-4 sm:px-6">
         <div>
             <h2 class="text-sm font-semibold text-surface-900">Message balance</h2>
@@ -113,7 +113,7 @@
     </div>
 
     @if(auth()->user()->isAdmin())
-    <form method="POST" action="{{ route('events.messages.balance.store', $event) }}" class="border-t border-surface-100 px-5 py-4 sm:px-6"
+    <form method="POST" action="{{ route('events.messages.balance.store', $event) }}" data-ajax class="border-t border-surface-100 px-5 py-4 sm:px-6"
         data-loading-text="Updating message balance...">
         @csrf
         <p class="text-sm font-semibold text-surface-900">Adjust balance <span class="ml-1 text-xs font-normal text-surface-500">Administrators only</span></p>
