@@ -78,6 +78,61 @@ class GuestPaymentController extends Controller
         return back()->with('success', 'Payment recorded successfully!');
     }
 
+    public function update(Request $request, Event $event, Guest $guest, GuestPayment $payment)
+    {
+        $this->authorizeEvent($event);
+        $this->ensureGuestBelongsToEvent($event, $guest);
+        abort_unless($payment->guest_id === $guest->id && $payment->event_id === $event->id, 404);
+
+        $methods = ['cash', 'mobile_money', 'bank', 'cheque', 'other'];
+        if ($payment->method === 'import') {
+            $methods[] = 'import';
+        }
+
+        $validated = $request->validate([
+            'amount' => 'required|numeric|min:1',
+            'method' => 'required|in:'.implode(',', $methods),
+            'reference' => 'nullable|string|max:255',
+            'paid_at' => 'required|date|before_or_equal:today',
+            'notes' => 'nullable|string|max:1000',
+        ]);
+
+        $oldAmount = (float) $payment->amount;
+
+        DB::transaction(function () use ($validated, $guest, $payment) {
+            $payment->update([
+                'amount' => $validated['amount'],
+                'method' => $validated['method'],
+                'reference' => $validated['reference'] ?? null,
+                'paid_at' => $validated['paid_at'],
+                'notes' => $validated['notes'] ?? null,
+            ]);
+
+            $this->refreshGuestPaymentTotals($guest);
+        });
+
+        $newAmount = (float) $payment->amount;
+        $description = $oldAmount === $newAmount
+            ? "Payment of ".number_format($newAmount)." TZS updated for '{$guest->full_name}'."
+            : "Payment changed from ".number_format($oldAmount)." to ".number_format($newAmount)." TZS for '{$guest->full_name}'.";
+
+        ActivityLog::create([
+            'event_id' => $event->id,
+            'user_id' => Auth::id(),
+            'action' => 'payment_updated',
+            'description' => $description,
+            'metadata' => [
+                'guest_id' => $guest->id,
+                'payment_id' => $payment->id,
+                'old_amount' => $oldAmount,
+                'amount' => $newAmount,
+                'method' => $payment->method,
+            ],
+        ]);
+
+        return back()->with('success', 'Payment updated successfully!');
+    }
+
     public function destroy(Event $event, Guest $guest, GuestPayment $payment)
     {
         $this->authorizeEvent($event);

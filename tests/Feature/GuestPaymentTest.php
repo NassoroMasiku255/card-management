@@ -169,6 +169,79 @@ class GuestPaymentTest extends TestCase
         $this->assertSame('unpaid', $guest->fresh()->payment_status);
     }
 
+    public function test_editing_a_payment_recalculates_the_guest_balance_and_logs_the_change(): void
+    {
+        Http::fake();
+        [$user, $event, $guest] = $this->eventWithGuest(100000);
+        $event->update(['payment_thank_you_enabled' => true]);
+        $payment = GuestPayment::create([
+            'event_id' => $event->id,
+            'guest_id' => $guest->id,
+            'user_id' => $user->id,
+            'amount' => 50000,
+            'method' => 'cash',
+            'paid_at' => now()->toDateString(),
+        ]);
+        $guest->update(['paid_amount' => 50000]);
+
+        $this->actingAs($user)
+            ->put(route('events.guests.payments.update', [$event, $guest, $payment]), [
+                'amount' => 5000,
+                'method' => 'mobile_money',
+                'reference' => 'MPESA-9',
+                'paid_at' => now()->toDateString(),
+                'notes' => 'Corrected',
+            ])
+            ->assertRedirect()
+            ->assertSessionHas('success');
+
+        $this->assertDatabaseHas('guest_payments', [
+            'id' => $payment->id,
+            'amount' => 5000,
+            'method' => 'mobile_money',
+            'reference' => 'MPESA-9',
+            'notes' => 'Corrected',
+        ]);
+        $this->assertEquals(5000, (float) $guest->fresh()->paid_amount);
+        $this->assertEquals(95000, $guest->fresh()->balance);
+        $this->assertDatabaseHas('activity_logs', [
+            'event_id' => $event->id,
+            'action' => 'payment_updated',
+            'description' => "Payment changed from 50,000 to 5,000 TZS for 'Jane Doe'.",
+        ]);
+        Http::assertNothingSent();
+    }
+
+    public function test_a_payment_cannot_be_edited_through_another_guest(): void
+    {
+        [$user, $event, $guest] = $this->eventWithGuest(100000);
+        $other = Guest::create([
+            'event_id' => $event->id,
+            'full_name' => 'John Roe',
+            'phone_number' => '0712345679',
+            'amount_contributed' => 0,
+            'card_type' => 'single',
+        ]);
+        $payment = GuestPayment::create([
+            'event_id' => $event->id,
+            'guest_id' => $guest->id,
+            'user_id' => $user->id,
+            'amount' => 50000,
+            'method' => 'cash',
+            'paid_at' => now()->toDateString(),
+        ]);
+
+        $this->actingAs($user)
+            ->put(route('events.guests.payments.update', [$event, $other, $payment]), [
+                'amount' => 1,
+                'method' => 'cash',
+                'paid_at' => now()->toDateString(),
+            ])
+            ->assertNotFound();
+
+        $this->assertEquals(50000, (float) $payment->fresh()->amount);
+    }
+
     public function test_payment_report_shows_totals_and_attendance_estimate(): void
     {
         [$user, $event, $single] = $this->eventWithGuest(100000, 'single');

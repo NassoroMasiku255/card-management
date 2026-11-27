@@ -97,6 +97,7 @@ Route::middleware('auth')->group(function () {
         Route::put('/guests/{guest}', [GuestController::class, 'update'])->name('guests.update');
         Route::delete('/guests/{guest}', [GuestController::class, 'destroy'])->name('guests.destroy');
         Route::post('/guests/{guest}/payments', [GuestPaymentController::class, 'store'])->name('guests.payments.store');
+        Route::put('/guests/{guest}/payments/{payment}', [GuestPaymentController::class, 'update'])->name('guests.payments.update');
         Route::delete('/guests/{guest}/payments/{payment}', [GuestPaymentController::class, 'destroy'])->name('guests.payments.destroy');
 
         // Invitations

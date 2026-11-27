@@ -275,7 +275,7 @@
             document.addEventListener('submit', function (event) {
                 const form = event.target;
                 if (!(form instanceof HTMLFormElement)) return;
-                if (event.defaultPrevented || form.hasAttribute('data-no-loading')) return;
+                if (event.defaultPrevented || form.hasAttribute('data-no-loading') || form.hasAttribute('data-ajax')) return;
 
                 const message = form.dataset.loadingText || 'Processing...';
                 const hint = form.dataset.loadingHint || "Please wait, don't close this page.";
@@ -427,6 +427,10 @@
                 if (form.dataset.ajaxBusy) return;
                 form.dataset.ajaxBusy = '1';
 
+                const submitButton = event.submitter || form.querySelector('button[type="submit"], button:not([type])');
+                const restoreButton = window.showButtonLoading(submitButton, submitButton?.textContent.trim() ? (form.dataset.loadingText || 'Saving...') : '');
+                window.startTopProgress(25);
+
                 const body = new FormData(form);
                 if (event.submitter?.name) body.append(event.submitter.name, event.submitter.value);
 
@@ -473,7 +477,8 @@
                     window.showAjaxToast('Something went wrong. Please try again.', 'error');
                 } finally {
                     delete form.dataset.ajaxBusy;
-                    window.hideActionLoader?.();
+                    restoreButton();
+                    window.finishTopProgress();
                 }
             });
         })();
